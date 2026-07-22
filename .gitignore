@@ -42,3 +42,6 @@ next-env.d.ts
 
 # exceção: exemplo versionado
 !.env.example
+
+# metadados do Windows
+*:Zone.Identifier
