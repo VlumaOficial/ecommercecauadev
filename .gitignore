@@ -45,3 +45,7 @@ next-env.d.ts
 
 # metadados do Windows
 *:Zone.Identifier
+
+# supabase cli
+supabase/.temp/
+supabase/.branches/
