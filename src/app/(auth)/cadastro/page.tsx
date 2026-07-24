@@ -13,7 +13,7 @@ import {
 import { BrandHeader } from '@/components/brand-header'
 import { VlumaFooter } from '@/components/vluma-footer'
 import { toast } from 'sonner'
-import { Loader2, MailCheck } from 'lucide-react'
+import { Loader2, MailCheck, Eye, EyeOff } from 'lucide-react'
 
 export default function CadastroPage() {
   const supabase = createClient()
@@ -26,6 +26,7 @@ export default function CadastroPage() {
   const [senha, setSenha] = useState('')
   const [carregando, setCarregando] = useState(false)
   const [enviado, setEnviado] = useState(false)
+  const [mostrarSenha, setMostrarSenha] = useState(false)
 
   function formatarWhatsapp(v: string) {
     const d = v.replace(/\D/g, '').slice(0, 11)
@@ -37,6 +38,8 @@ export default function CadastroPage() {
   async function cadastrar(e: React.FormEvent) {
     e.preventDefault()
     if (!cidadeId) { toast.error('Selecione sua cidade de entrega.'); return }
+    const wpp = whatsapp.replace(/\D/g, '')
+    if (wpp.length < 10) { toast.error('Informe um WhatsApp valido com DDD.'); return }
     if (senha.length < 8) { toast.error('A senha deve ter ao menos 8 caracteres.'); return }
 
     setCarregando(true)
@@ -47,7 +50,7 @@ export default function CadastroPage() {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: {
           nome: nome.trim(),
-          whatsapp: whatsapp.replace(/\D/g, ''),
+          whatsapp: wpp,
           delivery_city_id: cidadeId,
           role: 'cliente',
         },
@@ -117,7 +120,12 @@ export default function CadastroPage() {
               <Label htmlFor="cidade">Cidade de entrega</Label>
               <Select value={cidadeId} onValueChange={(v) => setCidadeId(v ?? '')}>
                 <SelectTrigger id="cidade" className="w-full">
-                  <SelectValue placeholder={carregandoCidades ? 'Carregando...' : 'Selecione sua cidade'} />
+                  <SelectValue placeholder={carregandoCidades ? 'Carregando...' : 'Selecione sua cidade'}>
+                    {(value: string | null) => {
+                      const c = cidades?.find((x) => x.id === value)
+                      return c ? `${c.nome}${c.uf ? ' - ' + c.uf : ''}` : ''
+                    }}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {cidades?.map((c) => (
@@ -132,7 +140,12 @@ export default function CadastroPage() {
 
             <div className="space-y-2">
               <Label htmlFor="senha">Senha</Label>
-              <Input id="senha" type="password" autoComplete="new-password" required value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Minimo 8 caracteres" />
+              <div className="relative">
+                <Input id="senha" type={mostrarSenha ? 'text' : 'password'} autoComplete="new-password" required value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Minimo 8 caracteres" className="pr-10" />
+                <button type="button" onClick={() => setMostrarSenha((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}>
+                  {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             <Button type="submit" disabled={carregando} className="w-full h-11 text-base">
