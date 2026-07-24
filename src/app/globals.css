@@ -9,7 +9,13 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-display);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-navy-deep: var(--brand-navy-deep);
+  --color-brand-red: var(--brand-red);
+  --color-brand-aqua: var(--brand-aqua);
+  --color-brand-aqua-light: var(--brand-aqua-light);
+  --font-display: var(--font-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,38 +55,53 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  /* ---- Marca Criatorio Capua ---- */
+  --brand-navy: #0B2E5C;
+  --brand-navy-deep: #072142;
+  --brand-red: #E32127;
+  --brand-aqua: #7FB2DC;
+  --brand-aqua-light: #D8E9F5;
+
+  /* ---- Tokens semanticos (loja em tema claro) ---- */
+  --background: #ffffff;
+  --foreground: #14263f;
+  --card: #ffffff;
+  --card-foreground: #14263f;
+  --popover: #ffffff;
+  --popover-foreground: #14263f;
+
+  --primary: #0B2E5C;
+  --primary-foreground: #ffffff;
+  --secondary: #eef4fb;
+  --secondary-foreground: #0B2E5C;
+  --muted: #f1f5f9;
+  --muted-foreground: #5b6b80;
+  --accent: #D8E9F5;
+  --accent-foreground: #0B2E5C;
+
+  /* erro distinto do vermelho da marca (mais escuro/dessaturado) */
+  --destructive: #b4232a;
+
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #7FB2DC;
+
+  --chart-1: #0B2E5C;
+  --chart-2: #E32127;
+  --chart-3: #7FB2DC;
+  --chart-4: #123E7C;
+  --chart-5: #94a3b8;
+
+  --sidebar: #0B2E5C;
+  --sidebar-foreground: #dbe7f4;
+  --sidebar-primary: #E32127;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #123E7C;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #123E7C;
+  --sidebar-ring: #7FB2DC;
 }
 
 .dark {
