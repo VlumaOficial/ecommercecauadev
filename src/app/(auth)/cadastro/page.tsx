@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useDeliveryCities } from '@/hooks/use-delivery-cities'
 import { Button } from '@/components/ui/button'
@@ -27,6 +28,9 @@ export default function CadastroPage() {
   const [carregando, setCarregando] = useState(false)
   const [enviado, setEnviado] = useState(false)
   const [mostrarSenha, setMostrarSenha] = useState(false)
+  const [reenvioContador, setReenvioContador] = useState(0)
+  const [reenviando, setReenviando] = useState(false)
+  const router = useRouter()
 
   function formatarWhatsapp(v: string) {
     const d = v.replace(/\D/g, '').slice(0, 11)
@@ -67,6 +71,29 @@ export default function CadastroPage() {
       return
     }
     setEnviado(true)
+    setReenvioContador(60)
+  }
+
+  useEffect(() => {
+    if (reenvioContador <= 0) return
+    const t = setTimeout(() => setReenvioContador((n) => n - 1), 1000)
+    return () => clearTimeout(t)
+  }, [reenvioContador])
+
+  async function reenviar() {
+    setReenviando(true)
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    })
+    setReenviando(false)
+    if (error) {
+      toast.error('Nao foi possivel reenviar agora. Tente em instantes.')
+      return
+    }
+    toast.success('E-mail reenviado.')
+    setReenvioContador(60)
   }
 
   if (enviado) {
@@ -82,7 +109,12 @@ export default function CadastroPage() {
             <h2 className="font-display text-xl font-bold text-[var(--brand-navy)] mb-2">Confirme seu e-mail</h2>
             <p className="text-sm text-muted-foreground mb-1">Enviamos um link de confirmacao para</p>
             <p className="text-sm font-medium text-foreground mb-4">{email}</p>
-            <p className="text-xs text-muted-foreground">Pode levar alguns minutos. Verifique tambem a caixa de spam.</p>
+            <p className="text-xs text-muted-foreground mb-6">Pode levar alguns minutos. Verifique tambem a caixa de spam.</p>
+            <Button onClick={reenviar} disabled={reenvioContador > 0 || reenviando} variant="outline" className="w-full mb-3">
+              {reenviando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {reenvioContador > 0 ? `Reenviar em ${reenvioContador}s` : 'Reenviar e-mail'}
+            </Button>
+            <Button onClick={() => router.push('/entrar')} variant="ghost" className="w-full">Voltar para entrar</Button>
           </div>
           <div className="flex justify-center mt-8"><VlumaFooter /></div>
         </div>
