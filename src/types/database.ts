@@ -64,6 +64,7 @@ export type Database = {
           auth_user_id: string
           cidade_entrega: string | null
           created_at: string
+          delivery_city_id: string | null
           email: string | null
           id: string
           nome: string
@@ -77,6 +78,7 @@ export type Database = {
           auth_user_id: string
           cidade_entrega?: string | null
           created_at?: string
+          delivery_city_id?: string | null
           email?: string | null
           id?: string
           nome: string
@@ -90,6 +92,7 @@ export type Database = {
           auth_user_id?: string
           cidade_entrega?: string | null
           created_at?: string
+          delivery_city_id?: string | null
           email?: string | null
           id?: string
           nome?: string
@@ -100,7 +103,64 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "customers_delivery_city_id_fkey"
+            columns: ["delivery_city_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_cities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "customers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_cities: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          horario: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          ordem: number
+          ponto_entrega: string | null
+          tenant_id: string
+          uf: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          horario?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          ordem?: number
+          ponto_entrega?: string | null
+          tenant_id: string
+          uf?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          horario?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          ordem?: number
+          ponto_entrega?: string | null
+          tenant_id?: string
+          uf?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_cities_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
