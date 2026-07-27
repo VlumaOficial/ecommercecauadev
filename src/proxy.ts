@@ -1,6 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Rotas de autenticacao: usuario JA logado nao deve acessa-las
+const ROTAS_AUTH = ['/entrar', '/cadastro', '/recuperar-senha']
+
+// Prefixos que exigem login
+const ROTAS_PROTEGIDAS = ['/painel', '/minha-conta']
+
 export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
 
@@ -25,7 +31,26 @@ export default async function proxy(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const { pathname } = request.nextUrl
+
+  // Logado tentando acessar tela de auth -> manda para home
+  if (user && ROTAS_AUTH.some((r) => pathname.startsWith(r))) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
+  }
+
+  // Deslogado tentando acessar area protegida -> manda para login
+  if (!user && ROTAS_PROTEGIDAS.some((r) => pathname.startsWith(r))) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/entrar'
+    url.searchParams.set('proximo', pathname)
+    return NextResponse.redirect(url)
+  }
 
   return response
 }
