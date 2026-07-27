@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,8 @@ export default function RecuperarSenhaPage() {
   const [email, setEmail] = useState('')
   const [carregando, setCarregando] = useState(false)
   const [enviado, setEnviado] = useState(false)
+  const [contador, setContador] = useState(0)
+  const [reenviando, setReenviando] = useState(false)
 
   async function solicitar(e: React.FormEvent) {
     e.preventDefault()
@@ -29,6 +31,24 @@ export default function RecuperarSenhaPage() {
       return
     }
     setEnviado(true)
+    setContador(60)
+  }
+
+  useEffect(() => {
+    if (contador <= 0) return
+    const t = setTimeout(() => setContador((n) => n - 1), 1000)
+    return () => clearTimeout(t)
+  }, [contador])
+
+  async function reenviar() {
+    setReenviando(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/auth/callback?next=/nova-senha`,
+    })
+    setReenviando(false)
+    if (error) { toast.error('Nao foi possivel reenviar agora.'); return }
+    toast.success('E-mail reenviado.')
+    setContador(60)
   }
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -53,6 +73,10 @@ export default function RecuperarSenhaPage() {
           <p className="text-sm text-muted-foreground mb-1">Se houver uma conta para</p>
           <p className="text-sm font-medium text-foreground mb-4">{email}</p>
           <p className="text-xs text-muted-foreground mb-6">enviamos um link para redefinir a senha. Verifique tambem o spam.</p>
+          <Button onClick={reenviar} disabled={contador > 0 || reenviando} variant="outline" className="w-full mb-3">
+            {reenviando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {contador > 0 ? `Reenviar em ${contador}s` : 'Reenviar e-mail'}
+          </Button>
           <Link href="/entrar"><Button variant="ghost" className="w-full">Voltar para entrar</Button></Link>
         </div>
       </Wrapper>
