@@ -2,6 +2,8 @@ import { getStaffProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { Package, FolderTree, ShoppingCart, Users } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export default async function PainelHome() {
   const perfil = await getStaffProfile()
   const supabase = await createClient()

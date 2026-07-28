@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { getStaffProfile } from '@/lib/auth'
 import { PainelSidebar } from '@/components/painel-sidebar'
 
+export const dynamic = 'force-dynamic'
+
 export default async function PainelLayout({
   children,
 }: {

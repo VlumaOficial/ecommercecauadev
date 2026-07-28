@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { VlumaFooter } from '@/components/vluma-footer'
 import { Button } from '@/components/ui/button'
 
+export const dynamic = 'force-dynamic'
+
 const SIMBOLO =
   'https://embgxkrfwtbqfkwmquvo.supabase.co/storage/v1/object/public/assets/capua-simbolo.png'
 
