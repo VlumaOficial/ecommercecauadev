@@ -58,7 +58,10 @@ export default async function proxy(request: NextRequest) {
     return redir
   }
 
-  // CRITICO: sempre retornar supabaseResponse (com os cookies) intacto
+  // DEBUG: expor no header quais cookies o proxy viu e se achou user
+  const nomes = request.cookies.getAll().map((c) => c.name).join(',')
+  supabaseResponse.headers.set('x-debug-cookies', nomes || 'NENHUM')
+  supabaseResponse.headers.set('x-debug-user', user ? user.email || 'sim' : 'NAO')
   return supabaseResponse
 }
 
