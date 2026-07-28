@@ -28,8 +28,10 @@ export function PainelSidebar({ nomeUsuario }: { nomeUsuario: string }) {
 
   const conteudo = (
     <>
-      <div className="flex items-center gap-2.5 px-5 h-16 border-b border-[var(--sidebar-border)]">
-        <Image src={SIMBOLO} alt="Criatório Capuã" width={30} height={24} />
+      <div className="flex items-center gap-3 px-5 h-16 border-b border-[var(--sidebar-border)]">
+        <div className="shrink-0 flex items-center justify-center w-11 h-11 rounded-xl bg-white p-1.5">
+          <Image src={SIMBOLO} alt="Criatório Capuã" width={30} height={24} className="w-full h-auto" />
+        </div>
         <div className="leading-[1.15]">
           <div className="font-display font-bold tracking-[0.14em] text-white text-[11px]">CRIATÓRIO</div>
           <div className="font-display font-bold tracking-[0.14em] text-[var(--sidebar-primary)] text-[11px]">CAPUÃ</div>
