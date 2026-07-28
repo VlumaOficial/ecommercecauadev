@@ -5,7 +5,7 @@ const ROTAS_AUTH = ['/entrar', '/cadastro', '/recuperar-senha']
 const ROTAS_PROTEGIDAS = ['/painel', '/minha-conta']
 
 export default async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request })
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,45 +19,47 @@ export default async function proxy(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
-          response = NextResponse.next({ request })
+          supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options)
           )
         },
       },
     }
   )
 
+  // IMPORTANTE: nao inserir codigo entre createServerClient e getUser
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
 
-  // Helper: redireciona preservando os cookies de sessao ja gravados em `response`
-  function redirecionarPreservandoCookies(destino: string) {
+  // Logado em rota de auth -> home
+  if (user && ROTAS_AUTH.some((r) => pathname.startsWith(r))) {
     const url = request.nextUrl.clone()
-    url.pathname = destino
-    if (destino === '/entrar') {
-      url.searchParams.set('proximo', pathname)
-    }
+    url.pathname = '/'
     const redir = NextResponse.redirect(url)
-    // CRITICO: copiar cookies de sessao para a resposta de redirecionamento
-    response.cookies.getAll().forEach((c) => {
+    supabaseResponse.cookies.getAll().forEach((c) =>
       redir.cookies.set(c.name, c.value, c)
-    })
+    )
     return redir
   }
 
-  if (user && ROTAS_AUTH.some((r) => pathname.startsWith(r))) {
-    return redirecionarPreservandoCookies('/')
-  }
-
+  // Deslogado em rota protegida -> login
   if (!user && ROTAS_PROTEGIDAS.some((r) => pathname.startsWith(r))) {
-    return redirecionarPreservandoCookies('/entrar')
+    const url = request.nextUrl.clone()
+    url.pathname = '/entrar'
+    url.searchParams.set('proximo', pathname)
+    const redir = NextResponse.redirect(url)
+    supabaseResponse.cookies.getAll().forEach((c) =>
+      redir.cookies.set(c.name, c.value, c)
+    )
+    return redir
   }
 
-  return response
+  // CRITICO: sempre retornar supabaseResponse (com os cookies) intacto
+  return supabaseResponse
 }
 
 export const config = {
