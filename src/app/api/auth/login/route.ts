@@ -10,6 +10,12 @@ export async function POST(request: Request) {
   const origin = new URL(request.url).origin
 
   const cookieStore = await cookies()
+
+  // Response criado ANTES do signIn: setAll grava direto nele, garantindo
+  // que o Set-Cookie va junto no redirect retornado (cookieStore.set() sozinho
+  // nao propaga para um NextResponse.redirect() construido separadamente).
+  const response = NextResponse.redirect(`${origin}${proximo}`, 303)
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -18,7 +24,7 @@ export async function POST(request: Request) {
         getAll() { return cookieStore.getAll() },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, { ...options, httpOnly: true, secure: true, sameSite: 'lax', path: '/' })
+            response.cookies.set(name, value, { ...options, httpOnly: true, secure: true, sameSite: 'lax', path: '/' })
           )
         },
       },
@@ -36,9 +42,12 @@ export async function POST(request: Request) {
       : error.message.includes('Email not confirmed')
       ? 'E-mail ainda nao confirmado.'
       : 'Nao foi possivel entrar.'
-    return NextResponse.redirect(`${origin}/entrar?erro=${encodeURIComponent(msg)}`, 303)
+    // Mesma response (preserva quaisquer cookies ja gravados pelo setAll),
+    // so troca o destino do redirect.
+    response.headers.set('Location', `${origin}/entrar?erro=${encodeURIComponent(msg)}`)
+    return response
   }
 
   // 303 See Other: cookie (Set-Cookie) + redirect na MESMA resposta = atomico
-  return NextResponse.redirect(`${origin}${proximo}`, 303)
+  return response
 }
