@@ -5,8 +5,9 @@ const ROTAS_AUTH = ['/entrar', '/cadastro', '/recuperar-senha']
 const ROTAS_PROTEGIDAS = ['/painel', '/minha-conta']
 
 export default async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+  const { pathname } = request.nextUrl
 
+  // Client somente-leitura: NUNCA grava cookies (evita sobrescrever a sessao)
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -15,54 +16,31 @@ export default async function proxy(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, { ...options, httpOnly: true, secure: true, sameSite: 'lax', path: '/' })
-          )
+        setAll() {
+          // intencionalmente vazio: proxy nao renova nem grava cookies
         },
       },
     }
   )
 
-  // IMPORTANTE: nao inserir codigo entre createServerClient e getUser
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { pathname } = request.nextUrl
-
-  // Logado em rota de auth -> home
   if (user && ROTAS_AUTH.some((r) => pathname.startsWith(r))) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
-    const redir = NextResponse.redirect(url)
-    supabaseResponse.cookies.getAll().forEach((c) =>
-      redir.cookies.set(c.name, c.value, c)
-    )
-    return redir
+    return NextResponse.redirect(url)
   }
 
-  // Deslogado em rota protegida -> login
   if (!user && ROTAS_PROTEGIDAS.some((r) => pathname.startsWith(r))) {
     const url = request.nextUrl.clone()
     url.pathname = '/entrar'
     url.searchParams.set('proximo', pathname)
-    const redir = NextResponse.redirect(url)
-    supabaseResponse.cookies.getAll().forEach((c) =>
-      redir.cookies.set(c.name, c.value, c)
-    )
-    return redir
+    return NextResponse.redirect(url)
   }
 
-  // DEBUG: expor no header quais cookies o proxy viu e se achou user
-  const nomes = request.cookies.getAll().map((c) => c.name).join(',')
-  supabaseResponse.headers.set('x-debug-cookies', nomes || 'NENHUM')
-  supabaseResponse.headers.set('x-debug-user', user ? user.email || 'sim' : 'NAO')
-  return supabaseResponse
+  return NextResponse.next({ request })
 }
 
 export const config = {
