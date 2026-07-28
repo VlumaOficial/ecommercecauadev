@@ -1,10 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Rotas de autenticacao: usuario JA logado nao deve acessa-las
 const ROTAS_AUTH = ['/entrar', '/cadastro', '/recuperar-senha']
-
-// Prefixos que exigem login
 const ROTAS_PROTEGIDAS = ['/painel', '/minha-conta']
 
 export default async function proxy(request: NextRequest) {
@@ -37,19 +34,27 @@ export default async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // Logado tentando acessar tela de auth -> manda para home
-  if (user && ROTAS_AUTH.some((r) => pathname.startsWith(r))) {
+  // Helper: redireciona preservando os cookies de sessao ja gravados em `response`
+  function redirecionarPreservandoCookies(destino: string) {
     const url = request.nextUrl.clone()
-    url.pathname = '/'
-    return NextResponse.redirect(url)
+    url.pathname = destino
+    if (destino === '/entrar') {
+      url.searchParams.set('proximo', pathname)
+    }
+    const redir = NextResponse.redirect(url)
+    // CRITICO: copiar cookies de sessao para a resposta de redirecionamento
+    response.cookies.getAll().forEach((c) => {
+      redir.cookies.set(c.name, c.value, c)
+    })
+    return redir
   }
 
-  // Deslogado tentando acessar area protegida -> manda para login
+  if (user && ROTAS_AUTH.some((r) => pathname.startsWith(r))) {
+    return redirecionarPreservandoCookies('/')
+  }
+
   if (!user && ROTAS_PROTEGIDAS.some((r) => pathname.startsWith(r))) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/entrar'
-    url.searchParams.set('proximo', pathname)
-    return NextResponse.redirect(url)
+    return redirecionarPreservandoCookies('/entrar')
   }
 
   return response
