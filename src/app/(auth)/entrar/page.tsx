@@ -25,6 +25,8 @@ export default function EntrarPage() {
     e.preventDefault()
     setCarregando(true)
     const resultado = await entrarAction(email, senha)
+    console.log('DEBUG LOGIN:', resultado.debug)
+    toast.message('debug: ' + resultado.debug)
     if (!resultado.ok) {
       setCarregando(false)
       toast.error(resultado.erro)
