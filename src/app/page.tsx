@@ -34,7 +34,9 @@ export default async function HomePage() {
         </div>
         <div className="flex items-center gap-2">
           {user ? (
-            <Link href="/sair"><Button variant="ghost" size="sm">Sair</Button></Link>
+            <form action="/sair" method="POST">
+              <Button type="submit" variant="ghost" size="sm">Sair</Button>
+            </form>
           ) : (
             <>
               <Link href="/entrar"><Button variant="ghost" size="sm">Entrar</Button></Link>

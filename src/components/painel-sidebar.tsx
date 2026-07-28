@@ -57,10 +57,12 @@ export function PainelSidebar({ nomeUsuario }: { nomeUsuario: string }) {
 
       <div className="border-t border-[var(--sidebar-border)] p-3">
         <div className="px-2 pb-2 text-xs text-[var(--sidebar-foreground)]/70 truncate">{nomeUsuario}</div>
-        <Link href="/sair" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]/50 hover:text-white transition-colors">
-          <LogOut className="h-[18px] w-[18px]" />
-          Sair
-        </Link>
+        <form action="/sair" method="POST">
+          <button type="submit" className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-accent)]/50 hover:text-white transition-colors">
+            <LogOut className="h-[18px] w-[18px]" />
+            Sair
+          </button>
+        </form>
       </div>
     </>
   )
