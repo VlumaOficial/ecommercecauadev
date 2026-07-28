@@ -1,31 +1,27 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 
-export type ResultadoLogin = { ok: boolean; erro?: string; debug: string }
+export async function entrarAction(formData: FormData) {
+  const email = String(formData.get('email') || '')
+  const senha = String(formData.get('senha') || '')
+  const proximo = String(formData.get('proximo') || '/')
 
-export async function entrarAction(email: string, senha: string): Promise<ResultadoLogin> {
   const supabase = await createClient()
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
     email: email.trim(),
     password: senha,
   })
 
   if (error) {
-    return { ok: false, erro: error.message, debug: 'erro auth: ' + error.message }
+    const msg = error.message.includes('Invalid login credentials')
+      ? 'E-mail ou senha incorretos.'
+      : error.message.includes('Email not confirmed')
+      ? 'E-mail ainda nao confirmado.'
+      : 'Nao foi possivel entrar.'
+    redirect('/entrar?erro=' + encodeURIComponent(msg))
   }
 
-  // Inspecionar cookies APOS o signIn, dentro da propria action
-  const jar = await cookies()
-  const todos = jar.getAll().map((c) => c.name)
-  const temSbCookie = todos.some((n) => n.startsWith('sb-'))
-
-  const debug = JSON.stringify({
-    temSessao: !!data?.session,
-    cookiesNaAction: todos,
-    temSbCookie,
-  })
-
-  return { ok: true, debug }
+  redirect(proximo)
 }
