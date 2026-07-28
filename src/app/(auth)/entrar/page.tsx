@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -24,14 +26,10 @@ export default function EntrarPage() {
   async function entrar(e: React.FormEvent) {
     e.preventDefault()
     setCarregando(true)
-    const params = new URLSearchParams(window.location.search)
-    const proximo = params.get('proximo') || '/'
-    const resultado = await entrarAction(email, senha, proximo)
-    // Se retornou, houve erro (sucesso redireciona no servidor)
-    if (resultado && !resultado.ok) {
-      setCarregando(false)
-      toast.error(resultado.erro)
-    }
+    const resultado = await entrarAction(email, senha)
+    setCarregando(false)
+    console.log('DEBUG ACTION:', resultado.debug)
+    toast.message(resultado.debug)
   }
 
   return (
