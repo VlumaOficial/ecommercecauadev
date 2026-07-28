@@ -16,6 +16,7 @@ export async function POST(request: Request) {
           cookiesToSet.forEach(({ name, value, options }) =>
             cookieStore.set(name, value, {
               ...options,
+              httpOnly: true,
               secure: true,
               sameSite: 'lax',
               path: '/',
