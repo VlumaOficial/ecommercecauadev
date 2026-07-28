@@ -5,7 +5,6 @@ import { NextResponse } from 'next/server'
 export async function POST(request: Request) {
   const { email, senha } = await request.json()
   const cookieStore = await cookies()
-  const cookiesGravados: string[] = []
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,23 +13,27 @@ export async function POST(request: Request) {
       cookies: {
         getAll() { return cookieStore.getAll() },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
+          cookiesToSet.forEach(({ name, value, options }) =>
             cookieStore.set(name, value, options)
-            cookiesGravados.push(name)
-          })
+          )
         },
       },
     }
   )
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
     email: String(email).trim(),
     password: String(senha),
   })
 
-  return NextResponse.json({
-    temSessao: !!data?.session,
-    erro: error?.message ?? null,
-    cookiesGravados,
-  })
+  if (error) {
+    const msg = error.message.includes('Invalid login credentials')
+      ? 'E-mail ou senha incorretos.'
+      : error.message.includes('Email not confirmed')
+      ? 'E-mail ainda nao confirmado. Verifique sua caixa de entrada.'
+      : 'Nao foi possivel entrar. Tente novamente.'
+    return NextResponse.json({ ok: false, erro: msg }, { status: 400 })
+  }
+
+  return NextResponse.json({ ok: true })
 }

@@ -1,34 +1,52 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { entrarAction } from './entrar-action'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { BrandHeader } from '@/components/brand-header'
 import { VlumaFooter } from '@/components/vluma-footer'
-import { Eye, EyeOff } from 'lucide-react'
-import { useEffect } from 'react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 function FormularioLogin() {
   const searchParams = useSearchParams()
   const proximo = searchParams.get('proximo') || '/'
-  const erro = searchParams.get('erro')
+  const [email, setEmail] = useState('')
+  const [senha, setSenha] = useState('')
   const [mostrarSenha, setMostrarSenha] = useState(false)
+  const [carregando, setCarregando] = useState(false)
 
-  useEffect(() => {
-    if (erro) toast.error(erro)
-  }, [erro])
+  async function entrar(e: React.FormEvent) {
+    e.preventDefault()
+    setCarregando(true)
+    try {
+      const resp = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha }),
+      })
+      const data = await resp.json()
+      if (!data.ok) {
+        setCarregando(false)
+        toast.error(data.erro || 'Nao foi possivel entrar.')
+        return
+      }
+      // cookie ja gravado pela route handler; redirect full-page le a sessao
+      window.location.href = proximo
+    } catch {
+      setCarregando(false)
+      toast.error('Erro de conexao. Tente novamente.')
+    }
+  }
 
   return (
-    <form action={entrarAction} className="space-y-4">
-      <input type="hidden" name="proximo" value={proximo} />
+    <form onSubmit={entrar} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="email">E-mail</Label>
-        <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" required placeholder="voce@email.com" />
+        <Input id="email" type="email" inputMode="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" />
       </div>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -36,13 +54,16 @@ function FormularioLogin() {
           <Link href="/recuperar-senha" className="text-xs text-[var(--brand-navy)] hover:underline">Esqueci minha senha</Link>
         </div>
         <div className="relative">
-          <Input id="senha" name="senha" type={mostrarSenha ? 'text' : 'password'} autoComplete="current-password" required placeholder="********" className="pr-10" />
+          <Input id="senha" type={mostrarSenha ? 'text' : 'password'} autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="********" className="pr-10" />
           <button type="button" onClick={() => setMostrarSenha((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}>
             {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
       </div>
-      <Button type="submit" className="w-full h-11 text-base">Entrar</Button>
+      <Button type="submit" disabled={carregando} className="w-full h-11 text-base">
+        {carregando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        Entrar
+      </Button>
     </form>
   )
 }
