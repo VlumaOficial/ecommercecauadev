@@ -24,18 +24,14 @@ export default function EntrarPage() {
   async function entrar(e: React.FormEvent) {
     e.preventDefault()
     setCarregando(true)
-    const resultado = await entrarAction(email, senha)
-    console.log('DEBUG LOGIN:', resultado.debug)
-    toast.message('debug: ' + resultado.debug)
-    if (!resultado.ok) {
-      setCarregando(false)
-      toast.error(resultado.erro)
-      return
-    }
-    // redirecionamento full-page: garante que o servidor releia os cookies de sessao
     const params = new URLSearchParams(window.location.search)
     const proximo = params.get('proximo') || '/'
-    window.location.href = proximo
+    const resultado = await entrarAction(email, senha, proximo)
+    // Se retornou, houve erro (sucesso redireciona no servidor)
+    if (resultado && !resultado.ok) {
+      setCarregando(false)
+      toast.error(resultado.erro)
+    }
   }
 
   return (
