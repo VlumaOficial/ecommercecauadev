@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { entrarAction } from './entrar-action'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,26 +24,16 @@ export default function EntrarPage() {
   async function entrar(e: React.FormEvent) {
     e.preventDefault()
     setCarregando(true)
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password: senha,
-    })
-    setCarregando(false)
-
-    if (error) {
-      if (error.message.includes('Email not confirmed')) {
-        toast.error('E-mail ainda nao confirmado. Verifique sua caixa de entrada.')
-      } else if (error.message.includes('Invalid login credentials')) {
-        toast.error('E-mail ou senha incorretos.')
-      } else {
-        toast.error('Nao foi possivel entrar. Tente novamente.')
-      }
+    const resultado = await entrarAction(email, senha)
+    if (!resultado.ok) {
+      setCarregando(false)
+      toast.error(resultado.erro)
       return
     }
-
-    toast.success('Bem-vindo de volta!')
-    router.push('/')
-    router.refresh()
+    // redirecionamento full-page: garante que o servidor releia os cookies de sessao
+    const params = new URLSearchParams(window.location.search)
+    const proximo = params.get('proximo') || '/'
+    window.location.href = proximo
   }
 
   return (
