@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { getStaffProfileForUser } from '@/lib/auth'
+import type { Database } from '@/types/database'
 
 export async function POST(request: Request) {
   const formData = await request.formData()
@@ -16,7 +18,7 @@ export async function POST(request: Request) {
   // nao propaga para um NextResponse.redirect() construido separadamente).
   const response = NextResponse.redirect(`${origin}${proximo}`, 303)
 
-  const supabase = createServerClient(
+  const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -31,7 +33,7 @@ export async function POST(request: Request) {
     }
   )
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: email.trim(),
     password: senha,
   })
@@ -46,6 +48,17 @@ export async function POST(request: Request) {
     // so troca o destino do redirect.
     response.headers.set('Location', `${origin}/entrar?erro=${encodeURIComponent(msg)}`)
     return response
+  }
+
+  // proximo === '/' significa "sem destino explicito" (valor default do form
+  // quando nao ha ?proximo= na URL de /entrar). Nesse caso, staff vai pro
+  // painel; cliente comum continua indo pra vitrine. Um proximo explicito
+  // (ex.: usuario redirecionado de uma rota protegida) sempre e respeitado.
+  if (proximo === '/' && data.user) {
+    const staff = await getStaffProfileForUser(supabase, data.user.id)
+    if (staff) {
+      response.headers.set('Location', `${origin}/painel`)
+    }
   }
 
   // 303 See Other: cookie (Set-Cookie) + redirect na MESMA resposta = atomico

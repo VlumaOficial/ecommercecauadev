@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Package, FolderTree, ShoppingCart, Users,
-  MapPin, Settings, Menu, X, LogOut,
+  MapPin, Settings, Menu, X, LogOut, Store,
 } from 'lucide-react'
 
 const SIMBOLO =
@@ -28,12 +28,25 @@ export function PainelSidebar({ nomeUsuario }: { nomeUsuario: string }) {
 
   const conteudo = (
     <>
-      <div className="flex items-center gap-2 px-5 h-16 border-b border-[var(--sidebar-border)]">
-        <Image src={SIMBOLO} alt="Capua" width={32} height={26} />
-        <span className="font-display font-bold tracking-wider text-white text-sm">CAPUA</span>
+      <div className="flex items-center gap-2.5 px-5 h-16 border-b border-[var(--sidebar-border)]">
+        <Image src={SIMBOLO} alt="Criatório Capuã" width={30} height={24} />
+        <div className="leading-[1.15]">
+          <div className="font-display font-bold tracking-[0.14em] text-white text-[11px]">CRIATÓRIO</div>
+          <div className="font-display font-bold tracking-[0.14em] text-[var(--sidebar-primary)] text-[11px]">CAPUÃ</div>
+        </div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <div className="px-3 pt-3">
+        <Link
+          href="/"
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-[var(--sidebar-foreground)]/80 hover:bg-[var(--sidebar-accent)]/50 hover:text-white transition-colors"
+        >
+          <Store className="h-4 w-4" />
+          Ver loja
+        </Link>
+      </div>
+
+      <nav className="flex-1 px-3 pb-4 pt-2 space-y-1 overflow-y-auto">
         {ITENS.map((item) => {
           const ativo = pathname === item.href || (item.href !== '/painel' && pathname.startsWith(item.href))
           const Icone = item.icone
@@ -71,8 +84,10 @@ export function PainelSidebar({ nomeUsuario }: { nomeUsuario: string }) {
     <>
       <div className="lg:hidden flex items-center justify-between h-14 px-4 border-b border-border bg-white sticky top-0 z-30">
         <div className="flex items-center gap-2">
-          <Image src={SIMBOLO} alt="Capua" width={28} height={23} />
-          <span className="font-display font-bold tracking-wider text-[var(--brand-navy)] text-sm">CAPUA</span>
+          <Image src={SIMBOLO} alt="Criatório Capuã" width={28} height={23} />
+          <span className="font-display font-bold tracking-wide text-xs text-[var(--brand-navy)]">
+            CRIATÓRIO <span className="text-[var(--brand-red)]">CAPUÃ</span>
+          </span>
         </div>
         <button onClick={() => setAberto(true)} aria-label="Abrir menu"><Menu className="h-6 w-6 text-[var(--brand-navy)]" /></button>
       </div>

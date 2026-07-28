@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { getStaffProfile } from '@/lib/auth'
 import { VlumaFooter } from '@/components/vluma-footer'
 import { Button } from '@/components/ui/button'
 
@@ -14,6 +15,8 @@ export default async function HomePage() {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  const staffProfile = user ? await getStaffProfile() : null
 
   const { data: settings } = await supabase
     .from('store_settings')
@@ -34,9 +37,14 @@ export default async function HomePage() {
         </div>
         <div className="flex items-center gap-2">
           {user ? (
-            <form action="/sair" method="POST">
-              <Button type="submit" variant="ghost" size="sm">Sair</Button>
-            </form>
+            <>
+              {staffProfile && (
+                <Link href="/painel"><Button variant="outline" size="sm">Painel</Button></Link>
+              )}
+              <form action="/sair" method="POST">
+                <Button type="submit" variant="ghost" size="sm">Sair</Button>
+              </form>
+            </>
           ) : (
             <>
               <Link href="/entrar"><Button variant="ghost" size="sm">Entrar</Button></Link>
