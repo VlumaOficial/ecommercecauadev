@@ -34,8 +34,12 @@ function FormularioLogin() {
         toast.error(data.erro || 'Nao foi possivel entrar.')
         return
       }
-      // cookie ja gravado pela route handler; redirect full-page le a sessao
-      window.location.href = proximo
+      // DIAGNOSTICO: verificar se o cookie existe apos o login
+      const temCookie = document.cookie.includes('sb-')
+      console.log('POS-LOGIN cookie sb- presente?', temCookie, '| cookie:', document.cookie.slice(0,60))
+      toast.message('cookie sb-: ' + temCookie)
+      // aguardar 3s para voce ler, depois redirecionar
+      setTimeout(() => { window.location.href = proximo }, 3000)
     } catch {
       setCarregando(false)
       toast.error('Erro de conexao. Tente novamente.')
