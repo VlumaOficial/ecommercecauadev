@@ -27,8 +27,8 @@ export default async function HomePage() {
 
       <header className="relative z-10 flex items-center justify-between px-5 py-4 max-w-5xl mx-auto w-full">
         <div className="flex items-center gap-2">
-          <Image src={SIMBOLO} alt="Criatorio Capua" width={40} height={33} priority />
-          <span className="font-display font-bold tracking-widest text-[var(--brand-navy)] text-sm">CRIATORIO CAPUA</span>
+          <Image src={SIMBOLO} alt="Criatório Capuã" width={40} height={33} priority />
+          <span className="font-display font-bold tracking-widest text-[var(--brand-navy)] text-sm">CRIATÓRIO CAPUÃ</span>
         </div>
         <div className="flex items-center gap-2">
           {user ? (
@@ -43,17 +43,17 @@ export default async function HomePage() {
       </header>
 
       <section className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-5 py-16 max-w-2xl mx-auto">
-        <Image src={SIMBOLO} alt="Criatorio Capua" width={120} height={98} priority className="mb-6" />
-        <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-[0.15em] text-[var(--brand-navy)]">CRIATORIO</h1>
-        <p className="font-display text-lg font-bold tracking-[0.35em] text-[var(--brand-red)] mb-6">CAPUA</p>
-        <p className="text-muted-foreground max-w-md mb-8">Peixes ornamentais e animais exoticos. Qualidade que nada sempre a frente.</p>
+        <Image src={SIMBOLO} alt="Criatório Capuã" width={120} height={98} priority className="mb-6" />
+        <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-[0.15em] text-[var(--brand-navy)]">CRIATÓRIO</h1>
+        <p className="font-display text-lg font-bold tracking-[0.35em] text-[var(--brand-red)] mb-6">CAPUÃ</p>
+        <p className="text-muted-foreground max-w-md mb-8">Peixes ornamentais e animais exóticos. Qualidade que nada sempre à frente.</p>
 
         {lojaAberta ? (
           <Link href="/loja"><Button size="lg" className="h-12 px-8 text-base">Ver catalogo do ciclo</Button></Link>
         ) : (
           <div className="rounded-2xl border border-border bg-card px-6 py-5 shadow-sm max-w-md">
             <p className="font-semibold text-[var(--brand-navy)] mb-1">Loja fechada no momento</p>
-            <p className="text-sm text-muted-foreground">{settings?.mensagem_loja_fechada ?? 'Aguarde a abertura do proximo ciclo de pedidos.'}</p>
+            <p className="text-sm text-muted-foreground">{settings?.mensagem_loja_fechada ?? 'Aguarde a abertura do próximo ciclo de pedidos.'}</p>
           </div>
         )}
       </section>

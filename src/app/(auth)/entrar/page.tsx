@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { BrandHeader } from '@/components/brand-header'
 import { VlumaFooter } from '@/components/vluma-footer'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 
 export default function EntrarPage() {
   const router = useRouter()
@@ -18,6 +18,7 @@ export default function EntrarPage() {
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [carregando, setCarregando] = useState(false)
+  const [mostrarSenha, setMostrarSenha] = useState(false)
 
   async function entrar(e: React.FormEvent) {
     e.preventDefault()
@@ -67,7 +68,12 @@ export default function EntrarPage() {
                 <Label htmlFor="senha">Senha</Label>
                 <Link href="/recuperar-senha" className="text-xs text-[var(--brand-navy)] hover:underline">Esqueci minha senha</Link>
               </div>
-              <Input id="senha" type="password" autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="********" />
+              <div className="relative">
+                <Input id="senha" type={mostrarSenha ? 'text' : 'password'} autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="********" className="pr-10" />
+                <button type="button" onClick={() => setMostrarSenha((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}>
+                  {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             <Button type="submit" disabled={carregando} className="w-full h-11 text-base">
