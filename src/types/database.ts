@@ -141,7 +141,9 @@ export type Database = {
           observacoes?: string | null
           ordem?: number
           ponto_entrega?: string | null
-          tenant_id: string
+          // tenant_id ganhou DEFAULT current_tenant_id() em 008; opcional no
+          // insert. Ajustado a mao (sem acesso ao projeto pra `npm run types`).
+          tenant_id?: string
           uf?: string | null
           updated_at?: string
         }
