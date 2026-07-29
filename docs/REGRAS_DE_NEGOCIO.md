@@ -61,9 +61,9 @@ Regra de combinação:
 
 **📐 Decidida — não implementada ainda.**
 
-Categoria é uma árvore (§4.1), então inativar uma categoria com filhas exige uma regra própria:
+Categoria é uma árvore (§4.2), então inativar uma categoria com filhas exige uma regra própria:
 
-- **Ao inativar** uma categoria que tem subcategorias (descendentes, qualquer profundidade) **ativas**: a inativação é **em cascata** — toda a subárvore ativa também é inativada. O sistema **registra quais foram arrastadas pela cascata** (diferente de quem já estava inativa por decisão própria antes). Aviso mostrado antes de confirmar: *"Ao inativar 'X', as N subcategorias ativas abaixo também serão inativadas."*
+- **Ao inativar** uma categoria que tem subcategorias (descendentes, qualquer profundidade) **ativas**: a inativação é **em cascata** — toda a subárvore ativa também é inativada. O sistema **registra quais foram arrastadas pela cascata** (diferente de quem já estava inativa por decisão própria antes). Aviso mostrado antes de confirmar: *"Ao inativar 'X', as N subcategorias ativas abaixo também serão inativadas."* Essa é exatamente a situação que o log de auditoria (§6) existe para explicar depois: uma ação sobre 1 categoria que muda o status de N — o `audit_log` guarda que foi uma cascata disparada a partir de "X", não N decisões independentes.
 - **Ao reativar**: só voltam **as descendentes que foram inativadas por causa desta cascata** — quem já estava inativa por decisão própria (antes ou independentemente da cascata) **permanece intacta**, não é reativada de carona. Aviso: *"Ao reativar 'X', as N subcategorias inativadas junto com ela voltarão."*
 - Caso não haja subcategorias ativas (pra inativar) ou nenhuma marcada como cascateada (pra reativar), o comportamento é o simples de sempre (sem aviso extra, sem confirmação extra na reativação).
 
@@ -77,7 +77,20 @@ Quando a vitrine pública for construída: uma categoria inativa deve esconder d
 
 ## 4. Catálogo
 
-### 4.1 Categorias em árvore
+### 4.1 Vocabulário da interface
+
+**✅ Em vigor** (aplicado no CRUD de Categorias; vale para todo o resto do catálogo)
+
+Nas telas voltadas ao lojista, os termos técnicos internos **não aparecem**. Vocabulário obrigatório na interface:
+
+| Nunca mostrar ao lojista | Mostrar sempre |
+|---|---|
+| "Atributos" | **"Características"** |
+| "SKU" / "Variants" | **"Variações"** |
+
+Decisão baseada em pesquisa de mercado (Nuvemshop, Shopify) — é assim que lojistas não-técnicos reconhecem esses conceitos. Os nomes técnicos (`category_attributes`, `product_variants`, "attribute") continuam existindo normalmente no código e no banco; a regra é só sobre o que aparece na tela.
+
+### 4.2 Categorias em árvore
 
 **✅ Em vigor**
 
@@ -86,13 +99,13 @@ Quando a vitrine pública for construída: uma categoria inativa deve esconder d
 - Uma categoria **não pode** ser definida como pai dela mesma nem de nenhuma de suas próprias subcategorias (isso criaria um loop). O sistema impede essa escolha na interface e recusa também no servidor caso, por algum motivo, chegue uma tentativa assim.
 - Slug (identificador usado na URL) é gerado automaticamente a partir do nome, e pode ser editado manualmente. É único dentro da loja (não pode repetir, mesmo em ramos diferentes da árvore).
 
-### 4.2 Características por categoria
+### 4.3 Características por categoria
 
 **📐 Modelada — sem interface ainda.**
 
 Cada categoria pode ter uma lista configurável de **características** (ficha técnica): nome, tipo (texto, número, seleção, sim/não), se é obrigatória, se aparece como filtro na vitrine. Quem define essas características é o **próprio lojista**, pelo painel — não é uma lista fixa no código. Um produto cadastrado numa categoria herda as características daquela categoria pra preencher sua ficha.
 
-### 4.3 Produtos e variações (SKU)
+### 4.4 Produtos e variações (SKU)
 
 **📐 Modelado — sem interface ainda.**
 
@@ -100,7 +113,7 @@ Cada categoria pode ter uma lista configurável de **características** (ficha t
 - Cada produto tem uma ou mais **variações** (SKU) — por exemplo, "Pequeno"/"Médio"/"Grande", ou "500g"/"1kg". Um produto simples (sem variação de verdade) ainda assim tem exatamente 1 variação, chamada "Padrão".
 - **Preço, promoção, estoque e quantidade mínima de compra vivem na variação, não no produto.** Um produto com 3 tamanhos pode ter 3 preços e 3 saldos de estoque diferentes.
 
-### 4.4 Status do produto — sempre calculado
+### 4.5 Status do produto — sempre calculado
 
 **📐 Modelado — sem interface ainda.**
 
@@ -122,7 +135,17 @@ Nenhum desses status é um campo que alguém marca manualmente — são sempre c
 
 ---
 
-## 6. Pendente de definição (⏳)
+## 6. Auditoria (rastreabilidade interna VLUMA)
+
+**📐 Decidida — não implementada ainda.**
+
+Toda ação de escrita no painel (criar, editar, inativar, reativar) fica registrada: quem fez, quando, o que mudou (dado antes e depois). Isso **não é uma tela que o lojista (admin do tenant) vê** — é uma ferramenta interna da VLUMA, pensada pro **Super Admin** (ver `ESCOPO_PROJETO.md`, decisão #15) conseguir reconstruir o histórico de qualquer loja quando precisar investigar algo — por exemplo, entender que uma leva de subcategorias ficou inativa porque foi arrastada pela cascata de inativação de uma categoria-pai (§3.1), e não por N ações manuais separadas.
+
+Também é uma característica candidata a virar **diferencial pago** do SaaS no futuro (plano com histórico de auditoria estendido, por exemplo).
+
+---
+
+## 7. Pendente de definição (⏳)
 
 As seções abaixo serão preenchidas conforme cada módulo for desenhado — mantidas aqui como lembrete do que falta decidir:
 
@@ -135,3 +158,5 @@ As seções abaixo serão preenchidas conforme cada módulo for desenhado — ma
 ---
 
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
+
+*Entregável planejado: ao final do desenvolvimento, este documento é a base para gerar o **manual formal do usuário/lojista** — por isso a linguagem aqui evita jargão técnico desde o início.*

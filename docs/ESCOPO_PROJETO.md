@@ -58,6 +58,13 @@ Colunas `tenant_id` ganham `DEFAULT public.current_tenant_id()` (função SQL qu
 - Toast (`sonner`) em toda mutation (criado/atualizado/inativado/reativado).
 - Validação client-side (Zod) **e** server-side (Zod de novo, no Route Handler) — o client nunca é a única linha de defesa.
 - Componentes genéricos reutilizáveis em `components/painel/crud/`: `StatusFilterTabs`, `SearchInput`, `StatusBadge`, `ConfirmDialog`, `FormDialog`. Primitivo `components/ui/combobox.tsx` (Base UI, select com busca) para seletores com listas grandes (ex.: categoria-pai).
+- **📐 Planejado, não implementado:** toda ação de escrita (criar/editar/inativar/reativar) deve chamar um helper `registrarAuditoria()` a partir do Route Handler, gravando em `audit_log` — ver "Auditoria" logo abaixo e decisão #15.
+
+### Auditoria (planejada — 📐 decidida, não implementada)
+
+Tabela genérica `audit_log`: `tenant_id`, `usuario_id`, `acao`, `entidade`, `entidade_id`, `dados_antes jsonb`, `dados_depois jsonb`, `timestamp`. **Registro feito na aplicação** (helper `registrarAuditoria()` chamado explicitamente por cada Route Handler de escrita), **não via trigger de banco** — a decisão foi deliberada: um trigger só vê o `UPDATE` cru na tabela, sem o contexto de negócio (ex.: "esta inativação foi uma cascata disparada a partir da categoria X", "por qual usuário/sessão"), que só a camada de aplicação tem no momento da ação. Isso amarra diretamente com a cascata de categorias (decisão #8): quando a inativação em massa acontecer, o audit_log é o que permite ao Super Admin reconstruir *por que* várias categorias mudaram de status de uma vez.
+
+Propósito: rastreabilidade para o **Super Admin VLUMA** (não para o admin comum do tenant, que não tem acesso a isso) — ver §4 "Planejadas (não iniciadas)", item Super Admin VLUMA. Candidata a feature premium monetizável no SaaS.
 
 ---
 
@@ -140,6 +147,9 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 - **Vitrine** (`(loja)`, hoje vazio): catálogo público, ficha de produto, Open Graph dinâmico por produto.
 - **Carrinho e checkout**: valor mínimo, quantidade mínima por variação, reserva/baixa de estoque atômica no Postgres.
 - **Pedidos**: fluxo pendente → aceite (staff) → PDF → envio (WhatsApp/Evolution API, mencionado na visão original, não iniciado).
+- **Importação em massa via CSV**: o catálogo real do cliente piloto tem **~1.000 itens** — cadastro manual produto a produto é inviável nessa escala. Importação de produtos/variações via CSV é planejada; fase exata a definir (provavelmente logo após o CRUD de Produtos existir).
+- **Super Admin VLUMA**: camada pós-MVP, separada do painel do tenant — gestão multi-tenant (criação de novas lojas), métricas entre clientes, e consumidora do `audit_log` (decisão #15). Ainda não desenhada.
+- **Manual do usuário/lojista**: entregável planejado para o final do desenvolvimento — gerado a partir de `docs/REGRAS_DE_NEGOCIO.md` (que já é escrito em linguagem clara, pensado pra isso desde a origem).
 
 ---
 
@@ -154,13 +164,15 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | 5 | Loja tem **dois níveis independentes de fechamento**: `loja_aberta` (Nível 1, loja inteira inacessível) e `pedidos_abertos` (Nível 2, catálogo visível mas checkout bloqueado) | ✅ Aplicado no banco (migration `007`); UI de configuração ainda não existe |
 | 6 | **Soft delete universal**: nenhuma entidade do painel tem exclusão real; sempre campo `ativo` + filtro Ativos/Inativos/Todos | ✅ Implementado no padrão de CRUD |
 | 7 | **Modal é o padrão** para toda criação/edição no painel; nunca página separada | ✅ Implementado |
-| 8 | Inativar categoria com filhas ativas **cascateia** a inativação pela subárvore, marcando quem foi arrastado (`inativado_em_cascata`) pra permitir restaurar só essas na reativação; quem já estava inativo por conta própria não é tocado em nenhum dos dois sentidos | Decidido; não implementado |
+| 8 | Inativar categoria com filhas ativas **cascateia** a inativação pela subárvore, marcando quem foi arrastado (`inativado_em_cascata`) pra permitir restaurar só essas na reativação; quem já estava inativo por conta própria não é tocado em nenhum dos dois sentidos. Ligado à decisão #15: é justamente esse tipo de ação (uma escrita que afeta N linhas por consequência de uma decisão sobre 1) que o `audit_log` existe para explicar depois | Decidido; não implementado |
 | 9 | Vitrine (quando construída) deve esconder da navegação uma categoria inativa **e toda a sua subárvore** | Registrado como requisito futuro (comentário em `src/lib/category-tree.ts`); nada a implementar ainda (vitrine não existe) |
 | 10 | Slug é gerado automaticamente a partir do nome (editável) — na entrega final ao lojista, o campo de slug deve ficar **oculto/secundário** na interface (detalhe técnico de URL não deve poluir o cadastro do dia a dia de quem não é técnico) | Decidido; hoje o campo aparece visível e editável no modal de Categoria (uso interno/DEV) — ocultar é um ajuste de UX pendente antes da entrega ao cliente final |
 | 11 | Arquitetura multi-tenant desde a primeira tabela, tenant fixo no MVP | ✅ Implementado (`tenant_id` + `current_tenant_id()` + RLS) |
 | 12 | Sessão em cookie `httpOnly`; toda mutation autenticada do painel passa por Route Handler, nunca client Supabase direto do browser | ✅ Implementado, é o padrão fixado |
 | 13 | Perfis de acesso: Admin (total) e Operador (cadastros + permissão granular `pode_aceitar_pedido`) | ✅ Modelado (`profiles.role`, `pode_aceitar_pedido`) |
 | 14 | Anti-ciclo em árvores (categoria não pode ter como pai um descendente dela mesma) validado **no client** (combobox exclui opções) **e no servidor** (defesa em profundidade) | ✅ Implementado |
+| 15 | **Auditoria** (`audit_log`): toda escrita do painel passa a chamar `registrarAuditoria()` na aplicação (não trigger de banco), pra capturar contexto de negócio (ex.: qual usuário, se foi cascata). Uso: rastreabilidade do Super Admin VLUMA, não do admin do tenant. Candidata a feature premium | 📐 Decidido; não implementado — ver §2, "Auditoria" |
+| 16 | **Vocabulário de interface**: telas voltadas ao lojista usam "Características" (nunca "atributos") e "Variações" (nunca "SKU"/"variants") — termos técnicos ficam só no código/banco. Decisão de UX baseada em pesquisa de mercado (Nuvemshop/Shopify) | ✅ Já seguido no CRUD de Categorias (rótulo "Características"); aplicar também ao CRUD de Produtos — ver `REGRAS_DE_NEGOCIO.md` §4.1 |
 
 ---
 
