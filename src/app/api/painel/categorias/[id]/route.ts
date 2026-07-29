@@ -1,0 +1,105 @@
+import { NextResponse, type NextRequest } from 'next/server'
+import { z } from 'zod'
+import { createClient } from '@/lib/supabase/server'
+import { getStaffProfile } from '@/lib/auth'
+import { getDescendantIds, slugify } from '@/lib/category-tree'
+
+const categoriaUpdateSchema = z.object({
+  nome: z.string().trim().min(1, 'Informe o nome da categoria.'),
+  slug: z.string().trim().optional().default(''),
+  parent_id: z.string().uuid().nullable().optional().default(null),
+  descricao: z.string().trim().optional().default(''),
+  ativo: z.boolean(),
+})
+
+const ativoOnlySchema = z.object({ ativo: z.boolean() })
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const perfil = await getStaffProfile()
+  if (!perfil) {
+    return NextResponse.json({ error: 'Acesso restrito a equipe.' }, { status: 403 })
+  }
+
+  const { id } = await params
+  const body = await request.json().catch(() => null)
+  const supabase = await createClient()
+
+  // Toggle rapido de status: payload so com { ativo }
+  if (body && Object.keys(body).length === 1 && ativoOnlySchema.safeParse(body).success) {
+    const { data, error } = await supabase
+      .from('categories')
+      .update({ ativo: body.ativo })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    return NextResponse.json({ data })
+  }
+
+  const parsed = categoriaUpdateSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? 'Dados invalidos.' },
+      { status: 400 }
+    )
+  }
+
+  // Validacao anti-ciclo (defesa em profundidade: o combobox ja exclui
+  // essas opcoes no client, mas o servidor precisa garantir tambem).
+  if (parsed.data.parent_id) {
+    if (parsed.data.parent_id === id) {
+      return NextResponse.json(
+        { error: 'Uma categoria nao pode ser pai dela mesma.' },
+        { status: 400 }
+      )
+    }
+
+    const { data: todas, error: errTodas } = await supabase
+      .from('categories')
+      .select('id, parent_id')
+
+    if (errTodas) {
+      return NextResponse.json({ error: errTodas.message }, { status: 400 })
+    }
+
+    const descendentes = getDescendantIds(id, todas ?? [])
+    if (descendentes.has(parsed.data.parent_id)) {
+      return NextResponse.json(
+        { error: 'A categoria-pai nao pode ser uma subcategoria da propria categoria (isso criaria um ciclo).' },
+        { status: 400 }
+      )
+    }
+  }
+
+  const slugFinal = slugify(parsed.data.slug || parsed.data.nome)
+  if (!slugFinal) {
+    return NextResponse.json(
+      { error: 'Nao foi possivel gerar um slug valido a partir do nome.' },
+      { status: 400 }
+    )
+  }
+
+  const { data, error } = await supabase
+    .from('categories')
+    .update({
+      nome: parsed.data.nome,
+      slug: slugFinal,
+      parent_id: parsed.data.parent_id,
+      descricao: parsed.data.descricao || null,
+      ativo: parsed.data.ativo,
+    })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) {
+    const message = error.code === '23505' ? 'Ja existe uma categoria com esse slug.' : error.message
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
+
+  return NextResponse.json({ data })
+}

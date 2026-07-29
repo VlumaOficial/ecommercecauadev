@@ -36,7 +36,10 @@ export type Database = {
           ordem?: number
           parent_id?: string | null
           slug: string
-          tenant_id: string
+          // tenant_id ganha DEFAULT current_tenant_id() na migration 010;
+          // opcional no insert. Ajustado a mao (sem acesso ao projeto pra
+          // `npm run types`).
+          tenant_id?: string
           updated_at?: string
         }
         Update: {
