@@ -63,7 +63,7 @@ Colunas `tenant_id` ganham `DEFAULT public.current_tenant_id()` (função SQL qu
 
 ## 3. Modelo de dados atual
 
-> Tabelas conforme aplicadas até a migration `009`. A migration `010` foi commitada; a `007` foi desenhada e commitada mas **ainda não confirmada como aplicada no banco** (ver seção 6).
+> Tabelas conforme aplicadas até a migration `010` (todas confirmadas aplicadas no banco — ver seção 6).
 
 ### Núcleo (`002_core.sql`)
 
@@ -72,7 +72,7 @@ Colunas `tenant_id` ganham `DEFAULT public.current_tenant_id()` (função SQL qu
 | `tenants` | Uma loja/cliente do SaaS. Hoje uma linha (`capua`). |
 | `profiles` | Equipe interna (`admin` \| `operador`), 1:1 com `auth.users`. `pode_aceitar_pedido` é permissão granular do operador. |
 | `customers` | Cliente final da loja, 1:1 com `auth.users`. |
-| `store_settings` | Configuração da loja por tenant (1 linha): `loja_aberta`, `mensagem_loja_fechada`, `permite_autocadastro`, `valor_minimo_pedido`, `baixa_estoque_na_reserva`, `minutos_expiracao_reserva`. |
+| `store_settings` | Configuração da loja por tenant (1 linha): `loja_aberta`, `mensagem_loja_fechada`, `pedidos_abertos`, `mensagem_pedidos_fechados`, `permite_autocadastro`, `valor_minimo_pedido`, `baixa_estoque_na_reserva`, `minutos_expiracao_reserva`. Os dois níveis de fechamento (`loja_aberta`/`pedidos_abertos`) foram adicionados na migration `007`. |
 
 Funções: `set_updated_at()` (trigger genérico), `current_tenant_id()`, `is_admin()`, `is_staff()` — todas `security definer`, usadas em RLS e em `DEFAULT` de coluna.
 
@@ -130,7 +130,7 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 |---|---|
 | Bug do slug trocado no modal de editar Categoria | **Causa raiz identificada** (corrida entre dois `useEffect` de `react-hook-form`), correção proposta (`key` por registro) — **não implementada ainda** |
 | Cascata inteligente de inativação/reativação de Categorias | Regra de negócio **decidida** (ver `REGRAS_DE_NEGOCIO.md`), modelagem proposta (coluna `inativado_em_cascata` + função `set_category_ativo_cascade`) — **não implementada ainda** |
-| Dois níveis de fechamento da loja | Migration `007` **desenhada e commitada, aplicação no banco não confirmada**; nenhuma UI consome `pedidos_abertos`/`mensagem_pedidos_fechados` ainda |
+| Dois níveis de fechamento da loja | Migration `007` **aplicada**; nenhuma UI consome `pedidos_abertos`/`mensagem_pedidos_fechados` ainda (tela de Configurações da loja é planejada, não iniciada) |
 
 ### Planejadas (não iniciadas)
 
@@ -151,7 +151,7 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | 2 | Características de produto (ficha técnica/filtro) são **configuráveis pelo lojista por categoria** (`category_attributes`), não fixas no código | Modelado; UI é Fase 2 |
 | 3 | Produto tem **variações/SKU** (`product_variants`); preço, promoção e estoque vivem na variação, não no produto | Modelado; UI ainda não existe |
 | 4 | Status de produto (esgotado, em promoção, novidade) é **sempre derivado em query**, nunca uma flag manual gravada | Modelado (view `products_com_status`) |
-| 5 | Loja tem **dois níveis independentes de fechamento**: `loja_aberta` (Nível 1, loja inteira inacessível) e `pedidos_abertos` (Nível 2, catálogo visível mas checkout bloqueado) | Desenhado (migration `007`), aplicação não confirmada |
+| 5 | Loja tem **dois níveis independentes de fechamento**: `loja_aberta` (Nível 1, loja inteira inacessível) e `pedidos_abertos` (Nível 2, catálogo visível mas checkout bloqueado) | ✅ Aplicado no banco (migration `007`); UI de configuração ainda não existe |
 | 6 | **Soft delete universal**: nenhuma entidade do painel tem exclusão real; sempre campo `ativo` + filtro Ativos/Inativos/Todos | ✅ Implementado no padrão de CRUD |
 | 7 | **Modal é o padrão** para toda criação/edição no painel; nunca página separada | ✅ Implementado |
 | 8 | Inativar categoria com filhas ativas **cascateia** a inativação pela subárvore, marcando quem foi arrastado (`inativado_em_cascata`) pra permitir restaurar só essas na reativação; quem já estava inativo por conta própria não é tocado em nenhum dos dois sentidos | Decidido; não implementado |
@@ -184,7 +184,7 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | # | Arquivo | Aplicada? |
 |---|---|---|
 | 001–006 | núcleo, catálogo v1, RLS, cidades, provisionamento de usuário | ✅ |
-| 007 | `store_settings_fechamento` (dois níveis de fechamento) | ⚠️ Desenhada e commitada; **aplicação não confirmada** |
+| 007 | `store_settings_fechamento` (dois níveis de fechamento) | ✅ |
 | 008 | `delivery_cities` ganha `DEFAULT current_tenant_id()` | ✅ |
 | 009 | `catalog_v2` (árvore + atributos + variações) | ✅ |
 | 010 | `categories` ganha `DEFAULT current_tenant_id()` | ✅ |
@@ -236,7 +236,7 @@ docs/                        VISAO_CAUA.md (visao original) + este documento + R
 
 ### Débito técnico conhecido
 
-- `src/app/(auth)/entrar/entrar-action.ts` — Server Action de login de uma iteração anterior do fluxo de auth, **não usado** (o form aponta pra `/api/auth/login`). Candidato a remoção numa limpeza futura.
+- ~~`src/app/(auth)/entrar/entrar-action.ts` — Server Action de login de uma iteração anterior do fluxo de auth, não usada.~~ **Removida em 29/07/2026** (confirmado sem nenhuma referência no código antes de apagar; build seguiu passando).
 
 ---
 

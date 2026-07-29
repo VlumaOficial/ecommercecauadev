@@ -28,7 +28,7 @@ Cada regra abaixo indica seu status: **✅ Em vigor** (implementada e funcionand
 
 ## 2. Fechamento da loja — dois níveis independentes
 
-**📐 Decidida e modelada** (migration `007`) — **UI de configuração ainda não existe; aplicação da migration no banco não confirmada.**
+**📐 Decidida e modelada, migration `007` aplicada no banco** — **UI de configuração ainda não existe.**
 
 A loja tem dois interruptores independentes, não um só:
 

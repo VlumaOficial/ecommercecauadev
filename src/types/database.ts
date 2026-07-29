@@ -595,7 +595,9 @@ export type Database = {
           created_at: string
           loja_aberta: boolean
           mensagem_loja_fechada: string | null
+          mensagem_pedidos_fechados: string | null
           minutos_expiracao_reserva: number
+          pedidos_abertos: boolean
           permite_autocadastro: boolean
           tenant_id: string
           updated_at: string
@@ -606,7 +608,9 @@ export type Database = {
           created_at?: string
           loja_aberta?: boolean
           mensagem_loja_fechada?: string | null
+          mensagem_pedidos_fechados?: string | null
           minutos_expiracao_reserva?: number
+          pedidos_abertos?: boolean
           permite_autocadastro?: boolean
           tenant_id: string
           updated_at?: string
@@ -617,7 +621,9 @@ export type Database = {
           created_at?: string
           loja_aberta?: boolean
           mensagem_loja_fechada?: string | null
+          mensagem_pedidos_fechados?: string | null
           minutos_expiracao_reserva?: number
+          pedidos_abertos?: boolean
           permite_autocadastro?: boolean
           tenant_id?: string
           updated_at?: string
