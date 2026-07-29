@@ -22,6 +22,7 @@ export type Database = {
           id: string
           nome: string
           ordem: number
+          parent_id: string | null
           slug: string
           tenant_id: string
           updated_at: string
@@ -33,6 +34,7 @@ export type Database = {
           id?: string
           nome: string
           ordem?: number
+          parent_id?: string | null
           slug: string
           tenant_id: string
           updated_at?: string
@@ -44,13 +46,84 @@ export type Database = {
           id?: string
           nome?: string
           ordem?: number
+          parent_id?: string | null
           slug?: string
           tenant_id?: string
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "categories_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      category_attributes: {
+        Row: {
+          ativo: boolean
+          category_id: string
+          chave: string
+          created_at: string
+          id: string
+          obrigatorio: boolean
+          opcoes: Json | null
+          ordem: number
+          rotulo: string
+          tenant_id: string
+          tipo: Database["public"]["Enums"]["field_type"]
+          updated_at: string
+          usar_em_filtro: boolean
+        }
+        Insert: {
+          ativo?: boolean
+          category_id: string
+          chave: string
+          created_at?: string
+          id?: string
+          obrigatorio?: boolean
+          opcoes?: Json | null
+          ordem?: number
+          rotulo: string
+          tenant_id: string
+          tipo?: Database["public"]["Enums"]["field_type"]
+          updated_at?: string
+          usar_em_filtro?: boolean
+        }
+        Update: {
+          ativo?: boolean
+          category_id?: string
+          chave?: string
+          created_at?: string
+          id?: string
+          obrigatorio?: boolean
+          opcoes?: Json | null
+          ordem?: number
+          rotulo?: string
+          tenant_id?: string
+          tipo?: Database["public"]["Enums"]["field_type"]
+          updated_at?: string
+          usar_em_filtro?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_attributes_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_attributes_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -188,10 +261,10 @@ export type Database = {
         }
         Relationships: []
       }
-      product_field_values: {
+      product_attribute_values: {
         Row: {
+          attribute_id: string
           created_at: string
-          field_id: string
           id: string
           product_id: string
           tenant_id: string
@@ -199,8 +272,8 @@ export type Database = {
           valor: string | null
         }
         Insert: {
+          attribute_id: string
           created_at?: string
-          field_id: string
           id?: string
           product_id: string
           tenant_id: string
@@ -208,8 +281,8 @@ export type Database = {
           valor?: string | null
         }
         Update: {
+          attribute_id?: string
           created_at?: string
-          field_id?: string
           id?: string
           product_id?: string
           tenant_id?: string
@@ -218,10 +291,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "product_field_values_field_id_fkey"
-            columns: ["field_id"]
+            foreignKeyName: "product_attribute_values_attribute_id_fkey"
+            columns: ["attribute_id"]
             isOneToOne: false
-            referencedRelation: "subcategory_fields"
+            referencedRelation: "category_attributes"
             referencedColumns: ["id"]
           },
           {
@@ -297,6 +370,7 @@ export type Database = {
           preco_novo: number
           product_id: string
           tenant_id: string
+          variant_id: string | null
         }
         Insert: {
           alterado_em?: string
@@ -306,6 +380,7 @@ export type Database = {
           preco_novo: number
           product_id: string
           tenant_id: string
+          variant_id?: string | null
         }
         Update: {
           alterado_em?: string
@@ -315,6 +390,7 @@ export type Database = {
           preco_novo?: number
           product_id?: string
           tenant_id?: string
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -331,72 +407,130 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "product_price_history_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
         ]
       }
-      products: {
+      product_variants: {
         Row: {
           ativo: boolean
           created_at: string
-          descricao: string | null
-          destaque: boolean
-          disponivel: boolean
           id: string
           modo_estoque: Database["public"]["Enums"]["stock_mode"]
           nome: string
           ordem: number
           preco: number
+          preco_promocional: number | null
+          product_id: string
           quantidade_minima: number
           saldo_estoque: number
+          sku: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          modo_estoque?: Database["public"]["Enums"]["stock_mode"]
+          nome?: string
+          ordem?: number
+          preco?: number
+          preco_promocional?: number | null
+          product_id: string
+          quantidade_minima?: number
+          saldo_estoque?: number
+          sku?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          modo_estoque?: Database["public"]["Enums"]["stock_mode"]
+          nome?: string
+          ordem?: number
+          preco?: number
+          preco_promocional?: number | null
+          product_id?: string
+          quantidade_minima?: number
+          saldo_estoque?: number
+          sku?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variants_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          ativo: boolean
+          category_id: string
+          created_at: string
+          descricao: string | null
+          destaque: boolean
+          id: string
+          nome: string
+          ordem: number
           slug: string
-          subcategory_id: string
           tenant_id: string
           unidade_venda: string
           updated_at: string
         }
         Insert: {
           ativo?: boolean
+          category_id: string
           created_at?: string
           descricao?: string | null
           destaque?: boolean
-          disponivel?: boolean
           id?: string
-          modo_estoque?: Database["public"]["Enums"]["stock_mode"]
           nome: string
           ordem?: number
-          preco?: number
-          quantidade_minima?: number
-          saldo_estoque?: number
           slug: string
-          subcategory_id: string
           tenant_id: string
           unidade_venda?: string
           updated_at?: string
         }
         Update: {
           ativo?: boolean
+          category_id?: string
           created_at?: string
           descricao?: string | null
           destaque?: boolean
-          disponivel?: boolean
           id?: string
-          modo_estoque?: Database["public"]["Enums"]["stock_mode"]
           nome?: string
           ordem?: number
-          preco?: number
-          quantidade_minima?: number
-          saldo_estoque?: number
           slug?: string
-          subcategory_id?: string
           tenant_id?: string
           unidade_venda?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "products_subcategory_id_fkey"
-            columns: ["subcategory_id"]
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
             isOneToOne: false
-            referencedRelation: "subcategories"
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
           {
@@ -496,123 +630,6 @@ export type Database = {
           },
         ]
       }
-      subcategories: {
-        Row: {
-          ativo: boolean
-          category_id: string
-          created_at: string
-          descricao: string | null
-          id: string
-          nome: string
-          ordem: number
-          slug: string
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          ativo?: boolean
-          category_id: string
-          created_at?: string
-          descricao?: string | null
-          id?: string
-          nome: string
-          ordem?: number
-          slug: string
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          ativo?: boolean
-          category_id?: string
-          created_at?: string
-          descricao?: string | null
-          id?: string
-          nome?: string
-          ordem?: number
-          slug?: string
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "subcategories_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subcategories_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      subcategory_fields: {
-        Row: {
-          ativo: boolean
-          chave: string
-          created_at: string
-          id: string
-          obrigatorio: boolean
-          opcoes: Json | null
-          ordem: number
-          rotulo: string
-          subcategory_id: string
-          tenant_id: string
-          tipo: Database["public"]["Enums"]["field_type"]
-          updated_at: string
-          usar_em_filtro: boolean
-        }
-        Insert: {
-          ativo?: boolean
-          chave: string
-          created_at?: string
-          id?: string
-          obrigatorio?: boolean
-          opcoes?: Json | null
-          ordem?: number
-          rotulo: string
-          subcategory_id: string
-          tenant_id: string
-          tipo?: Database["public"]["Enums"]["field_type"]
-          updated_at?: string
-          usar_em_filtro?: boolean
-        }
-        Update: {
-          ativo?: boolean
-          chave?: string
-          created_at?: string
-          id?: string
-          obrigatorio?: boolean
-          opcoes?: Json | null
-          ordem?: number
-          rotulo?: string
-          subcategory_id?: string
-          tenant_id?: string
-          tipo?: Database["public"]["Enums"]["field_type"]
-          updated_at?: string
-          usar_em_filtro?: boolean
-        }
-        Relationships: [
-          {
-            foreignKeyName: "subcategory_fields_subcategory_id_fkey"
-            columns: ["subcategory_id"]
-            isOneToOne: false
-            referencedRelation: "subcategories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subcategory_fields_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       tenants: {
         Row: {
           ativo: boolean
@@ -642,7 +659,43 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      products_com_status: {
+        Row: {
+          ativo: boolean | null
+          category_id: string | null
+          created_at: string | null
+          descricao: string | null
+          destaque: boolean | null
+          em_promocao: boolean | null
+          esgotado: boolean | null
+          estoque_total: number | null
+          id: string | null
+          nome: string | null
+          novidade: boolean | null
+          ordem: number | null
+          preco_a_partir_de: number | null
+          slug: string | null
+          tenant_id: string | null
+          unidade_venda: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       current_tenant_id: { Args: never; Returns: string }
@@ -650,7 +703,7 @@ export type Database = {
       is_staff: { Args: never; Returns: boolean }
     }
     Enums: {
-      field_type: "texto" | "numero" | "lista" | "booleano" | "data"
+      field_type: "texto" | "numero" | "selecao" | "booleano" | "data"
       stock_mode: "quantitativo" | "disponibilidade"
       user_role: "admin" | "operador"
     }
@@ -780,7 +833,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      field_type: ["texto", "numero", "lista", "booleano", "data"],
+      field_type: ["texto", "numero", "selecao", "booleano", "data"],
       stock_mode: ["quantitativo", "disponibilidade"],
       user_role: ["admin", "operador"],
     },
