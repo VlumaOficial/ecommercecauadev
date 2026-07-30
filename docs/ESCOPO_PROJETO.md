@@ -150,6 +150,7 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 - **Importação em massa via CSV**: o catálogo real do cliente piloto tem **~1.000 itens** — cadastro manual produto a produto é inviável nessa escala. Importação de produtos/variações via CSV é planejada; fase exata a definir (provavelmente logo após o CRUD de Produtos existir).
 - **Super Admin VLUMA**: camada pós-MVP, separada do painel do tenant — gestão multi-tenant (criação de novas lojas), métricas entre clientes, e consumidora do `audit_log` (decisão #15). Ainda não desenhada.
 - **Manual do usuário/lojista**: entregável planejado para o final do desenvolvimento — gerado a partir de `docs/REGRAS_DE_NEGOCIO.md` (que já é escrito em linguagem clara, pensado pra isso desde a origem).
+- **Documentos Legais e Aceite (LGPD)**: aceite obrigatório de Política de Privacidade e Termos de Uso no cadastro do cliente, registro do aceite (quem/quando/versão/IP) para comprovação, documentos versionados por tenant, páginas públicas linkadas no rodapé. Ver decisão #17 e `REGRAS_DE_NEGOCIO.md` §8. **Sequenciado para depois da vitrine (F4)**, já na fase de preparação para produção.
 
 ---
 
@@ -173,6 +174,7 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | 14 | Anti-ciclo em árvores (categoria não pode ter como pai um descendente dela mesma) validado **no client** (combobox exclui opções) **e no servidor** (defesa em profundidade) | ✅ Implementado |
 | 15 | **Auditoria** (`audit_log`): toda escrita do painel passa a chamar `registrarAuditoria()` na aplicação (não trigger de banco), pra capturar contexto de negócio (ex.: qual usuário, se foi cascata). Uso: rastreabilidade do Super Admin VLUMA, não do admin do tenant. Candidata a feature premium | 📐 Decidido; não implementado — ver §2, "Auditoria" |
 | 16 | **Vocabulário de interface**: telas voltadas ao lojista usam "Características" (nunca "atributos") e "Variações" (nunca "SKU"/"variants") — termos técnicos ficam só no código/banco. Decisão de UX baseada em pesquisa de mercado (Nuvemshop/Shopify) | ✅ Já seguido no CRUD de Categorias (rótulo "Características"); aplicar também ao CRUD de Produtos — ver `REGRAS_DE_NEGOCIO.md` §4.1 |
+| 17 | **Documentos Legais e Aceite (LGPD)**: aceite obrigatório (checkbox + links) de Política de Privacidade e Termos de Uso no cadastro do cliente; aceite registrado com quem/quando/versão/IP para comprovação; documentos **versionados por tenant** (nova versão pode exigir re-aceite); páginas públicas linkadas no rodapé; texto-base gerado por IA **com ressalva explícita de revisão jurídica obrigatória antes de produção**. Sequenciado para depois da vitrine (F4) | 📐 Decidido; não implementado — ver `REGRAS_DE_NEGOCIO.md` §8 |
 
 ---
 
