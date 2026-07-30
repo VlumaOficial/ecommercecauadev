@@ -16,6 +16,7 @@ function LinhaCategoria({
   onEdit,
   onInativar,
   onReativar,
+  onCaracteristicas,
 }: {
   node: CategoriaTreeNode
   nivel: number
@@ -26,6 +27,7 @@ function LinhaCategoria({
   onEdit: (node: CategoriaTreeNode) => void
   onInativar: (node: CategoriaTreeNode) => void
   onReativar: (node: CategoriaTreeNode) => void
+  onCaracteristicas: (node: CategoriaTreeNode) => void
 }) {
   if (!visibleIds.has(node.id)) return null
 
@@ -59,9 +61,9 @@ function LinhaCategoria({
           <Button
             variant="ghost"
             size="icon-sm"
-            disabled
-            title="Caracteristicas (em breve)"
-            aria-label="Caracteristicas (em breve)"
+            onClick={() => onCaracteristicas(node)}
+            title="Caracteristicas"
+            aria-label="Caracteristicas"
           >
             <ListTreeIcon />
           </Button>
@@ -104,6 +106,7 @@ function LinhaCategoria({
               onEdit={onEdit}
               onInativar={onInativar}
               onReativar={onReativar}
+              onCaracteristicas={onCaracteristicas}
             />
           ))}
         </div>
@@ -120,6 +123,7 @@ export function CategoriasTree({
   onEdit,
   onInativar,
   onReativar,
+  onCaracteristicas,
 }: {
   arvore: CategoriaTreeNode[]
   visibleIds: Set<string>
@@ -128,6 +132,7 @@ export function CategoriasTree({
   onEdit: (node: CategoriaTreeNode) => void
   onInativar: (node: CategoriaTreeNode) => void
   onReativar: (node: CategoriaTreeNode) => void
+  onCaracteristicas: (node: CategoriaTreeNode) => void
 }) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
@@ -168,6 +173,7 @@ export function CategoriasTree({
           onEdit={onEdit}
           onInativar={onInativar}
           onReativar={onReativar}
+          onCaracteristicas={onCaracteristicas}
         />
       ))}
     </div>

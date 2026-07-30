@@ -97,7 +97,10 @@ export type Database = {
           opcoes?: Json | null
           ordem?: number
           rotulo: string
-          tenant_id: string
+          // tenant_id ganha DEFAULT current_tenant_id() na migration 012;
+          // opcional no insert. Ajustado a mao (sem acesso ao projeto pra
+          // `npm run types`).
+          tenant_id?: string
           tipo?: Database["public"]["Enums"]["field_type"]
           updated_at?: string
           usar_em_filtro?: boolean

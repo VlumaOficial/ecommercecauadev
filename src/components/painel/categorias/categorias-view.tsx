@@ -9,6 +9,7 @@ import { SearchInput } from '@/components/painel/crud/search-input'
 import { ConfirmDialog } from '@/components/painel/crud/confirm-dialog'
 import { CategoriasTree } from './categorias-tree'
 import { CategoriaFormDialog } from './categoria-form-dialog'
+import { CaracteristicasSheet } from './caracteristicas-sheet'
 import { buildTree, computeVisibleIds, getDescendantIds, type CategoriaTreeNode } from '@/lib/category-tree'
 import {
   useCategorias,
@@ -36,6 +37,7 @@ export function CategoriasView() {
   const [categoriaEditando, setCategoriaEditando] = useState<Categoria | null>(null)
   const [categoriaParaInativar, setCategoriaParaInativar] = useState<CategoriaTreeNode | null>(null)
   const [categoriaParaReativar, setCategoriaParaReativar] = useState<CategoriaTreeNode | null>(null)
+  const [categoriaCaracteristicas, setCategoriaCaracteristicas] = useState<CategoriaTreeNode | null>(null)
 
   const criar = useCreateCategoria()
   const atualizar = useUpdateCategoria()
@@ -134,8 +136,15 @@ export function CategoriasView() {
           onEdit={abrirEdicao}
           onInativar={setCategoriaParaInativar}
           onReativar={handleReativarClick}
+          onCaracteristicas={setCategoriaCaracteristicas}
         />
       </div>
+
+      <CaracteristicasSheet
+        categoria={categoriaCaracteristicas}
+        open={!!categoriaCaracteristicas}
+        onOpenChange={(open) => !open && setCategoriaCaracteristicas(null)}
+      />
 
       <CategoriaFormDialog
         key={categoriaEditando?.id ?? 'novo'}
