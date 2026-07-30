@@ -3,6 +3,8 @@
 **Última atualização:** 29/07/2026
 **Baseado em:** leitura completa do código-fonte, migrations `001` a `011`, histórico de commits e `docs/VISAO_CAUA.md`.
 
+> **Princípio norteador:** este é um produto **SaaS** (VLUMA). O Criatório Capuã é o primeiro cliente e validador, mas as decisões são de **produto** — o critério é "isso serve qualquer lojista do segmento?", não "o Cauã precisa disso?". Justificativas de arquitetura baseadas só na realidade de um cliente devem ser evitadas.
+
 ---
 
 ## 0. Regra de processo (definition of done)
@@ -20,6 +22,12 @@ Ao concluir cada feature, **antes de considerá-la pronta**:
 Se a sessão estiver longa, encerrar com os docs atualizados e commitados, para que uma sessão nova possa retomar lendo só os documentos.
 
 **Ao iniciar qualquer sessão nova**, o primeiro passo é ler `docs/ESCOPO_PROJETO.md` e `docs/REGRAS_DE_NEGOCIO.md` para recuperar o contexto.
+
+### Registro de tempo por feature
+
+| Feature | Início | Conclusão | Nº de sessões |
+|---|---|---|---|
+| Características de categoria | 30/07/2026 15:31 | — | 1 (em andamento) |
 
 ---
 
