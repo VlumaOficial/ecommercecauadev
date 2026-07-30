@@ -9,7 +9,7 @@ import { SearchInput } from '@/components/painel/crud/search-input'
 import { ConfirmDialog } from '@/components/painel/crud/confirm-dialog'
 import { CategoriasTree } from './categorias-tree'
 import { CategoriaFormDialog } from './categoria-form-dialog'
-import { buildTree, computeVisibleIds, type CategoriaTreeNode } from '@/lib/category-tree'
+import { buildTree, computeVisibleIds, getDescendantIds, type CategoriaTreeNode } from '@/lib/category-tree'
 import {
   useCategorias,
   useCreateCategoria,
@@ -35,10 +35,25 @@ export function CategoriasView() {
   const [formAberto, setFormAberto] = useState(false)
   const [categoriaEditando, setCategoriaEditando] = useState<Categoria | null>(null)
   const [categoriaParaInativar, setCategoriaParaInativar] = useState<CategoriaTreeNode | null>(null)
+  const [categoriaParaReativar, setCategoriaParaReativar] = useState<CategoriaTreeNode | null>(null)
 
   const criar = useCreateCategoria()
   const atualizar = useUpdateCategoria()
   const setAtivo = useSetCategoriaAtivo()
+
+  // Contagem recursiva (subarvore inteira, nao so filhos diretos) pros
+  // avisos de cascata — ver REGRAS_DE_NEGOCIO.md §3.1.
+  const descendentesAtivosParaInativar = useMemo(() => {
+    if (!categoriaParaInativar) return 0
+    const descendentes = getDescendantIds(categoriaParaInativar.id, categorias)
+    return categorias.filter((c) => descendentes.has(c.id) && c.ativo).length
+  }, [categoriaParaInativar, categorias])
+
+  const descendentesCascateadosParaReativar = useMemo(() => {
+    if (!categoriaParaReativar) return 0
+    const descendentes = getDescendantIds(categoriaParaReativar.id, categorias)
+    return categorias.filter((c) => descendentes.has(c.id) && c.inativado_em_cascata).length
+  }, [categoriaParaReativar, categorias])
 
   function abrirNovo() {
     setCategoriaEditando(null)
@@ -66,6 +81,24 @@ export function CategoriasView() {
     setAtivo.mutate(
       { id: categoriaParaInativar.id, ativo: false },
       { onSuccess: () => setCategoriaParaInativar(null) }
+    )
+  }
+
+  function handleReativarClick(node: CategoriaTreeNode) {
+    const descendentes = getDescendantIds(node.id, categorias)
+    const temCascata = categorias.some((c) => descendentes.has(c.id) && c.inativado_em_cascata)
+    if (temCascata) {
+      setCategoriaParaReativar(node)
+    } else {
+      setAtivo.mutate({ id: node.id, ativo: true })
+    }
+  }
+
+  function confirmarReativar() {
+    if (!categoriaParaReativar) return
+    setAtivo.mutate(
+      { id: categoriaParaReativar.id, ativo: true },
+      { onSuccess: () => setCategoriaParaReativar(null) }
     )
   }
 
@@ -100,11 +133,12 @@ export function CategoriasView() {
           isLoading={isLoading}
           onEdit={abrirEdicao}
           onInativar={setCategoriaParaInativar}
-          onReativar={(node) => setAtivo.mutate({ id: node.id, ativo: true })}
+          onReativar={handleReativarClick}
         />
       </div>
 
       <CategoriaFormDialog
+        key={categoriaEditando?.id ?? 'novo'}
         open={formAberto}
         onOpenChange={setFormAberto}
         categoria={categoriaEditando}
@@ -118,14 +152,24 @@ export function CategoriasView() {
         onOpenChange={(open) => !open && setCategoriaParaInativar(null)}
         title="Inativar categoria?"
         description={
-          categoriaParaInativar && categoriaParaInativar.filhos.length > 0
-            ? `"${categoriaParaInativar.nome}" tem ${categoriaParaInativar.filhos.length} subcategoria(s). Inativa-la nao afeta o status delas — se quiser oculta-las tambem, inative cada uma separadamente.`
+          descendentesAtivosParaInativar > 0
+            ? `Ao inativar "${categoriaParaInativar?.nome}", as ${descendentesAtivosParaInativar} subcategoria(s) ativa(s) abaixo tambem serao inativadas.`
             : `"${categoriaParaInativar?.nome}" deixara de aparecer para novos produtos ate ser reativada.`
         }
         confirmLabel="Inativar"
         destructive
         loading={setAtivo.isPending}
         onConfirm={confirmarInativar}
+      />
+
+      <ConfirmDialog
+        open={!!categoriaParaReativar}
+        onOpenChange={(open) => !open && setCategoriaParaReativar(null)}
+        title="Reativar categoria?"
+        description={`Ao reativar "${categoriaParaReativar?.nome}", as ${descendentesCascateadosParaReativar} subcategoria(s) inativada(s) junto com ela voltarao.`}
+        confirmLabel="Reativar"
+        loading={setAtivo.isPending}
+        onConfirm={confirmarReativar}
       />
     </div>
   )

@@ -24,7 +24,7 @@ export async function GET() {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('categories')
-    .select('id, nome, slug, descricao, parent_id, ordem, ativo')
+    .select('id, nome, slug, descricao, parent_id, ordem, ativo, inativado_em_cascata')
     .order('ordem', { ascending: true })
     .order('nome', { ascending: true })
 

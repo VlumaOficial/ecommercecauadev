@@ -6,6 +6,7 @@ export type CategoriaNode = {
   parent_id: string | null
   ordem: number
   ativo: boolean
+  inativado_em_cascata: boolean
 }
 
 export type CategoriaTreeNode = CategoriaNode & { filhos: CategoriaTreeNode[] }

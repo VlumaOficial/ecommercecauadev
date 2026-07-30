@@ -38,6 +38,17 @@ const VALORES_PADRAO: CategoriaFormValues = {
   ativo: true,
 }
 
+function valoresIniciais(categoria: Categoria | null): CategoriaFormValues {
+  if (!categoria) return VALORES_PADRAO
+  return {
+    nome: categoria.nome,
+    slug: categoria.slug,
+    parent_id: categoria.parent_id,
+    descricao: categoria.descricao ?? '',
+    ativo: categoria.ativo,
+  }
+}
+
 type ParentOption = { value: string; label: string }
 
 export function CategoriaFormDialog({
@@ -55,7 +66,13 @@ export function CategoriaFormDialog({
   onSubmit: (values: CategoriaFormValues) => void
   loading: boolean
 }) {
-  const [slugManual, setSlugManual] = useState(false)
+  // Inicializados a partir de `categoria` na construcao (nao via efeito
+  // assincrono): combinado com o `key={categoria?.id}` no ponto onde
+  // este componente e renderizado, cada categoria ganha uma montagem
+  // fresca com os valores certos desde o primeiro render — sem isso,
+  // useState(false)/defaultValues estaticos ficavam reféns de um
+  // reset() em useEffect que corria contra o efeito de auto-slug.
+  const [slugManual, setSlugManual] = useState(() => !!categoria)
 
   const {
     register,
@@ -66,26 +83,20 @@ export function CategoriaFormDialog({
     formState: { errors },
   } = useForm<CategoriaFormValues>({
     resolver: zodResolver(categoriaSchema),
-    defaultValues: VALORES_PADRAO,
+    defaultValues: valoresIniciais(categoria),
   })
 
   const nome = useWatch({ control, name: 'nome' })
 
+  // So entra em acao ao reabrir o MESMO registro (mesma key, portanto
+  // sem remontagem) com dados possivelmente mais recentes — a
+  // populacao inicial ja aconteceu via defaultValues/useState acima.
   useEffect(() => {
     if (!open) return
     setSlugManual(!!categoria)
-    reset(
-      categoria
-        ? {
-            nome: categoria.nome,
-            slug: categoria.slug,
-            parent_id: categoria.parent_id,
-            descricao: categoria.descricao ?? '',
-            ativo: categoria.ativo,
-          }
-        : VALORES_PADRAO
-    )
-  }, [open, categoria, reset])
+    reset(valoresIniciais(categoria))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   useEffect(() => {
     if (!open || slugManual) return

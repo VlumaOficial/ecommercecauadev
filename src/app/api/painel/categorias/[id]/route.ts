@@ -27,15 +27,17 @@ export async function PATCH(
   const body = await request.json().catch(() => null)
   const supabase = await createClient()
 
-  // Toggle rapido de status: payload so com { ativo }
+  // Toggle rapido de status: payload so com { ativo }. Passa pela RPC
+  // (nao update direto) pra aplicar a cascata em subarvore de forma
+  // atomica — ver migration 011.
   if (body && Object.keys(body).length === 1 && ativoOnlySchema.safeParse(body).success) {
-    const { data, error } = await supabase
-      .from('categories')
-      .update({ ativo: body.ativo })
-      .eq('id', id)
-      .select()
-      .single()
+    const { error: rpcError } = await supabase.rpc('set_category_ativo_cascade', {
+      p_category_id: id,
+      p_ativo: body.ativo,
+    })
+    if (rpcError) return NextResponse.json({ error: rpcError.message }, { status: 400 })
 
+    const { data, error } = await supabase.from('categories').select().eq('id', id).single()
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
     return NextResponse.json({ data })
   }

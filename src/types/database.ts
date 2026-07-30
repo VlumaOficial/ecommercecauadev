@@ -710,6 +710,10 @@ export type Database = {
       current_tenant_id: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      set_category_ativo_cascade: {
+        Args: { p_category_id: string; p_ativo: boolean }
+        Returns: undefined
+      }
     }
     Enums: {
       field_type: "texto" | "numero" | "selecao" | "booleano" | "data"
