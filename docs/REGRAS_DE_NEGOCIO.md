@@ -145,7 +145,7 @@ Também é uma característica candidata a virar **diferencial pago** do SaaS no
 
 ---
 
-## 8. Documentos Legais e Aceite (LGPD)
+## 7. Documentos Legais e Aceite (LGPD)
 
 **📐 Decidida — não implementada.** Sequenciada para **depois da vitrine (F4)**, na fase de preparação para produção (só fica urgente quando há coleta real de dados de clientes reais).
 
@@ -160,7 +160,7 @@ Obrigação legal (LGPD): a loja precisa comprovar que o cliente aceitou os term
 
 ---
 
-## 9. Pendente de definição (⏳)
+## 8. Pendente de definição (⏳)
 
 As seções abaixo serão preenchidas conforme cada módulo for desenhado — mantidas aqui como lembrete do que falta decidir:
 
