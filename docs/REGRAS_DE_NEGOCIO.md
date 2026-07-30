@@ -1,6 +1,6 @@
 # REGRAS DE NEGÓCIO — E-commerce Criatório Capuã
 
-**Última atualização:** 29/07/2026
+**Última atualização:** 30/07/2026
 **Propósito:** descrever o comportamento do sistema em linguagem clara, sem jargão técnico onde possível. Este documento é a base do futuro manual do usuário/lojista.
 
 ---
@@ -101,9 +101,11 @@ Decisão baseada em pesquisa de mercado (Nuvemshop, Shopify) — é assim que lo
 
 ### 4.3 Características por categoria
 
-**📐 Modelada — sem interface ainda.**
+**✅ Em vigor** (`/painel/categorias`, botão "Características" em cada categoria) — testado com Chromium real: criar, editar, inativar/reativar e reordenar por arrastar, com persistência confirmada no banco.
 
-Cada categoria pode ter uma lista configurável de **características** (ficha técnica): nome, tipo (texto, número, seleção, sim/não), se é obrigatória, se aparece como filtro na vitrine. Quem define essas características é o **próprio lojista**, pelo painel — não é uma lista fixa no código. Um produto cadastrado numa categoria herda as características daquela categoria pra preencher sua ficha.
+Cada categoria pode ter uma lista configurável de **características** (ficha técnica): nome, tipo (texto, número, seleção, sim/não), opções (quando o tipo é seleção), se é obrigatória, se aparece como filtro na vitrine, e a ordem de exibição (arrastar para reordenar). Quem define essas características é o **próprio lojista**, pelo painel — não é uma lista fixa no código. Segue o mesmo padrão de soft delete do resto do painel (inativar/reativar, nunca excluir de verdade).
+
+**Sem herança entre categorias nesta fase**: cada categoria define as suas próprias características, mesmo que tenha uma categoria-pai. Um produto cadastrado numa categoria usa só a ficha daquela categoria específica — não herda automaticamente as características de categorias acima na árvore. Essa porta fica aberta para o futuro (a árvore já existe via `parent_id`), mas não foi implementada agora.
 
 ### 4.4 Produtos e variações (SKU)
 

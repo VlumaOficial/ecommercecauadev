@@ -1,7 +1,7 @@
 # ESCOPO DO PROJETO — E-commerce Criatório Capuã / VLUMA
 
-**Última atualização:** 29/07/2026
-**Baseado em:** leitura completa do código-fonte, migrations `001` a `011`, histórico de commits e `docs/VISAO_CAUA.md`.
+**Última atualização:** 30/07/2026
+**Baseado em:** leitura completa do código-fonte, migrations `001` a `012`, histórico de commits e `docs/VISAO_CAUA.md`.
 
 > **Princípio norteador:** este é um produto **SaaS** (VLUMA). O Criatório Capuã é o primeiro cliente e validador, mas as decisões são de **produto** — o critério é "isso serve qualquer lojista do segmento?", não "o Cauã precisa disso?". Justificativas de arquitetura baseadas só na realidade de um cliente devem ser evitadas.
 
@@ -27,7 +27,7 @@ Se a sessão estiver longa, encerrar com os docs atualizados e commitados, para 
 
 | Feature | Início | Conclusão | Nº de sessões |
 |---|---|---|---|
-| Características de categoria | 30/07/2026 15:31 | — | 1 (em andamento) |
+| Características de categoria | 30/07/2026 15:31 | 30/07/2026 17:12 | 1 |
 
 ---
 
@@ -53,6 +53,7 @@ O produto é **arquitetado como SaaS multi-tenant desde a primeira tabela**, mas
 | Estado de servidor | TanStack Query v5 |
 | Formulários | React Hook Form + Zod (`@hookform/resolvers`) — **sem** o componente `Form` do shadcn, que é acoplado a Radix/Slot e incompatível com o preset Base UI deste projeto; forms usam `register`/`Controller` direto sobre `Input`/`Select`/`Switch`/`Combobox` |
 | Backend/dados | Supabase (Postgres + Auth + RLS), `@supabase/ssr` 0.12.3 |
+| Drag-and-drop | `@dnd-kit/core` + `@dnd-kit/sortable` + `@dnd-kit/utilities` — Base UI não tem primitivo de sortable; dnd-kit é o padrão de mercado, acessível, sem dependência de Radix |
 | Deploy | Vercel |
 
 ### Padrão de autenticação (importante, decisão custosa de descobrir)
@@ -68,7 +69,7 @@ A sessão Supabase é gravada em cookie **`httpOnly: true`** (proteção contra 
 
 ### Padrão de multi-tenant nas escritas
 
-Colunas `tenant_id` ganham `DEFAULT public.current_tenant_id()` (função SQL que resolve o tenant do usuário autenticado via `profiles`/`customers`). Assim nenhum Route Handler precisa descobrir/hardcodar o tenant no `insert()` — já feito para `delivery_cities` (migration `008`) e `categories` (migration `010`); qualquer tabela nova gerida pelo painel deve repetir o padrão.
+Colunas `tenant_id` ganham `DEFAULT public.current_tenant_id()` (função SQL que resolve o tenant do usuário autenticado via `profiles`/`customers`). Assim nenhum Route Handler precisa descobrir/hardcodar o tenant no `insert()` — já feito para `delivery_cities` (migration `008`), `categories` (migration `010`) e `category_attributes` (migration `012`); qualquer tabela nova gerida pelo painel deve repetir o padrão.
 
 ### Padrão de CRUD administrativo (fixado a partir de Cidades, replicado em Categorias)
 
@@ -78,6 +79,7 @@ Colunas `tenant_id` ganham `DEFAULT public.current_tenant_id()` (função SQL qu
 - Toast (`sonner`) em toda mutation (criado/atualizado/inativado/reativado).
 - Validação client-side (Zod) **e** server-side (Zod de novo, no Route Handler) — o client nunca é a única linha de defesa.
 - Componentes genéricos reutilizáveis em `components/painel/crud/`: `StatusFilterTabs`, `SearchInput`, `StatusBadge`, `ConfirmDialog`, `FormDialog`. Primitivo `components/ui/combobox.tsx` (Base UI, select com busca) para seletores com listas grandes (ex.: categoria-pai).
+- **`Sheet` (painel lateral) é o padrão quando abrir a gestão de uma sub-lista que por sua vez precisa de modais próprios** — evita aninhamento de `Dialog` dentro de `Dialog`. Usado em Características de categoria (`caracteristicas-sheet.tsx`): o Sheet lista/reordena, e o `FormDialog` de criar/editar característica abre *sobre* ele. Filtro/busca/URL-state não são obrigatórios nessa tela — aplicar onde o volume de dados justifica (lista curta por categoria não precisa).
 - **📐 Planejado, não implementado:** toda ação de escrita (criar/editar/inativar/reativar) deve chamar um helper `registrarAuditoria()` a partir do Route Handler, gravando em `audit_log` — ver "Auditoria" logo abaixo e decisão #15.
 
 ### Auditoria (planejada — 📐 decidida, não implementada)
@@ -90,7 +92,7 @@ Propósito: rastreabilidade para o **Super Admin VLUMA** (não para o admin comu
 
 ## 3. Modelo de dados atual
 
-> Tabelas conforme aplicadas até a migration `011` (todas confirmadas aplicadas no banco — ver seção 6).
+> Tabelas conforme aplicadas até a migration `012` (todas confirmadas aplicadas no banco — ver seção 6).
 
 ### Núcleo (`002_core.sql`)
 
@@ -108,7 +110,7 @@ Funções: `set_updated_at()` (trigger genérico), `current_tenant_id()`, `is_ad
 | Tabela | Representa |
 |---|---|
 | `categories` | Árvore de categorias via `parent_id` (auto-FK, N níveis). `parent_id = null` → raiz. `slug` único por tenant (namespace global, não por parent — decisão de produto). `inativado_em_cascata` (migration `011`) marca linhas derrubadas por cascata a partir de um ancestral — ver decisão #8 e RPC `set_category_ativo_cascade`. |
-| `category_attributes` | Ficha técnica / atributos configuráveis por categoria (substituiu `subcategory_fields`). `tipo`: `texto \| numero \| selecao \| booleano \| data` (enum `field_type`; valor `'lista'` renomeado para `'selecao'` na 009). **Ainda sem UI** (Fase 2 do CRUD de Categorias — botão "Características" já reservado, desabilitado). |
+| `category_attributes` | Ficha técnica / filtros configuráveis por categoria — "Características" na interface (substituiu `subcategory_fields`). `tipo`: `texto \| numero \| selecao \| booleano \| data` (enum `field_type`; valor `'lista'` renomeado para `'selecao'` na 009; UI só expõe os 4 primeiros). `opcoes` (jsonb, array de strings) quando `tipo=selecao`. `chave` gerada uma única vez na criação (nunca muda depois, mesmo editando `rotulo`) — identificador interno estável. **CRUD completo em `/painel/categorias` → botão "Características" (Sheet lateral)**, com reordenação por drag-and-drop (`@dnd-kit`). |
 | `products` | Produto de vitrine: `nome`, `slug`, `descricao`, `category_id`, `unidade_venda`, `destaque` (curadoria manual), `ativo`. **Sem preço nem estoque** — isso vive na variação. |
 | `product_variants` | SKU do produto (substituiu os campos de preço/estoque que existiam direto em `products`). `nome` (rótulo, ex. "1kg"), `sku`, `preco`, `preco_promocional` (nullable, `check` garante `< preco`), `modo_estoque` (`quantitativo \| disponibilidade`), `saldo_estoque`, `quantidade_minima`, `ativo`. Produto simples = 1 variant "Padrão"; produto com tamanhos = N variants. |
 | `product_attribute_values` | Valor de um `category_attributes` para um produto específico (substituiu `product_field_values`). |
@@ -150,6 +152,7 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | CRUD de Cidades de entrega | `/painel/cidades` | Define o padrão de CRUD administrativo (URL state, modal, soft delete, Route Handlers) |
 | Catálogo v2 (modelagem) | Migration `009`: árvore de categorias, `category_attributes`, `product_variants`, status derivado | Só modelagem — telas de Produtos ainda não existem |
 | CRUD de Categorias em árvore | `/painel/categorias` | Árvore colapsável, busca com auto-expand preservando caminho até a raiz, combobox de categoria-pai com exclusão anti-ciclo (client **e** servidor) |
+| Características de categoria | Botão "Características" na árvore abre `Sheet` lateral (`caracteristicas-sheet.tsx`) com lista reordenável (`@dnd-kit`) + `FormDialog` de criar/editar. Migration `012` (`category_attributes.tenant_id` ganha `DEFAULT`) | Nome, Tipo (texto/número/seleção/sim-não), Opções (quando seleção), Obrigatória, Usar como filtro, soft delete. `chave` auto-gerada e estável. Sem herança entre categorias nesta fase — modelo não impede adicionar depois (resolução via `parent_id` em tempo de consulta, ver `use-caracteristicas.ts`). Testado com Chromium real: criar, editar (opções pré-carregadas), inativar/reativar, drag-and-drop com persistência confirmada no banco |
 | Fix do bug de slug trocado no modal de editar Categoria | `categoria-form-dialog.tsx` | Causa raiz real: `useState`/`defaultValues` estáticos do `react-hook-form` dependiam de um `reset()` em `useEffect` que corria contra o efeito de auto-slug. Corrigido inicializando os dois direto de `categoria` (lazy init + `defaultValues` computados) **e** `key={categoria?.id}` no ponto de renderização. Testado com Chromium real: 4 edições seguidas em categorias diferentes, slug correto em todas |
 | Cascata de inativação/reativação de Categorias | Migration `011` (`inativado_em_cascata` + RPC `set_category_ativo_cascade`, atômica, com checagem `is_staff()` própria) + `ConfirmDialog` de inativar (conta descendentes ativos) e de reativar (conta descendentes cascateados, só aparece se > 0) | Testado com Chromium real contra o banco: filha já inativa por decisão própria não é tocada por nenhum dos dois sentidos; filha ativa é cascateada e depois restaurada corretamente |
 
@@ -161,7 +164,6 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 
 ### Planejadas (não iniciadas)
 
-- **Características de categoria** (Fase 2 do CRUD de Categorias): CRUD de `category_attributes` por categoria, botão já reservado na árvore.
 - **Produtos com variações**: CRUD de `products` + `product_variants` + `product_images` + valores de atributos, reaproveitando o padrão de CRUD e o combobox de categoria.
 - **Configurações da loja**: tela para `store_settings` (dois níveis de fechamento, valor mínimo de pedido, autocadastro, regra de baixa de estoque).
 - **Vitrine** (`(loja)`, hoje vazio): catálogo público, ficha de produto, Open Graph dinâmico por produto.
@@ -179,7 +181,7 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | # | Decisão | Status |
 |---|---|---|
 | 1 | Catálogo em **árvore** de categorias (N níveis via `parent_id`), não dois níveis fixos | ✅ Implementado |
-| 2 | Características de produto (ficha técnica/filtro) são **configuráveis pelo lojista por categoria** (`category_attributes`), não fixas no código | Modelado; UI é Fase 2 |
+| 2 | Características de produto (ficha técnica/filtro) são **configuráveis pelo lojista por categoria** (`category_attributes`), não fixas no código | ✅ Implementado (`/painel/categorias`, Sheet "Características") |
 | 3 | Produto tem **variações/SKU** (`product_variants`); preço, promoção e estoque vivem na variação, não no produto | Modelado; UI ainda não existe |
 | 4 | Status de produto (esgotado, em promoção, novidade) é **sempre derivado em query**, nunca uma flag manual gravada | Modelado (view `products_com_status`) |
 | 5 | Loja tem **dois níveis independentes de fechamento**: `loja_aberta` (Nível 1, loja inteira inacessível) e `pedidos_abertos` (Nível 2, catálogo visível mas checkout bloqueado) | ✅ Aplicado no banco (migration `007`); UI de configuração ainda não existe |
@@ -223,6 +225,7 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | 009 | `catalog_v2` (árvore + atributos + variações) | ✅ |
 | 010 | `categories` ganha `DEFAULT current_tenant_id()` | ✅ |
 | 011 | `categories` ganha `inativado_em_cascata` + RPC `set_category_ativo_cascade` (cascata) | ✅ |
+| 012 | `category_attributes` ganha `DEFAULT current_tenant_id()` | ✅ |
 
 ### Variáveis de ambiente
 
@@ -246,7 +249,7 @@ src/
 │   ├── (loja)/           vazio — vitrine ainda nao construida
 │   ├── api/
 │   │   ├── auth/login/   POST — login (303 + Set-Cookie atomico)
-│   │   └── painel/       Route Handlers de CRUD (cidades, categorias — GET/POST/PATCH)
+│   │   └── painel/       Route Handlers de CRUD (cidades, categorias + caracteristicas/reorder — GET/POST/PATCH)
 │   ├── auth/callback/    callback de confirmacao de e-mail / magic link
 │   ├── painel/           layout protegido (so staff) + cidades/ + categorias/
 │   └── sair/             POST — logout
@@ -254,9 +257,9 @@ src/
 │   ├── painel/
 │   │   ├── crud/         StatusFilterTabs, SearchInput, StatusBadge, ConfirmDialog, FormDialog
 │   │   ├── cidades/
-│   │   └── categorias/
-│   └── ui/                20 componentes shadcn (preset Base UI) + combobox.tsx (custom)
-├── hooks/                 use-cidades, use-categorias, use-delivery-cities, use-query-param-state
+│   │   └── categorias/   arvore, form, Sheet+lista+form de Caracteristicas (drag-and-drop)
+│   └── ui/                20 componentes shadcn (preset Base UI) + combobox.tsx, sheet.tsx (custom/reaproveitado)
+├── hooks/                 use-cidades, use-categorias, use-caracteristicas, use-delivery-cities, use-query-param-state
 ├── lib/
 │   ├── supabase/          client.ts (browser), server.ts (SSR/Route Handlers), admin.ts (service_role)
 │   ├── auth.ts             getStaffProfile()
@@ -265,7 +268,7 @@ src/
 ├── types/database.ts       tipos gerados/ajustados a mao do schema Supabase
 └── proxy.ts                somente leitura: redireciona /entrar <-> /painel
 
-supabase/migrations/        001 a 011, ver secao 6
+supabase/migrations/        001 a 012, ver secao 6
 docs/                        VISAO_CAUA.md (visao original) + este documento + REGRAS_DE_NEGOCIO.md
 ```
 
