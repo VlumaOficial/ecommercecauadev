@@ -1,7 +1,7 @@
 # ESCOPO DO PROJETO — E-commerce Criatório Capuã / VLUMA
 
 **Última atualização:** 29/07/2026
-**Baseado em:** leitura completa do código-fonte, migrations `001` a `010`, histórico de commits e `docs/VISAO_CAUA.md`.
+**Baseado em:** leitura completa do código-fonte, migrations `001` a `011`, histórico de commits e `docs/VISAO_CAUA.md`.
 
 ---
 
@@ -70,7 +70,7 @@ Propósito: rastreabilidade para o **Super Admin VLUMA** (não para o admin comu
 
 ## 3. Modelo de dados atual
 
-> Tabelas conforme aplicadas até a migration `010` (todas confirmadas aplicadas no banco — ver seção 6).
+> Tabelas conforme aplicadas até a migration `011` (todas confirmadas aplicadas no banco — ver seção 6).
 
 ### Núcleo (`002_core.sql`)
 
@@ -87,7 +87,7 @@ Funções: `set_updated_at()` (trigger genérico), `current_tenant_id()`, `is_ad
 
 | Tabela | Representa |
 |---|---|
-| `categories` | Árvore de categorias via `parent_id` (auto-FK, N níveis). `parent_id = null` → raiz. `slug` único por tenant (namespace global, não por parent — decisão de produto). |
+| `categories` | Árvore de categorias via `parent_id` (auto-FK, N níveis). `parent_id = null` → raiz. `slug` único por tenant (namespace global, não por parent — decisão de produto). `inativado_em_cascata` (migration `011`) marca linhas derrubadas por cascata a partir de um ancestral — ver decisão #8 e RPC `set_category_ativo_cascade`. |
 | `category_attributes` | Ficha técnica / atributos configuráveis por categoria (substituiu `subcategory_fields`). `tipo`: `texto \| numero \| selecao \| booleano \| data` (enum `field_type`; valor `'lista'` renomeado para `'selecao'` na 009). **Ainda sem UI** (Fase 2 do CRUD de Categorias — botão "Características" já reservado, desabilitado). |
 | `products` | Produto de vitrine: `nome`, `slug`, `descricao`, `category_id`, `unidade_venda`, `destaque` (curadoria manual), `ativo`. **Sem preço nem estoque** — isso vive na variação. |
 | `product_variants` | SKU do produto (substituiu os campos de preço/estoque que existiam direto em `products`). `nome` (rótulo, ex. "1kg"), `sku`, `preco`, `preco_promocional` (nullable, `check` garante `< preco`), `modo_estoque` (`quantitativo \| disponibilidade`), `saldo_estoque`, `quantidade_minima`, `ativo`. Produto simples = 1 variant "Padrão"; produto com tamanhos = N variants. |
@@ -129,14 +129,14 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | Painel — acesso e shell | Layout protegido, sidebar, roteamento por papel (staff → `/painel`), logo/identidade da sidebar | — |
 | CRUD de Cidades de entrega | `/painel/cidades` | Define o padrão de CRUD administrativo (URL state, modal, soft delete, Route Handlers) |
 | Catálogo v2 (modelagem) | Migration `009`: árvore de categorias, `category_attributes`, `product_variants`, status derivado | Só modelagem — telas de Produtos ainda não existem |
-| CRUD de Categorias em árvore | `/painel/categorias` | Árvore colapsável, busca com auto-expand preservando caminho até a raiz, combobox de categoria-pai com exclusão anti-ciclo (client **e** servidor), soft delete sem cascata automática (decisão original) |
+| CRUD de Categorias em árvore | `/painel/categorias` | Árvore colapsável, busca com auto-expand preservando caminho até a raiz, combobox de categoria-pai com exclusão anti-ciclo (client **e** servidor) |
+| Fix do bug de slug trocado no modal de editar Categoria | `categoria-form-dialog.tsx` | Causa raiz real: `useState`/`defaultValues` estáticos do `react-hook-form` dependiam de um `reset()` em `useEffect` que corria contra o efeito de auto-slug. Corrigido inicializando os dois direto de `categoria` (lazy init + `defaultValues` computados) **e** `key={categoria?.id}` no ponto de renderização. Testado com Chromium real: 4 edições seguidas em categorias diferentes, slug correto em todas |
+| Cascata de inativação/reativação de Categorias | Migration `011` (`inativado_em_cascata` + RPC `set_category_ativo_cascade`, atômica, com checagem `is_staff()` própria) + `ConfirmDialog` de inativar (conta descendentes ativos) e de reativar (conta descendentes cascateados, só aparece se > 0) | Testado com Chromium real contra o banco: filha já inativa por decisão própria não é tocada por nenhum dos dois sentidos; filha ativa é cascateada e depois restaurada corretamente |
 
 ### Em andamento / decidido mas não implementado
 
 | Item | Status |
 |---|---|
-| Bug do slug trocado no modal de editar Categoria | **Causa raiz identificada** (corrida entre dois `useEffect` de `react-hook-form`), correção proposta (`key` por registro) — **não implementada ainda** |
-| Cascata inteligente de inativação/reativação de Categorias | Regra de negócio **decidida** (ver `REGRAS_DE_NEGOCIO.md`), modelagem proposta (coluna `inativado_em_cascata` + função `set_category_ativo_cascade`) — **não implementada ainda** |
 | Dois níveis de fechamento da loja | Migration `007` **aplicada**; nenhuma UI consome `pedidos_abertos`/`mensagem_pedidos_fechados` ainda (tela de Configurações da loja é planejada, não iniciada) |
 
 ### Planejadas (não iniciadas)
@@ -164,7 +164,7 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | 5 | Loja tem **dois níveis independentes de fechamento**: `loja_aberta` (Nível 1, loja inteira inacessível) e `pedidos_abertos` (Nível 2, catálogo visível mas checkout bloqueado) | ✅ Aplicado no banco (migration `007`); UI de configuração ainda não existe |
 | 6 | **Soft delete universal**: nenhuma entidade do painel tem exclusão real; sempre campo `ativo` + filtro Ativos/Inativos/Todos | ✅ Implementado no padrão de CRUD |
 | 7 | **Modal é o padrão** para toda criação/edição no painel; nunca página separada | ✅ Implementado |
-| 8 | Inativar categoria com filhas ativas **cascateia** a inativação pela subárvore, marcando quem foi arrastado (`inativado_em_cascata`) pra permitir restaurar só essas na reativação; quem já estava inativo por conta própria não é tocado em nenhum dos dois sentidos. Ligado à decisão #15: é justamente esse tipo de ação (uma escrita que afeta N linhas por consequência de uma decisão sobre 1) que o `audit_log` existe para explicar depois | Decidido; não implementado |
+| 8 | Inativar categoria com filhas ativas **cascateia** a inativação pela subárvore, marcando quem foi arrastado (`inativado_em_cascata`) pra permitir restaurar só essas na reativação; quem já estava inativo por conta própria não é tocado em nenhum dos dois sentidos. Ligado à decisão #15: é justamente esse tipo de ação (uma escrita que afeta N linhas por consequência de uma decisão sobre 1) que o `audit_log` vai existir para explicar depois | ✅ Implementado (migration `011` + RPC `set_category_ativo_cascade`) |
 | 9 | Vitrine (quando construída) deve esconder da navegação uma categoria inativa **e toda a sua subárvore** | Registrado como requisito futuro (comentário em `src/lib/category-tree.ts`); nada a implementar ainda (vitrine não existe) |
 | 10 | Slug é gerado automaticamente a partir do nome (editável) — na entrega final ao lojista, o campo de slug deve ficar **oculto/secundário** na interface (detalhe técnico de URL não deve poluir o cadastro do dia a dia de quem não é técnico) | Decidido; hoje o campo aparece visível e editável no modal de Categoria (uso interno/DEV) — ocultar é um ajuste de UX pendente antes da entrega ao cliente final |
 | 11 | Arquitetura multi-tenant desde a primeira tabela, tenant fixo no MVP | ✅ Implementado (`tenant_id` + `current_tenant_id()` + RLS) |
@@ -200,6 +200,7 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | 008 | `delivery_cities` ganha `DEFAULT current_tenant_id()` | ✅ |
 | 009 | `catalog_v2` (árvore + atributos + variações) | ✅ |
 | 010 | `categories` ganha `DEFAULT current_tenant_id()` | ✅ |
+| 011 | `categories` ganha `inativado_em_cascata` + RPC `set_category_ativo_cascade` (cascata) | ✅ |
 
 ### Variáveis de ambiente
 
@@ -242,7 +243,7 @@ src/
 ├── types/database.ts       tipos gerados/ajustados a mao do schema Supabase
 └── proxy.ts                somente leitura: redireciona /entrar <-> /painel
 
-supabase/migrations/        001 a 010, ver secao 6
+supabase/migrations/        001 a 011, ver secao 6
 docs/                        VISAO_CAUA.md (visao original) + este documento + REGRAS_DE_NEGOCIO.md
 ```
 

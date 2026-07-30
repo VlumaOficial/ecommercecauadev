@@ -59,7 +59,7 @@ Regra de combinação:
 
 ### 3.1 Cascata de inativação/reativação em Categorias
 
-**📐 Decidida — não implementada ainda.**
+**✅ Em vigor** (migration `011`, RPC `set_category_ativo_cascade`) — testada com Chromium real contra o banco: filha já inativa por decisão própria não é tocada em nenhum dos dois sentidos; filha ativa é cascateada ao inativar o pai e restaurada corretamente ao reativá-lo.
 
 Categoria é uma árvore (§4.2), então inativar uma categoria com filhas exige uma regra própria:
 
