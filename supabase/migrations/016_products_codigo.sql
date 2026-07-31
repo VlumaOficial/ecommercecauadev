@@ -15,6 +15,13 @@
 -- o padrao registrado em REGRAS_DE_NEGOCIO.md §9: portugues claro,
 -- orienta a acao, zero jargao tecnico. Ver ESCOPO_PROJETO.md §2
 -- "Padrao de mensagens de erro" para o catalogo completo desta feature.
+--
+-- Renumerada de 014 para 016 em 31/07/2026: a migration 013 (isolamento
+-- total por tenant, decisao #21) precisa entrar ANTES desta. Sem
+-- mudanca de conteudo alem da policy de category_code_sequences logo
+-- abaixo, que ja nasce com o filtro de tenant embutido (nao precisa de
+-- patch depois) -- ver ESCOPO_PROJETO.md §6 para o historico completo
+-- da renumeracao.
 -- Projeto: Criatorio Capua
 -- =====================================================
 
@@ -74,9 +81,15 @@ create table if not exists public.category_code_sequences (
 
 alter table public.category_code_sequences enable row level security;
 
+-- Filtro de tenant ja nasce embutido aqui (isolamento total por tenant,
+-- migration 013 / decisao #21) -- diferente de category_attributes,
+-- products etc., que precisaram de migration de correcao a parte por
+-- ja estarem aplicadas quando o gap foi identificado.
 drop policy if exists "category_code_sequences_staff_all" on public.category_code_sequences;
 create policy "category_code_sequences_staff_all" on public.category_code_sequences
-  for all to authenticated using (public.is_staff()) with check (public.is_staff());
+  for all to authenticated
+  using (public.is_staff() and tenant_id = public.current_tenant_id())
+  with check (public.is_staff() and tenant_id = public.current_tenant_id());
 
 -- ---------- 4. RPC: reserva o proximo codigo (modo automatico) ----------
 -- Atomica (insert...on conflict e atomico por linha).
