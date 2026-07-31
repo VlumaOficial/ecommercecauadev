@@ -1,6 +1,24 @@
 -- ============================================================
 -- TESTE DE ISOLAMENTO POR TENANT — pós migration 013 aplicada
 --
+-- v6 (31/07/2026): CAUSA RAIZ do profile nunca "pegar" — a Parte 1
+-- não tinha `commit;` explícito. O SQL Editor manda o script colado
+-- inteiro como UMA mensagem só, e o Postgres trata isso como UMA
+-- transação implícita única (a menos que o próprio script marque os
+-- limites com BEGIN/COMMIT/ROLLBACK). Sem um `commit;` fechando a
+-- Parte 1, o `rollback;` do FINAL da Parte 2 desfazia TUDO desde o
+-- início do script — inclusive a criação do tenant/profile da Parte 1
+-- — mesmo a Parte 1 "parecendo" persistente. O usuário de teste
+-- (8c0c4252-a38e-406f-94f7-a6f2aa3b7dcb) continuava só como customer
+-- em capua (criado pelo handle_new_user, que não sabe nada deste
+-- teste) porque o profile que a Parte 1 criava era sempre desfeito
+-- minutos depois pelo rollback da mesma execução. Corrigido: Parte 1
+-- agora tem `begin;`/`commit;` explícitos, próprios, fechados ANTES
+-- da Parte 2 abrir a transação dela. Também move o `customer` deste
+-- usuário em capua (se existir) pro tenant de teste — evita a mesma
+-- pessoa aparecer como cliente de um tenant e staff de outro ao
+-- mesmo tempo, sem afetar o teste de isolamento de staff em si.
+--
 -- v5 (31/07/2026): ABANDONA tabela temporária por completo na Parte 2
 -- (terceira falha distinta com temp table nesse fluxo de
 -- impersonação: primeiro "permission denied" de leitura, depois de
@@ -62,8 +80,12 @@
 -- ============================================================
 -- PARTE 0 — DIAGNÓSTICO (somente leitura, roda a qualquer momento)
 -- Mostra onde o profile desse UUID está HOJE, antes de qualquer
--- mudança. Se o trigger handle_new_user já rodou no cadastro deste
--- usuário, ele deve aparecer aqui com tenant_slug = 'capua'.
+-- mudança. Cenário já confirmado neste projeto: a primeira query
+-- (profiles) não retorna nenhuma linha, e a segunda (customers)
+-- retorna 1 linha em capua — o trigger handle_new_user provisionou
+-- este usuário como CLIENTE, não como staff (não veio com
+-- role='admin'/'operador' no metadata do signup). É exatamente esse
+-- cenário que a Parte 1 trata: cria o profile de staff do zero.
 -- ============================================================
 
 select
@@ -94,12 +116,19 @@ where c.auth_user_id = '8c0c4252-a38e-406f-94f7-a6f2aa3b7dcb';
 
 
 -- ============================================================
--- PARTE 1 — SETUP (efeito real e persistente, committed de verdade)
--- Cria o tenant sintético (idempotente) + move (ou cria, se o
--- trigger não criou nada) o profile do usuário real pro tenant de
--- teste, role='admin' + 1 categoria e 1 cidade vinculadas só a ele.
--- NENHUM ALTER TABLE, NENHUMA FK tocada em momento algum.
+-- PARTE 1 — SETUP (transação própria, com COMMIT explícito)
+-- Cria o tenant sintético (idempotente) + cria (ou move, se já
+-- existir de uma tentativa anterior) o profile de STAFF do usuário
+-- real no tenant de teste, role='admin', ativo=true + move o customer
+-- deste mesmo usuário em capua (se existir) pro tenant de teste,
+-- só por limpeza — não interfere no teste de isolamento de staff +
+-- 1 categoria e 1 cidade vinculadas ao tenant de teste.
+-- NENHUM ALTER TABLE, NENHUMA FK tocada em momento algum. `begin;` /
+-- `commit;` explícitos: sem isso, o `rollback;` da Parte 2 desfaz
+-- TUDO (ver nota v6 no topo do arquivo).
 -- ============================================================
+
+begin;
 
 do $$
 declare
@@ -109,6 +138,7 @@ declare
   v_profile_capua   uuid;
   v_email           text;
   v_existe_profile  boolean;
+  v_existe_customer boolean;
 begin
   -- ---------- tenant sintético ----------
   insert into public.tenants (slug, nome, ativo)
@@ -150,7 +180,22 @@ begin
     end if;
     insert into public.profiles (id, tenant_id, nome, email, role, ativo)
     values (v_uuid_teste, v_tenant_teste, 'TESTE - Staff Canário', v_email, 'admin', true);
-    raise notice 'Profile % CRIADO no tenant de teste (o trigger não tinha criado nenhum profile pra ele).', v_uuid_teste;
+    raise notice 'Profile % CRIADO no tenant de teste (o trigger handle_new_user tinha criado só um customer pra ele em capua, nunca um profile).', v_uuid_teste;
+  end if;
+
+  -- ---------- move o customer deste usuário (se existir) pro tenant de teste ----------
+  -- Só limpeza/consistência: o trigger handle_new_user provisionou
+  -- este UUID como customer em capua (hardcoda esse tenant no
+  -- signup). Isso não afeta o teste de isolamento de staff abaixo,
+  -- mas deixar a mesma pessoa como cliente de um tenant e staff de
+  -- outro ao mesmo tempo é confuso de depurar depois.
+  select exists(select 1 from public.customers where auth_user_id = v_uuid_teste) into v_existe_customer;
+
+  if v_existe_customer then
+    update public.customers
+    set tenant_id = v_tenant_teste
+    where auth_user_id = v_uuid_teste;
+    raise notice 'Customer de % MOVIDO para o tenant de teste também (provisionado em capua pelo handle_new_user).', v_uuid_teste;
   end if;
 
   -- ---------- dado de domínio do tenant de teste ----------
@@ -172,6 +217,8 @@ begin
   raise notice 'Setup OK — tenant_teste=%, tenant_capua=%, profile_teste=%, profile_capua=%',
     v_tenant_teste, v_tenant_capua, v_uuid_teste, v_profile_capua;
 end $$;
+
+commit;
 
 
 -- ============================================================
@@ -326,15 +373,18 @@ rollback;
 -- PARTE 3 — SITUAÇÃO FINAL (sem limpeza automática)
 --
 -- Decisão já tomada: manter o canário permanente. Como NENHUMA FK
--- foi tocada em nenhum momento (diferente da v1 deste script), NÃO
--- HÁ NADA A RESTAURAR — o banco já fica no estado final assim que a
--- Parte 1 termina de rodar. O que ficou no banco, pra sempre (até
--- decisão em contrário):
+-- foi tocada em nenhum momento, e a Parte 1 agora tem `commit;`
+-- explícito (v6), NÃO HÁ NADA A RESTAURAR — o banco já fica no
+-- estado final assim que a Parte 1 termina de rodar. O que ficou no
+-- banco, pra sempre (até decisão em contrário):
 --   - tenant '_teste_isolamento' (ativo=false)
---   - profile de 8c0c4252-a38e-406f-94f7-a6f2aa3b7dcb, agora
---     pertencendo a esse tenant, role='admin' — este usuário PODE
---     logar de verdade na UI (é um Auth user real) e vai cair no
---     contexto do tenant de teste, nunca no do Cauã, a partir de agora
+--   - profile de 8c0c4252-a38e-406f-94f7-a6f2aa3b7dcb, agora no
+--     tenant de teste, role='admin' — este usuário PODE logar de
+--     verdade na UI (é um Auth user real) e vai cair no contexto do
+--     tenant de teste, nunca no do Cauã, a partir de agora
+--   - customer de 8c0c4252-a38e-406f-94f7-a6f2aa3b7dcb (o que o
+--     handle_new_user tinha criado em capua), também movido pro
+--     tenant de teste, se existia
 --   - 1 categoria e 1 cidade de teste vinculadas a esse tenant
 --
 -- Bônus sobre a v1: como agora é um usuário real, esse canário
@@ -352,7 +402,9 @@ rollback;
 -- begin
 --   select id into v_tenant_capua from public.tenants where slug = 'capua';
 --   update public.profiles set tenant_id = v_tenant_capua where id = v_uuid_teste;
+--   update public.customers set tenant_id = v_tenant_capua where auth_user_id = v_uuid_teste;
 --   delete from public.categories where tenant_id = (select id from public.tenants where slug = '_teste_isolamento');
 --   delete from public.delivery_cities where tenant_id = (select id from public.tenants where slug = '_teste_isolamento');
 --   delete from public.tenants where slug = '_teste_isolamento';
 -- end $$;
+-- commit;
