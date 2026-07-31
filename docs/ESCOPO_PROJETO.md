@@ -303,6 +303,8 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 
 ### Estado das migrations
 
+> **Ver `docs/MIGRATIONS.md`** para o mapa completo migration a migration (001–016), incluindo a explicação do número `014` que não existe (renumeração da feature Código do Produto — nenhum conteúdo perdido, só o arquivo pulou de número).
+
 | # | Arquivo | Aplicada? |
 |---|---|---|
 | 001–006 | núcleo, catálogo v1, RLS, cidades, provisionamento de usuário | ✅ |

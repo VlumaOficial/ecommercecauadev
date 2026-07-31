@@ -1,0 +1,52 @@
+# Mapa de Migrations — E-commerce Criatório Capuã / VLUMA
+
+**Última atualização:** 31/07/2026
+**Propósito:** referência rápida de todas as migrations em `supabase/migrations/`, o que cada uma faz e se já foi aplicada no banco. Detalhe completo de cada decisão de produto por trás de uma migration está em `docs/ESCOPO_PROJETO.md`; este documento é só o mapa técnico objetivo.
+
+> Migrations são aplicadas manualmente pelo usuário via SQL Editor do Supabase (nunca pelo assistente) — ver `ESCOPO_PROJETO.md` §6.
+
+---
+
+## O "buraco" do número 014 — explicado
+
+**Não é um erro nem um arquivo perdido.** Não existe `014_*.sql` em `supabase/migrations/` de propósito. Histórico:
+
+1. Em 30/07/2026, `013_products_tenant_default.sql` e `014_products_codigo.sql` foram criadas (feature Código do Produto).
+2. Antes de aplicar qualquer uma das duas, decidimos tratar primeiro o isolamento total por tenant (decisão #21, `ESCOPO_PROJETO.md`) — um gap de segurança mais urgente e estruturalmente anterior.
+3. Como o isolamento precisava logicamente rodar **antes** das migrations de Produtos, ele assumiu o número `013` (`013_rls_tenant_isolation.sql`), e as duas migrations de Produtos foram **renumeradas** via `git mv`: `013_products_tenant_default.sql` → `015_products_tenant_default.sql`, `014_products_codigo.sql` → `016_products_codigo.sql`.
+4. Resultado: o número `014` nunca chegou a existir como arquivo — foi "pulado" na renumeração, não removido. Nenhum conteúdo foi perdido; a rastreabilidade completa dessa renumeração (o quê, por quê) já está registrada em `ESCOPO_PROJETO.md` §0 (regra de rastreabilidade) e §6 (nota de rastreabilidade da tabela de migrations).
+
+**Se você (ou uma sessão futura) vir a numeração pular de `013` para `015` e estranhar: é isso — não procure um `014_*.sql` desaparecido, ele nunca existiu.**
+
+---
+
+## Tabela completa (001–016)
+
+| # | Arquivo | O que faz | Status |
+|---|---|---|---|
+| 001 | `001_keepalive.sql` | Tabela singleton `keepalive_ping`, pingada por GitHub Action a cada 8h pra manter o projeto Supabase free tier ativo. | ✅ Aplicada |
+| 002 | `002_core.sql` | Núcleo: `tenants`, `profiles`, `customers`, `store_settings`. Funções `set_updated_at()`, `current_tenant_id()`, `is_admin()`, `is_staff()`. | ✅ Aplicada |
+| 003 | `003_catalog.sql` | Catálogo v1: `categories`/`subcategories` (2 níveis fixos), `subcategory_fields`, `products` (com preço/estoque direto na tabela), `product_field_values`, `product_images`, `product_price_history`. **Substituída pela v2 na `009`.** | ✅ Aplicada (estrutura depois alterada pela `009`) |
+| 004 | `004_rls.sql` | Habilita RLS e cria as policies originais de todas as tabelas de `002`/`003` (leitura pública + escrita staff, sem filtro de tenant — gap corrigido só na `013`). | ✅ Aplicada |
+| 005 | `005_delivery_cities.sql` | Tabela `delivery_cities` (cidades de entrega) + RLS própria. Primeiro CRUD administrativo do painel. | ✅ Aplicada |
+| 006 | `006_handle_new_user.sql` | Trigger `handle_new_user()` em `auth.users`: direciona signup pra `profiles` (staff) ou `customers` (cliente) conforme metadata. Hardcoda tenant `'capua'` (ver nota em `ESCOPO_PROJETO.md` §2 — fora de escopo do isolamento, tema da Fase SaaS). | ✅ Aplicada |
+| 007 | `007_store_settings_fechamento.sql` | Dois níveis independentes de fechamento da loja: `loja_aberta` e `pedidos_abertos` em `store_settings`, com mensagens amigáveis. | ✅ Aplicada |
+| 008 | `008_delivery_cities_tenant_default.sql` | `delivery_cities.tenant_id` ganha `DEFAULT current_tenant_id()`. | ✅ Aplicada |
+| 009 | `009_catalog_v2.sql` | Catálogo v2: `categories` vira árvore (`parent_id`), `category_attributes` substitui `subcategory_fields`, `product_variants` (SKU) nasce e assume preço/estoque/promoção, `products` perde essas colunas, view `products_com_status` (status derivado), `product_field_values`→`product_attribute_values`. Dropa `subcategories`/`subcategory_fields`. | ✅ Aplicada |
+| 010 | `010_categories_tenant_default.sql` | `categories.tenant_id` ganha `DEFAULT current_tenant_id()`. | ✅ Aplicada |
+| 011 | `011_categories_inativado_em_cascata.sql` | `categories.inativado_em_cascata` + RPC `set_category_ativo_cascade` (cascata atômica de inativação/reativação em subárvore). **RPC corrigida na `013`** (gap de tenant). | ✅ Aplicada (RPC revisada pela `013`, ainda não aplicada) |
+| 012 | `012_category_attributes_tenant_default.sql` | `category_attributes.tenant_id` ganha `DEFAULT current_tenant_id()`. | ✅ Aplicada |
+| 013 | `013_rls_tenant_isolation.sql` | **Isolamento total por tenant** (decisão #21): todas as policies de leitura privilegiada/escrita staff (tenants, profiles, customers, store_settings, categories, category_attributes, products, product_variants, product_attribute_values, product_images, product_price_history, delivery_cities) ganham `and tenant_id = current_tenant_id()`. Corrige a RPC `set_category_ativo_cascade` (mesmo gap, já em produção). | ⏳ **Não aplicada** — criada e commitada, aguardando aplicação manual |
+| **014** | **— não existe —** | **"Buraco" intencional da renumeração — ver seção acima.** Nenhum conteúdo perdido. | — |
+| 015 | `015_products_tenant_default.sql` | `products.tenant_id` e `product_variants.tenant_id` ganham `DEFAULT current_tenant_id()` (mesmo gap de `008`/`010`/`012`, nunca corrigido desde a `003`/`009`). Renumerada de `013` (nome original, 30/07/2026). | ⏳ **Não aplicada** — em espera da `013` |
+| 016 | `016_products_codigo.sql` | Feature **Código do Produto** (decisão #18): `categories.prefixo_codigo`, `products.codigo`/`codigo_visivel`, tabela `category_code_sequences`, RPCs `gerar_codigo_produto` e `criar_produto_com_variacoes` (criação atômica produto+variações). Renumerada de `014` (nome original, 30/07/2026); policy de `category_code_sequences` já nasce com filtro de tenant embutido. | ⏳ **Não aplicada** — em espera da `013`/`015` |
+
+---
+
+## Ordem de aplicação recomendada (das pendentes)
+
+`013` → `015` → `016`, nessa ordem — `015`/`016` dependem do isolamento (`013`) já estar em vigor pra fazerem sentido dentro da estratégia adotada (decisão #21).
+
+---
+
+*Ver `docs/ESCOPO_PROJETO.md` §6 "Ambientes e referências" para o contexto completo de como as migrations são versionadas e aplicadas, e §0 para a regra de rastreabilidade de migrations ajustadas/descartadas.*
