@@ -125,6 +125,32 @@ Nenhum desses status é um campo que alguém marca manualmente — são sempre c
 - **Em promoção**: existe pelo menos uma variação ativa com preço promocional menor que o preço normal.
 - **Novidade**: produto foi criado recentemente (janela de tempo a definir na UI).
 
+### 4.6 Código do Produto (identificação/referência)
+
+**📐 Decidida — não implementada.**
+
+Além do SKU (código da variação, usado para controle de estoque — ver §4.4), cada produto tem um **Código** próprio: serve para identificação, referência e busca — inclusive pensado para lojistas que estão migrando de outro sistema e já têm uma codificação própria de produtos.
+
+Diferença entre Código e SKU:
+
+| | Código | SKU |
+|---|---|---|
+| Nível | Produto | Variação |
+| Para quê | Identificação, referência, busca | Controle de estoque |
+| Visibilidade | Configurável (pode aparecer na vitrine) | Interno, discreto |
+| Geração | Automático **ou** manual (lojista escolhe) | Automático, mas editável |
+| Muda? | Nunca, depois de criado | Pode ser ajustado |
+
+Regras do Código:
+
+- **Prefixo vem da categoria do produto**, nunca da loja como um todo. Cada categoria tem seu próprio prefixo (cadastrado na tela de Categoria).
+- Se o lojista não digitar um prefixo para a categoria, o sistema **deriva automaticamente do nome** (ex.: "Ciclídeos" → `CIC`) e mostra o resultado já preenchido, para o lojista confirmar ou ajustar.
+- O prefixo é único dentro da loja — se a derivação automática colidir com um prefixo já existente, o sistema ajusta ou pede confirmação antes de salvar.
+- Formato do código: `PREFIXO-NNNN` (número sequencial com zeros à esquerda). A sequência é **por categoria** — cada categoria começa contando do zero (ex.: `CIC-0001`, `CIC-0002`, e a próxima categoria começa em `RAC-0001`).
+- O código é gerado no momento da criação do produto e **nunca muda depois** — mesmo que o produto seja movido para outra categoria no futuro, o código original é mantido (garante que pedidos e histórico do cliente continuem apontando para a referência certa).
+- Ao cadastrar o produto, o lojista escolhe entre **código automático** (segue a regra acima) ou **código manual** (o sistema sugere o automático, mas o campo pode ser editado livremente — útil para quem está migrando de outro sistema e quer manter os códigos antigos).
+- Cada produto tem um interruptor **"código visível na vitrine"**: se ligado, o código aparece na página do produto e o cliente consegue buscar por ele na loja; se desligado, o código existe só para uso interno do lojista.
+
 ---
 
 ## 5. Entrega

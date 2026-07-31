@@ -121,6 +121,28 @@ Funções: `set_updated_at()` (trigger genérico), `current_tenant_id()`, `is_ad
 
 `subcategories` e `subcategory_fields` **foram removidas** (dropadas na `009`, sem necessidade de migrar dados — ambiente de dev sem catálogo real).
 
+### Codificação de produtos — Código vs SKU (planejada — 📐 decidida, não implementada)
+
+Decisão de produto fechada em 30/07/2026 (ver decisão #18 em §5), registrada antes de iniciar o CRUD de Produtos. Formaliza dois identificadores distintos:
+
+- **Código** — por *produto*: identificação/referência, pensado inclusive para lojistas migrando de outro sistema que já têm códigos próprios. Prefixo vem sempre da **categoria** do produto, nunca de um prefixo genérico de loja. Visibilidade na vitrine é configurável (toggle) — quando visível, aparece na ficha do produto e é buscável pelo cliente.
+- **SKU** (`product_variants.sku`, já modelado na `009`) — por *variação*: controle de estoque, uso interno/discreto, sem seletor automático/manual.
+
+Regras do Código:
+
+1. Prefixo definido no cadastro da categoria (`categories.prefixo_codigo`, novo campo, opcional). Vazio → derivado automaticamente do nome (ex. "Ciclídeos" → `CIC`), mostrado pré-preenchido no formulário da categoria para o lojista ajustar se quiser (transparência, não é caixa-preta).
+2. Prefixo único por tenant; colisão na derivação automática exige ajuste do sistema ou confirmação do lojista.
+3. Formato `PREFIXO-NNNN` — sequência numérica com zeros à esquerda, **contada por categoria** (cada categoria começa do zero: `CIC-0001`, `CIC-0002`; `RAC-0001`...).
+4. Gerado na criação do produto; **imutável depois** — mesmo que o produto mude de categoria, o código original permanece (preserva referência em pedidos já feitos e no histórico do cliente).
+5. Lojista escolhe automático (regra acima) ou manual (campo editável, pré-preenchido com a sugestão automática) no cadastro do produto.
+
+Modelagem afetada (nenhuma migration criada ainda):
+
+- `categories.prefixo_codigo` (opcional; derivado do nome se vazio).
+- `products.codigo` (imutável) + `products.codigo_visivel` (boolean, toggle de vitrine).
+- Mecanismo de sequência por categoria (contador garantindo unicidade do código).
+- SKU em `product_variants` permanece automático-editável, sem seletor (distinção reforçada acima).
+
 ### Entrega (`005_delivery_cities.sql`)
 
 | Tabela | Representa |
@@ -165,6 +187,7 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 ### Planejadas (não iniciadas)
 
 - **Produtos com variações**: CRUD de `products` + `product_variants` + `product_images` + valores de atributos, reaproveitando o padrão de CRUD e o combobox de categoria.
+- **Codificação de produtos (Código vs SKU)**: ver decisão #18 e §3 "Codificação de produtos" — prefixo por categoria, sequência por categoria, código imutável, visibilidade configurável na vitrine. 📐 Decidido, não implementado; a implementar junto com o CRUD de Produtos.
 - **Configurações da loja**: tela para `store_settings` (dois níveis de fechamento, valor mínimo de pedido, autocadastro, regra de baixa de estoque).
 - **Vitrine** (`(loja)`, hoje vazio): catálogo público, ficha de produto, Open Graph dinâmico por produto.
 - **Carrinho e checkout**: valor mínimo, quantidade mínima por variação, reserva/baixa de estoque atômica no Postgres.
@@ -197,6 +220,7 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | 15 | **Auditoria** (`audit_log`): toda escrita do painel passa a chamar `registrarAuditoria()` na aplicação (não trigger de banco), pra capturar contexto de negócio (ex.: qual usuário, se foi cascata). Uso: rastreabilidade do Super Admin VLUMA, não do admin do tenant. Candidata a feature premium | 📐 Decidido; não implementado — ver §2, "Auditoria" |
 | 16 | **Vocabulário de interface**: telas voltadas ao lojista usam "Características" (nunca "atributos") e "Variações" (nunca "SKU"/"variants") — termos técnicos ficam só no código/banco. Decisão de UX baseada em pesquisa de mercado (Nuvemshop/Shopify) | ✅ Já seguido no CRUD de Categorias (rótulo "Características"); aplicar também ao CRUD de Produtos — ver `REGRAS_DE_NEGOCIO.md` §4.1 |
 | 17 | **Documentos Legais e Aceite (LGPD)**: aceite obrigatório (checkbox + links) de Política de Privacidade e Termos de Uso no cadastro do cliente; aceite registrado com quem/quando/versão/IP para comprovação; documentos **versionados por tenant** (nova versão pode exigir re-aceite); páginas públicas linkadas no rodapé; texto-base gerado por IA **com ressalva explícita de revisão jurídica obrigatória antes de produção**. Sequenciado para depois da vitrine (F4) | 📐 Decidido; não implementado — ver `REGRAS_DE_NEGOCIO.md` §7 |
+| 18 | **Código do Produto**: identificação/referência do produto, distinta do SKU (que é da variação, para estoque). Prefixo vem da **categoria** (`categories.prefixo_codigo`, derivado do nome se vazio, ex. "Ciclídeos" → `CIC`, único por tenant). Formato `PREFIXO-NNNN`, sequência própria por categoria (cada uma começa do zero). Gerado na criação do produto, **imutável** mesmo que o produto mude de categoria. Lojista escolhe automático ou manual (editável — migração de outro sistema). Toggle `codigo_visivel` controla se aparece e é buscável na vitrine | 📐 Decidido; não implementado — ver §3 "Codificação de produtos" e `REGRAS_DE_NEGOCIO.md` §4.6 |
 
 ---
 
