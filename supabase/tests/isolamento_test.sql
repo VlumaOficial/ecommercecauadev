@@ -1,6 +1,21 @@
 -- ============================================================
 -- TESTE DE ISOLAMENTO POR TENANT — pós migration 013 aplicada
 --
+-- v4 (31/07/2026): o SQL Editor do Supabase só exibe o resultado do
+-- ÚLTIMO SELECT executado — com a Parte 2 rodando vários SELECTs em
+-- sequência (leitura TESTE, leitura CAUÃ, updates cross-tenant), só
+-- o último aparecia, escondendo as verificações anteriores. Agora a
+-- Parte 2 GRAVA cada verificação (leitura e escrita, nos dois
+-- sentidos) numa tabela temporária de resultados — via
+-- `INSERT INTO ... SELECT` durante a impersonação — e só no final,
+-- já de volta como `postgres`, roda UM SELECT único que devolve tudo
+-- consolidado, com uma coluna `status` ('OK'/'VAZAMENTO'). Como essa
+-- tabela é gravada TAMBÉM pelo role `authenticated` (durante a
+-- impersonação), ela precisa de `GRANT INSERT/SELECT ... TO
+-- authenticated` logo após ser criada — do contrário, mesmo erro de
+-- permissão que a v3 corrigiu pra passagem de IDs voltaria a
+-- acontecer aqui, agora pra gravação de resultado em vez de leitura.
+--
 -- v3 (31/07/2026): elimina a tabela temporária usada pra passar os
 -- UUIDs entre a Parte 1 e a Parte 2. Motivo: a temp table é criada
 -- pelo role de conexão do SQL Editor (postgres/admin), e a Parte 2
@@ -151,16 +166,33 @@ end $$;
 
 
 -- ============================================================
--- PARTE 2 — IMPERSONAÇÃO E VERIFICAÇÃO
+-- PARTE 2 — IMPERSONAÇÃO E VERIFICAÇÃO (resultado único consolidado)
 --
 -- Tudo dentro de UMA transação que sempre termina em ROLLBACK —
 -- mesmo que algum UPDATE cross-tenant "funcionasse" (não deveria),
--- fica desfeito automaticamente. Os SELECTs de contagem continuam
--- aparecendo normalmente nos resultados do SQL Editor antes do
--- rollback acontecer. Nenhuma escrita desta parte fica no banco.
+-- fica desfeito automaticamente. Nenhuma escrita desta parte fica no
+-- banco. A tabela `_teste_isolamento_resultados` também é temporária
+-- (não sobrevive ao fim da sessão) — só existe pra acumular as
+-- verificações e exibi-las juntas no SELECT final, já que o SQL
+-- Editor só mostra o resultado do último SELECT executado.
 -- ============================================================
 
 begin;
+
+drop table if exists _teste_isolamento_resultados;
+create temporary table _teste_isolamento_resultados (
+  etapa integer,
+  verificacao text,
+  sentido text,
+  tabela text,
+  linhas_proprio_tenant integer,
+  linhas_outro_tenant integer
+);
+
+-- Grava também enquanto impersonado como `authenticated` (não só
+-- como postgres) — sem isso, mesmo erro de permissão que a v3
+-- corrigiu pra leitura de IDs aconteceria aqui pra gravação.
+grant select, insert on _teste_isolamento_resultados to authenticated;
 
 -- ---------- 2.1: impersonando o usuário REAL movido pro tenant de teste ----------
 select set_config(
@@ -173,45 +205,43 @@ select set_config(
 );
 set local role authenticated;
 
--- Verificação A — leitura: "linhas_outro_tenant" tem que ser 0 em
--- TODA linha, exceto store_settings (leitura pública por design —
--- ver nota abaixo da tabela de resultados esperados).
+-- Verificação de leitura — "linhas_outro_tenant" tem que ser 0 em
+-- toda linha, exceto store_settings (leitura pública por design).
 with ids as (
   select
     current_setting('myapp.tenant_teste')::uuid as teste,
     current_setting('myapp.tenant_capua')::uuid as capua
 )
-select 'categories' as tabela,
-  count(*) filter (where t.tenant_id = ids.teste) as linhas_proprio_tenant,
-  count(*) filter (where t.tenant_id = ids.capua) as linhas_outro_tenant
+insert into _teste_isolamento_resultados (etapa, verificacao, sentido, tabela, linhas_proprio_tenant, linhas_outro_tenant)
+select 1, 'leitura', 'TESTE (não deve ver Cauã)', 'categories',
+  count(*) filter (where t.tenant_id = ids.teste), count(*) filter (where t.tenant_id = ids.capua)
 from public.categories t, ids
 union all
-select 'category_attributes',
+select 1, 'leitura', 'TESTE (não deve ver Cauã)', 'category_attributes',
   count(*) filter (where t.tenant_id = ids.teste), count(*) filter (where t.tenant_id = ids.capua)
 from public.category_attributes t, ids
 union all
-select 'products',
+select 1, 'leitura', 'TESTE (não deve ver Cauã)', 'products',
   count(*) filter (where t.tenant_id = ids.teste), count(*) filter (where t.tenant_id = ids.capua)
 from public.products t, ids
 union all
-select 'product_variants',
+select 1, 'leitura', 'TESTE (não deve ver Cauã)', 'product_variants',
   count(*) filter (where t.tenant_id = ids.teste), count(*) filter (where t.tenant_id = ids.capua)
 from public.product_variants t, ids
 union all
-select 'delivery_cities',
+select 1, 'leitura', 'TESTE (não deve ver Cauã)', 'delivery_cities',
   count(*) filter (where t.tenant_id = ids.teste), count(*) filter (where t.tenant_id = ids.capua)
 from public.delivery_cities t, ids
 union all
-select 'customers',
+select 1, 'leitura', 'TESTE (não deve ver Cauã)', 'customers',
   count(*) filter (where t.tenant_id = ids.teste), count(*) filter (where t.tenant_id = ids.capua)
 from public.customers t, ids
 union all
-select 'store_settings (público por design — ver nota)',
+select 1, 'leitura', 'TESTE (não deve ver Cauã)', 'store_settings',
   count(*) filter (where t.tenant_id = ids.teste), count(*) filter (where t.tenant_id = ids.capua)
-from public.store_settings t, ids
-order by 1;
+from public.store_settings t, ids;
 
--- Verificação B — escrita: tentativa de UPDATE em categoria do Cauã
+-- Verificação de escrita — tentativa de UPDATE em dado do Cauã
 -- impersonando o usuário de teste. Esperado: 0 linhas afetadas.
 with tentativa as (
   update public.categories
@@ -219,16 +249,19 @@ with tentativa as (
   where tenant_id = current_setting('myapp.tenant_capua')::uuid
   returning 1
 )
-select 'UPDATE em categories do Cauã, impersonando TESTE' as tentativa, count(*) as linhas_afetadas from tentativa;
+insert into _teste_isolamento_resultados (etapa, verificacao, sentido, tabela, linhas_proprio_tenant, linhas_outro_tenant)
+select 2, 'escrita (UPDATE cross-tenant)', 'TESTE tenta alterar dado do Cauã', 'categories', null, count(*)
+from tentativa;
 
--- mesma verificação em delivery_cities, pra não confiar só numa tabela
 with tentativa as (
   update public.delivery_cities
   set observacoes = 'TENTATIVA DE ESCRITA CROSS-TENANT — não deveria afetar nada'
   where tenant_id = current_setting('myapp.tenant_capua')::uuid
   returning 1
 )
-select 'UPDATE em delivery_cities do Cauã, impersonando TESTE' as tentativa, count(*) as linhas_afetadas from tentativa;
+insert into _teste_isolamento_resultados (etapa, verificacao, sentido, tabela, linhas_proprio_tenant, linhas_outro_tenant)
+select 3, 'escrita (UPDATE cross-tenant)', 'TESTE tenta alterar dado do Cauã', 'delivery_cities', null, count(*)
+from tentativa;
 
 reset role;
 
@@ -243,54 +276,71 @@ select set_config(
 );
 set local role authenticated;
 
--- Verificação C — leitura inversa: "linhas_outro_tenant" (o de teste)
--- tem que ser 0 em toda linha, exceto store_settings.
+-- Verificação de leitura inversa — "linhas_outro_tenant" (o de
+-- teste) tem que ser 0 em toda linha, exceto store_settings.
 with ids as (
   select
     current_setting('myapp.tenant_capua')::uuid as capua,
     current_setting('myapp.tenant_teste')::uuid as teste
 )
-select 'categories' as tabela,
-  count(*) filter (where t.tenant_id = ids.capua) as linhas_proprio_tenant,
-  count(*) filter (where t.tenant_id = ids.teste) as linhas_outro_tenant
+insert into _teste_isolamento_resultados (etapa, verificacao, sentido, tabela, linhas_proprio_tenant, linhas_outro_tenant)
+select 4, 'leitura', 'CAUÃ (não deve ver TESTE)', 'categories',
+  count(*) filter (where t.tenant_id = ids.capua), count(*) filter (where t.tenant_id = ids.teste)
 from public.categories t, ids
 union all
-select 'category_attributes',
+select 4, 'leitura', 'CAUÃ (não deve ver TESTE)', 'category_attributes',
   count(*) filter (where t.tenant_id = ids.capua), count(*) filter (where t.tenant_id = ids.teste)
 from public.category_attributes t, ids
 union all
-select 'products',
+select 4, 'leitura', 'CAUÃ (não deve ver TESTE)', 'products',
   count(*) filter (where t.tenant_id = ids.capua), count(*) filter (where t.tenant_id = ids.teste)
 from public.products t, ids
 union all
-select 'product_variants',
+select 4, 'leitura', 'CAUÃ (não deve ver TESTE)', 'product_variants',
   count(*) filter (where t.tenant_id = ids.capua), count(*) filter (where t.tenant_id = ids.teste)
 from public.product_variants t, ids
 union all
-select 'delivery_cities',
+select 4, 'leitura', 'CAUÃ (não deve ver TESTE)', 'delivery_cities',
   count(*) filter (where t.tenant_id = ids.capua), count(*) filter (where t.tenant_id = ids.teste)
 from public.delivery_cities t, ids
 union all
-select 'customers',
+select 4, 'leitura', 'CAUÃ (não deve ver TESTE)', 'customers',
   count(*) filter (where t.tenant_id = ids.capua), count(*) filter (where t.tenant_id = ids.teste)
 from public.customers t, ids
 union all
-select 'store_settings (público por design — ver nota)',
+select 4, 'leitura', 'CAUÃ (não deve ver TESTE)', 'store_settings',
   count(*) filter (where t.tenant_id = ids.capua), count(*) filter (where t.tenant_id = ids.teste)
-from public.store_settings t, ids
-order by 1;
+from public.store_settings t, ids;
 
--- Verificação D — tentativa de UPDATE em categoria do tenant de teste
--- impersonando o staff do Cauã. Esperado: 0 linhas afetadas.
+-- Verificação de escrita inversa — tentativa de UPDATE em categoria
+-- do tenant de teste impersonando o staff do Cauã. Esperado: 0 linhas.
 with tentativa as (
   update public.categories
   set descricao = 'TENTATIVA DE ESCRITA CROSS-TENANT — não deveria afetar nada'
   where tenant_id = current_setting('myapp.tenant_teste')::uuid
   returning 1
 )
-select 'UPDATE em categories do TESTE, impersonando CAUÃ' as tentativa, count(*) as linhas_afetadas from tentativa;
+insert into _teste_isolamento_resultados (etapa, verificacao, sentido, tabela, linhas_proprio_tenant, linhas_outro_tenant)
+select 5, 'escrita (UPDATE cross-tenant)', 'CAUÃ tenta alterar dado do TESTE', 'categories', null, count(*)
+from tentativa;
 
 reset role;
+
+-- ---------- RESULTADO ÚNICO CONSOLIDADO (última query — é o que o SQL Editor exibe) ----------
+select
+  etapa,
+  verificacao,
+  sentido,
+  tabela,
+  linhas_proprio_tenant,
+  linhas_outro_tenant,
+  case
+    when tabela = 'store_settings' then 'OK (público por design, não restrito por tenant — ver nota)'
+    when linhas_outro_tenant = 0 then 'OK'
+    else 'VAZAMENTO'
+  end as status
+from _teste_isolamento_resultados
+order by etapa, tabela;
 
 rollback;
 
