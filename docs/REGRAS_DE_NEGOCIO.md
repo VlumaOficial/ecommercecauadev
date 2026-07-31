@@ -216,6 +216,16 @@ O detalhe técnico completo (código do erro do Postgres, nome da constraint, st
 
 ---
 
+## 10. Isolamento entre lojas (multi-tenant)
+
+**✅ Em vigor e testado a partir de 31/07/2026.**
+
+Cada loja que usa a plataforma VLUMA só acessa os próprios dados — categorias, produtos, cidades de entrega, clientes, configurações. **Nunca enxerga nem consegue alterar dados de outra loja**, mesmo que as duas rodem sobre a mesma infraestrutura compartilhada. Isso vale tanto para a equipe (staff) quanto para o cliente final logado de cada loja.
+
+Essa garantia não é só uma intenção de design — foi **testada de verdade**: criou-se uma segunda loja fictícia só para teste, e confirmou-se que uma pessoa da equipe dessa loja fictícia não via nada da loja do Cauã (nem o inverso). Numa primeira rodada de teste, dois pontos falhos foram encontrados e corrigidos antes de a garantia ser considerada válida — detalhe técnico completo em `ESCOPO_PROJETO.md` §2 e §5 (decisão #21).
+
+---
+
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
 
 *Entregável planejado: ao final do desenvolvimento, este documento é a base para gerar o **manual formal do usuário/lojista** — por isso a linguagem aqui evita jargão técnico desde o início.*
