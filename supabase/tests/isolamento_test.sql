@@ -1,20 +1,29 @@
 -- ============================================================
 -- TESTE DE ISOLAMENTO POR TENANT — pós migration 013 aplicada
 --
--- v4 (31/07/2026): o SQL Editor do Supabase só exibe o resultado do
--- ÚLTIMO SELECT executado — com a Parte 2 rodando vários SELECTs em
--- sequência (leitura TESTE, leitura CAUÃ, updates cross-tenant), só
--- o último aparecia, escondendo as verificações anteriores. Agora a
--- Parte 2 GRAVA cada verificação (leitura e escrita, nos dois
--- sentidos) numa tabela temporária de resultados — via
--- `INSERT INTO ... SELECT` durante a impersonação — e só no final,
--- já de volta como `postgres`, roda UM SELECT único que devolve tudo
--- consolidado, com uma coluna `status` ('OK'/'VAZAMENTO'). Como essa
--- tabela é gravada TAMBÉM pelo role `authenticated` (durante a
--- impersonação), ela precisa de `GRANT INSERT/SELECT ... TO
--- authenticated` logo após ser criada — do contrário, mesmo erro de
--- permissão que a v3 corrigiu pra passagem de IDs voltaria a
--- acontecer aqui, agora pra gravação de resultado em vez de leitura.
+-- v5 (31/07/2026): ABANDONA tabela temporária por completo na Parte 2
+-- (terceira falha distinta com temp table nesse fluxo de
+-- impersonação: primeiro "permission denied" de leitura, depois de
+-- escrita, agora "relation does not exist" — sinal de que depender
+-- de qualquer tabela temporária atravessando `set role`/impersonação
+-- no SQL Editor do Supabase não é confiável, seja qual for o motivo
+-- exato). A Parte 2 agora roda como blocos `DO $$ ... $$` que
+-- calculam cada verificação em variáveis locais (sem tocar em
+-- nenhuma tabela auxiliar) e emitem o resultado via `RAISE NOTICE` —
+-- essas mensagens aparecem TODAS juntas na aba "Messages"/log do SQL
+-- Editor, na ordem em que rodam, independente de qual foi o "último
+-- SELECT" (não existe mais SELECT solto pra essa parte) e
+-- independente do `ROLLBACK` no final (RAISE NOTICE é enviado ao
+-- cliente na hora, não faz parte dos dados que o rollback desfaz).
+-- Passagem de valores entre a Parte 1 e a Parte 2 continua via
+-- variável de sessão (`set_config`/`current_setting`, namespace
+-- `myapp.*` — isso nunca falhou nos testes anteriores, só a parte de
+-- tabela temporária). Trocar de role em plpgsql exige `EXECUTE 'set
+-- local role authenticated'` (comando SET não é uma instrução
+-- plpgsql direta, só via SQL dinâmico); contagem de linhas afetadas
+-- por UPDATE vem de `GET DIAGNOSTICS ... = ROW_COUNT` em vez de
+-- `RETURNING` (não precisamos mais de um `INSERT ... SELECT ...
+-- FROM (UPDATE ... RETURNING)` como antes).
 --
 -- v3 (31/07/2026): elimina a tabela temporária usada pra passar os
 -- UUIDs entre a Parte 1 e a Parte 2. Motivo: a temp table é criada
@@ -166,181 +175,149 @@ end $$;
 
 
 -- ============================================================
--- PARTE 2 — IMPERSONAÇÃO E VERIFICAÇÃO (resultado único consolidado)
+-- PARTE 2 — IMPERSONAÇÃO E VERIFICAÇÃO (via RAISE NOTICE, sem tabela)
 --
 -- Tudo dentro de UMA transação que sempre termina em ROLLBACK —
 -- mesmo que algum UPDATE cross-tenant "funcionasse" (não deveria),
--- fica desfeito automaticamente. Nenhuma escrita desta parte fica no
--- banco. A tabela `_teste_isolamento_resultados` também é temporária
--- (não sobrevive ao fim da sessão) — só existe pra acumular as
--- verificações e exibi-las juntas no SELECT final, já que o SQL
--- Editor só mostra o resultado do último SELECT executado.
+-- fica desfeito automaticamente. As mensagens RAISE NOTICE já foram
+-- enviadas ao cliente no momento em que rodam, então aparecem todas
+-- na aba "Messages"/log do SQL Editor independente do rollback.
+-- Nenhuma tabela (nem temporária) é criada nesta parte.
 -- ============================================================
 
 begin;
 
-drop table if exists _teste_isolamento_resultados;
-create temporary table _teste_isolamento_resultados (
-  etapa integer,
-  verificacao text,
-  sentido text,
-  tabela text,
-  linhas_proprio_tenant integer,
-  linhas_outro_tenant integer
-);
+do $$
+declare
+  v_tenant_teste  uuid := current_setting('myapp.tenant_teste')::uuid;
+  v_tenant_capua  uuid := current_setting('myapp.tenant_capua')::uuid;
+  v_profile_teste uuid := current_setting('myapp.profile_teste')::uuid;
+  v_profile_capua uuid := current_setting('myapp.profile_capua')::uuid;
+  v_proprio  integer;
+  v_outro    integer;
+  v_afetadas integer;
+begin
+  raise notice '======================================================';
+  raise notice '2.1 — IMPERSONANDO O USUÁRIO DE TESTE (movido pro tenant de teste)';
+  raise notice '======================================================';
 
--- Grava também enquanto impersonado como `authenticated` (não só
--- como postgres) — sem isso, mesmo erro de permissão que a v3
--- corrigiu pra leitura de IDs aconteceria aqui pra gravação.
-grant select, insert on _teste_isolamento_resultados to authenticated;
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', v_profile_teste::text, 'role', 'authenticated')::text,
+    true
+  );
+  execute 'set local role authenticated';
 
--- ---------- 2.1: impersonando o usuário REAL movido pro tenant de teste ----------
-select set_config(
-  'request.jwt.claims',
-  json_build_object(
-    'sub', current_setting('myapp.profile_teste'),
-    'role', 'authenticated'
-  )::text,
-  true
-);
-set local role authenticated;
+  select count(*) filter (where tenant_id = v_tenant_teste), count(*) filter (where tenant_id = v_tenant_capua)
+    into v_proprio, v_outro from public.categories;
+  raise notice '[LEITURA] categories: proprio=%, outro=%  ->  %',
+    v_proprio, v_outro, case when v_outro = 0 then 'OK' else 'VAZAMENTO' end;
 
--- Verificação de leitura — "linhas_outro_tenant" tem que ser 0 em
--- toda linha, exceto store_settings (leitura pública por design).
-with ids as (
-  select
-    current_setting('myapp.tenant_teste')::uuid as teste,
-    current_setting('myapp.tenant_capua')::uuid as capua
-)
-insert into _teste_isolamento_resultados (etapa, verificacao, sentido, tabela, linhas_proprio_tenant, linhas_outro_tenant)
-select 1, 'leitura', 'TESTE (não deve ver Cauã)', 'categories',
-  count(*) filter (where t.tenant_id = ids.teste), count(*) filter (where t.tenant_id = ids.capua)
-from public.categories t, ids
-union all
-select 1, 'leitura', 'TESTE (não deve ver Cauã)', 'category_attributes',
-  count(*) filter (where t.tenant_id = ids.teste), count(*) filter (where t.tenant_id = ids.capua)
-from public.category_attributes t, ids
-union all
-select 1, 'leitura', 'TESTE (não deve ver Cauã)', 'products',
-  count(*) filter (where t.tenant_id = ids.teste), count(*) filter (where t.tenant_id = ids.capua)
-from public.products t, ids
-union all
-select 1, 'leitura', 'TESTE (não deve ver Cauã)', 'product_variants',
-  count(*) filter (where t.tenant_id = ids.teste), count(*) filter (where t.tenant_id = ids.capua)
-from public.product_variants t, ids
-union all
-select 1, 'leitura', 'TESTE (não deve ver Cauã)', 'delivery_cities',
-  count(*) filter (where t.tenant_id = ids.teste), count(*) filter (where t.tenant_id = ids.capua)
-from public.delivery_cities t, ids
-union all
-select 1, 'leitura', 'TESTE (não deve ver Cauã)', 'customers',
-  count(*) filter (where t.tenant_id = ids.teste), count(*) filter (where t.tenant_id = ids.capua)
-from public.customers t, ids
-union all
-select 1, 'leitura', 'TESTE (não deve ver Cauã)', 'store_settings',
-  count(*) filter (where t.tenant_id = ids.teste), count(*) filter (where t.tenant_id = ids.capua)
-from public.store_settings t, ids;
+  select count(*) filter (where tenant_id = v_tenant_teste), count(*) filter (where tenant_id = v_tenant_capua)
+    into v_proprio, v_outro from public.category_attributes;
+  raise notice '[LEITURA] category_attributes: proprio=%, outro=%  ->  %',
+    v_proprio, v_outro, case when v_outro = 0 then 'OK' else 'VAZAMENTO' end;
 
--- Verificação de escrita — tentativa de UPDATE em dado do Cauã
--- impersonando o usuário de teste. Esperado: 0 linhas afetadas.
-with tentativa as (
+  select count(*) filter (where tenant_id = v_tenant_teste), count(*) filter (where tenant_id = v_tenant_capua)
+    into v_proprio, v_outro from public.products;
+  raise notice '[LEITURA] products: proprio=%, outro=%  ->  %',
+    v_proprio, v_outro, case when v_outro = 0 then 'OK' else 'VAZAMENTO' end;
+
+  select count(*) filter (where tenant_id = v_tenant_teste), count(*) filter (where tenant_id = v_tenant_capua)
+    into v_proprio, v_outro from public.product_variants;
+  raise notice '[LEITURA] product_variants: proprio=%, outro=%  ->  %',
+    v_proprio, v_outro, case when v_outro = 0 then 'OK' else 'VAZAMENTO' end;
+
+  select count(*) filter (where tenant_id = v_tenant_teste), count(*) filter (where tenant_id = v_tenant_capua)
+    into v_proprio, v_outro from public.delivery_cities;
+  raise notice '[LEITURA] delivery_cities: proprio=%, outro=%  ->  %',
+    v_proprio, v_outro, case when v_outro = 0 then 'OK' else 'VAZAMENTO' end;
+
+  select count(*) filter (where tenant_id = v_tenant_teste), count(*) filter (where tenant_id = v_tenant_capua)
+    into v_proprio, v_outro from public.customers;
+  raise notice '[LEITURA] customers: proprio=%, outro=%  ->  %',
+    v_proprio, v_outro, case when v_outro = 0 then 'OK' else 'VAZAMENTO' end;
+
+  select count(*) filter (where tenant_id = v_tenant_teste), count(*) filter (where tenant_id = v_tenant_capua)
+    into v_proprio, v_outro from public.store_settings;
+  raise notice '[LEITURA] store_settings: proprio=%, outro=%  ->  OK (público por design, não restrito por tenant — ver nota)',
+    v_proprio, v_outro;
+
   update public.categories
   set descricao = 'TENTATIVA DE ESCRITA CROSS-TENANT — não deveria afetar nada'
-  where tenant_id = current_setting('myapp.tenant_capua')::uuid
-  returning 1
-)
-insert into _teste_isolamento_resultados (etapa, verificacao, sentido, tabela, linhas_proprio_tenant, linhas_outro_tenant)
-select 2, 'escrita (UPDATE cross-tenant)', 'TESTE tenta alterar dado do Cauã', 'categories', null, count(*)
-from tentativa;
+  where tenant_id = v_tenant_capua;
+  get diagnostics v_afetadas = row_count;
+  raise notice '[ESCRITA] UPDATE categories do Cauã (impersonando TESTE): linhas_afetadas=%  ->  %',
+    v_afetadas, case when v_afetadas = 0 then 'OK' else 'VAZAMENTO' end;
 
-with tentativa as (
   update public.delivery_cities
   set observacoes = 'TENTATIVA DE ESCRITA CROSS-TENANT — não deveria afetar nada'
-  where tenant_id = current_setting('myapp.tenant_capua')::uuid
-  returning 1
-)
-insert into _teste_isolamento_resultados (etapa, verificacao, sentido, tabela, linhas_proprio_tenant, linhas_outro_tenant)
-select 3, 'escrita (UPDATE cross-tenant)', 'TESTE tenta alterar dado do Cauã', 'delivery_cities', null, count(*)
-from tentativa;
+  where tenant_id = v_tenant_capua;
+  get diagnostics v_afetadas = row_count;
+  raise notice '[ESCRITA] UPDATE delivery_cities do Cauã (impersonando TESTE): linhas_afetadas=%  ->  %',
+    v_afetadas, case when v_afetadas = 0 then 'OK' else 'VAZAMENTO' end;
 
-reset role;
+  execute 'reset role';
 
--- ---------- 2.2: impersonando um STAFF REAL DO CAUÃ (sentido inverso) ----------
-select set_config(
-  'request.jwt.claims',
-  json_build_object(
-    'sub', current_setting('myapp.profile_capua'),
-    'role', 'authenticated'
-  )::text,
-  true
-);
-set local role authenticated;
+  raise notice '======================================================';
+  raise notice '2.2 — IMPERSONANDO UM STAFF REAL DO CAUÃ (sentido inverso)';
+  raise notice '======================================================';
 
--- Verificação de leitura inversa — "linhas_outro_tenant" (o de
--- teste) tem que ser 0 em toda linha, exceto store_settings.
-with ids as (
-  select
-    current_setting('myapp.tenant_capua')::uuid as capua,
-    current_setting('myapp.tenant_teste')::uuid as teste
-)
-insert into _teste_isolamento_resultados (etapa, verificacao, sentido, tabela, linhas_proprio_tenant, linhas_outro_tenant)
-select 4, 'leitura', 'CAUÃ (não deve ver TESTE)', 'categories',
-  count(*) filter (where t.tenant_id = ids.capua), count(*) filter (where t.tenant_id = ids.teste)
-from public.categories t, ids
-union all
-select 4, 'leitura', 'CAUÃ (não deve ver TESTE)', 'category_attributes',
-  count(*) filter (where t.tenant_id = ids.capua), count(*) filter (where t.tenant_id = ids.teste)
-from public.category_attributes t, ids
-union all
-select 4, 'leitura', 'CAUÃ (não deve ver TESTE)', 'products',
-  count(*) filter (where t.tenant_id = ids.capua), count(*) filter (where t.tenant_id = ids.teste)
-from public.products t, ids
-union all
-select 4, 'leitura', 'CAUÃ (não deve ver TESTE)', 'product_variants',
-  count(*) filter (where t.tenant_id = ids.capua), count(*) filter (where t.tenant_id = ids.teste)
-from public.product_variants t, ids
-union all
-select 4, 'leitura', 'CAUÃ (não deve ver TESTE)', 'delivery_cities',
-  count(*) filter (where t.tenant_id = ids.capua), count(*) filter (where t.tenant_id = ids.teste)
-from public.delivery_cities t, ids
-union all
-select 4, 'leitura', 'CAUÃ (não deve ver TESTE)', 'customers',
-  count(*) filter (where t.tenant_id = ids.capua), count(*) filter (where t.tenant_id = ids.teste)
-from public.customers t, ids
-union all
-select 4, 'leitura', 'CAUÃ (não deve ver TESTE)', 'store_settings',
-  count(*) filter (where t.tenant_id = ids.capua), count(*) filter (where t.tenant_id = ids.teste)
-from public.store_settings t, ids;
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', v_profile_capua::text, 'role', 'authenticated')::text,
+    true
+  );
+  execute 'set local role authenticated';
 
--- Verificação de escrita inversa — tentativa de UPDATE em categoria
--- do tenant de teste impersonando o staff do Cauã. Esperado: 0 linhas.
-with tentativa as (
+  select count(*) filter (where tenant_id = v_tenant_capua), count(*) filter (where tenant_id = v_tenant_teste)
+    into v_proprio, v_outro from public.categories;
+  raise notice '[LEITURA] categories: proprio=%, outro=%  ->  %',
+    v_proprio, v_outro, case when v_outro = 0 then 'OK' else 'VAZAMENTO' end;
+
+  select count(*) filter (where tenant_id = v_tenant_capua), count(*) filter (where tenant_id = v_tenant_teste)
+    into v_proprio, v_outro from public.category_attributes;
+  raise notice '[LEITURA] category_attributes: proprio=%, outro=%  ->  %',
+    v_proprio, v_outro, case when v_outro = 0 then 'OK' else 'VAZAMENTO' end;
+
+  select count(*) filter (where tenant_id = v_tenant_capua), count(*) filter (where tenant_id = v_tenant_teste)
+    into v_proprio, v_outro from public.products;
+  raise notice '[LEITURA] products: proprio=%, outro=%  ->  %',
+    v_proprio, v_outro, case when v_outro = 0 then 'OK' else 'VAZAMENTO' end;
+
+  select count(*) filter (where tenant_id = v_tenant_capua), count(*) filter (where tenant_id = v_tenant_teste)
+    into v_proprio, v_outro from public.product_variants;
+  raise notice '[LEITURA] product_variants: proprio=%, outro=%  ->  %',
+    v_proprio, v_outro, case when v_outro = 0 then 'OK' else 'VAZAMENTO' end;
+
+  select count(*) filter (where tenant_id = v_tenant_capua), count(*) filter (where tenant_id = v_tenant_teste)
+    into v_proprio, v_outro from public.delivery_cities;
+  raise notice '[LEITURA] delivery_cities: proprio=%, outro=%  ->  %',
+    v_proprio, v_outro, case when v_outro = 0 then 'OK' else 'VAZAMENTO' end;
+
+  select count(*) filter (where tenant_id = v_tenant_capua), count(*) filter (where tenant_id = v_tenant_teste)
+    into v_proprio, v_outro from public.customers;
+  raise notice '[LEITURA] customers: proprio=%, outro=%  ->  %',
+    v_proprio, v_outro, case when v_outro = 0 then 'OK' else 'VAZAMENTO' end;
+
+  select count(*) filter (where tenant_id = v_tenant_capua), count(*) filter (where tenant_id = v_tenant_teste)
+    into v_proprio, v_outro from public.store_settings;
+  raise notice '[LEITURA] store_settings: proprio=%, outro=%  ->  OK (público por design, não restrito por tenant — ver nota)',
+    v_proprio, v_outro;
+
   update public.categories
   set descricao = 'TENTATIVA DE ESCRITA CROSS-TENANT — não deveria afetar nada'
-  where tenant_id = current_setting('myapp.tenant_teste')::uuid
-  returning 1
-)
-insert into _teste_isolamento_resultados (etapa, verificacao, sentido, tabela, linhas_proprio_tenant, linhas_outro_tenant)
-select 5, 'escrita (UPDATE cross-tenant)', 'CAUÃ tenta alterar dado do TESTE', 'categories', null, count(*)
-from tentativa;
+  where tenant_id = v_tenant_teste;
+  get diagnostics v_afetadas = row_count;
+  raise notice '[ESCRITA] UPDATE categories do TESTE (impersonando CAUÃ): linhas_afetadas=%  ->  %',
+    v_afetadas, case when v_afetadas = 0 then 'OK' else 'VAZAMENTO' end;
 
-reset role;
+  execute 'reset role';
 
--- ---------- RESULTADO ÚNICO CONSOLIDADO (última query — é o que o SQL Editor exibe) ----------
-select
-  etapa,
-  verificacao,
-  sentido,
-  tabela,
-  linhas_proprio_tenant,
-  linhas_outro_tenant,
-  case
-    when tabela = 'store_settings' then 'OK (público por design, não restrito por tenant — ver nota)'
-    when linhas_outro_tenant = 0 then 'OK'
-    else 'VAZAMENTO'
-  end as status
-from _teste_isolamento_resultados
-order by etapa, tabela;
+  raise notice '======================================================';
+  raise notice 'FIM DAS VERIFICAÇÕES — a seguir vem o ROLLBACK (nada disso fica gravado)';
+  raise notice '======================================================';
+end $$;
 
 rollback;
 
