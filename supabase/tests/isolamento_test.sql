@@ -1,43 +1,90 @@
 -- ============================================================
 -- TESTE DE ISOLAMENTO POR TENANT — pós migration 013 aplicada
 --
+-- v3 (31/07/2026): elimina a tabela temporária usada pra passar os
+-- UUIDs entre a Parte 1 e a Parte 2. Motivo: a temp table é criada
+-- pelo role de conexão do SQL Editor (postgres/admin), e a Parte 2
+-- troca pro role `authenticated` via `set role` — que não tem
+-- privilégio nenhum sobre uma tabela criada por outro role, mesmo
+-- temporária ("permission denied for table _teste_isolamento_ids").
+-- Trocado por variáveis de sessão custom (`set_config`/
+-- `current_setting`, namespace `myapp.*`), que não são objetos de
+-- banco com dono/permissão — qualquer role na mesma sessão consegue
+-- ler, exatamente como o próprio `request.jwt.claims` já funciona
+-- pro `auth.uid()` do Supabase.
+--
+-- v2 (31/07/2026): reescrito para NÃO tocar em nenhuma FK/constraint.
+-- A v1 deste arquivo relaxava temporariamente o FK
+-- profiles.id -> auth.users(id) para criar um perfil sintético sem
+-- usuário real no Auth. Substituído porque agora existe um usuário
+-- real no Supabase Auth criado especificamente para este teste
+-- (UUID 8c0c4252-a38e-406f-94f7-a6f2aa3b7dcb) — a FK já é satisfeita
+-- naturalmente, sem precisar relaxar nada.
+--
 -- Roda no SQL Editor do Supabase (conecta como `postgres`, que
 -- bypassa RLS por padrão — por isso a impersonação na Parte 2).
--- NÃO é uma migration (não fica em supabase/migrations/, não
--- muda schema de forma permanente) — é um script de verificação,
--- reaproveitável sempre que RLS mudar de novo no futuro.
+-- NÃO é uma migration — é um script de verificação, reaproveitável
+-- sempre que RLS mudar de novo no futuro.
 --
--- Este arquivo cola inteiro no SQL Editor. As Partes 1 e 2 são
--- seguras de rodar juntas (Parte 2 sempre dá ROLLBACK, mesmo se
--- algo "vazar"). A Parte 3 (limpeza) é OPCIONAL e não roda
--- automaticamente — role até lá, escolha um dos dois blocos, rode
--- só ele depois de já ter visto os resultados da Parte 2.
+-- ATENÇÃO — efeito colateral real: este script MOVE o profile do
+-- usuário 8c0c4252-a38e-406f-94f7-a6f2aa3b7dcb para o tenant de
+-- teste (não cria uma cópia). Se esse usuário for hoje o ÚNICO staff
+-- ativo do Cauã, a Parte 1 se recusa a rodar (ver guarda de
+-- segurança) — precisa existir OUTRO staff ativo do Cauã antes.
 -- Projeto: Criatorio Capua
 -- ============================================================
 
 
 -- ============================================================
+-- PARTE 0 — DIAGNÓSTICO (somente leitura, roda a qualquer momento)
+-- Mostra onde o profile desse UUID está HOJE, antes de qualquer
+-- mudança. Se o trigger handle_new_user já rodou no cadastro deste
+-- usuário, ele deve aparecer aqui com tenant_slug = 'capua'.
+-- ============================================================
+
+select
+  p.id,
+  p.nome,
+  p.email,
+  p.role,
+  p.ativo,
+  p.tenant_id,
+  t.slug as tenant_slug,
+  t.nome as tenant_nome
+from public.profiles p
+join public.tenants t on t.id = p.tenant_id
+where p.id = '8c0c4252-a38e-406f-94f7-a6f2aa3b7dcb';
+
+-- Só por garantia: confere se por acaso o trigger jogou pra
+-- "customers" em vez de "profiles" (aconteceria se o metadata de
+-- signup não tivesse role='admin'/'operador').
+select
+  c.id,
+  c.auth_user_id,
+  c.nome,
+  c.tenant_id,
+  t.slug as tenant_slug
+from public.customers c
+join public.tenants t on t.id = c.tenant_id
+where c.auth_user_id = '8c0c4252-a38e-406f-94f7-a6f2aa3b7dcb';
+
+
+-- ============================================================
 -- PARTE 1 — SETUP (efeito real e persistente, committed de verdade)
--- Cria o tenant sintético (idempotente — se já existir, reaproveita)
--- + 1 categoria e 1 cidade de entrega vinculadas só a ele + 1 perfil
--- de staff sintético (sem usuário real no Auth, de propósito — só
--- serve pra impersonação via SQL, nunca conseguiria logar na UI).
---
--- Pra isso, relaxa TEMPORARIAMENTE o FK profiles.id -> auth.users(id)
--- (drop, sem precisar saber o nome exato da constraint). ALTER TABLE
--- DROP/ADD CONSTRAINT aqui é operação de metadado, rápida, não
--- reescreve a tabela nem trava tráfego concorrente por muito tempo.
--- A Parte 3 decide se esse FK volta validado (descartando o canário)
--- ou como NOT VALID (mantendo o canário, protegendo inserts futuros).
+-- Cria o tenant sintético (idempotente) + move (ou cria, se o
+-- trigger não criou nada) o profile do usuário real pro tenant de
+-- teste, role='admin' + 1 categoria e 1 cidade vinculadas só a ele.
+-- NENHUM ALTER TABLE, NENHUMA FK tocada em momento algum.
 -- ============================================================
 
 do $$
 declare
-  v_tenant_teste     uuid;
-  v_tenant_capua     uuid;
-  v_profile_teste    uuid := gen_random_uuid();
-  v_profile_capua    uuid;
-  v_fk_name          text;
+  v_uuid_teste      uuid := '8c0c4252-a38e-406f-94f7-a6f2aa3b7dcb';
+  v_tenant_teste    uuid;
+  v_tenant_capua    uuid;
+  v_profile_capua   uuid;
+  v_email           text;
+  v_existe_profile  boolean;
 begin
   -- ---------- tenant sintético ----------
   insert into public.tenants (slug, nome, ativo)
@@ -51,36 +98,35 @@ begin
     raise exception 'Tenant capua não encontrado — aborte e investigue antes de continuar.';
   end if;
 
-  -- ---------- relaxa o FK profiles.id -> auth.users(id) ----------
-  select conname into v_fk_name
-  from pg_constraint
-  where conrelid = 'public.profiles'::regclass
-    and confrelid = 'auth.users'::regclass
-    and contype = 'f';
-
-  if v_fk_name is not null then
-    execute format('alter table public.profiles drop constraint %I', v_fk_name);
-    raise notice 'FK % removido temporariamente (restaurado na Parte 3).', v_fk_name;
-  else
-    raise notice 'FK profiles->auth.users já estava ausente (script rodado antes sem restaurar na Parte 3?).';
-  end if;
-
-  -- ---------- perfil de staff sintético (reaproveita se já existir) ----------
-  select id into v_profile_teste from public.profiles where tenant_id = v_tenant_teste limit 1;
-  if v_profile_teste is null then
-    v_profile_teste := gen_random_uuid();
-    insert into public.profiles (id, tenant_id, nome, email, role, ativo)
-    values (v_profile_teste, v_tenant_teste, 'TESTE - Staff Canário', 'teste-isolamento@invalido.local', 'admin', true);
-  end if;
-
-  -- ---------- staff REAL do Cauã, pra impersonar no sentido inverso ----------
+  -- ---------- guarda de segurança: precisa sobrar staff no Cauã ----------
+  -- Se o usuário de teste for o único staff ativo do Cauã, movê-lo
+  -- deixaria o Cauã sem ninguém logável no painel. Aborta antes de
+  -- fazer qualquer mudança.
   select id into v_profile_capua
   from public.profiles
-  where tenant_id = v_tenant_capua and ativo = true
+  where tenant_id = v_tenant_capua and ativo = true and id <> v_uuid_teste
   limit 1;
 
   if v_profile_capua is null then
-    raise exception 'Nenhum staff ativo encontrado no tenant capua — crie um antes de rodar este teste.';
+    raise exception 'Não existe outro staff ativo no Cauã além de %. Abortando: mover este perfil deixaria o Cauã sem staff logável. Crie/ative outro admin ou operador do Cauã antes de rodar este teste.', v_uuid_teste;
+  end if;
+
+  -- ---------- move (ou cria) o profile do usuário real pro tenant de teste ----------
+  select exists(select 1 from public.profiles where id = v_uuid_teste) into v_existe_profile;
+
+  if v_existe_profile then
+    update public.profiles
+    set tenant_id = v_tenant_teste, role = 'admin', ativo = true
+    where id = v_uuid_teste;
+    raise notice 'Profile % MOVIDO para o tenant de teste (estava em outro tenant).', v_uuid_teste;
+  else
+    select email into v_email from auth.users where id = v_uuid_teste;
+    if v_email is null then
+      raise exception 'Usuário % não encontrado em auth.users — confirme o UUID antes de rodar de novo.', v_uuid_teste;
+    end if;
+    insert into public.profiles (id, tenant_id, nome, email, role, ativo)
+    values (v_uuid_teste, v_tenant_teste, 'TESTE - Staff Canário', v_email, 'admin', true);
+    raise notice 'Profile % CRIADO no tenant de teste (o trigger não tinha criado nenhum profile pra ele).', v_uuid_teste;
   end if;
 
   -- ---------- dado de domínio do tenant de teste ----------
@@ -92,17 +138,15 @@ begin
   select v_tenant_teste, 'TESTE - Cidade Canário', 'XX', true
   where not exists (select 1 from public.delivery_cities where tenant_id = v_tenant_teste);
 
-  -- ---------- guarda os ids pra Parte 2 usar (só existe nesta sessão) ----------
-  create temporary table if not exists _teste_isolamento_ids (chave text primary key, valor uuid);
-  insert into _teste_isolamento_ids (chave, valor) values
-    ('tenant_teste',  v_tenant_teste),
-    ('tenant_capua',  v_tenant_capua),
-    ('profile_teste', v_profile_teste),
-    ('profile_capua', v_profile_capua)
-  on conflict (chave) do update set valor = excluded.valor;
+  -- ---------- guarda os ids pra Parte 2 usar (variável de sessão, ----------
+  -- ---------- não tabela — legível por qualquer role, sem GRANT) ----------
+  perform set_config('myapp.tenant_teste',  v_tenant_teste::text,  false);
+  perform set_config('myapp.tenant_capua',  v_tenant_capua::text,  false);
+  perform set_config('myapp.profile_teste', v_uuid_teste::text,    false);
+  perform set_config('myapp.profile_capua', v_profile_capua::text, false);
 
   raise notice 'Setup OK — tenant_teste=%, tenant_capua=%, profile_teste=%, profile_capua=%',
-    v_tenant_teste, v_tenant_capua, v_profile_teste, v_profile_capua;
+    v_tenant_teste, v_tenant_capua, v_uuid_teste, v_profile_capua;
 end $$;
 
 
@@ -113,16 +157,16 @@ end $$;
 -- mesmo que algum UPDATE cross-tenant "funcionasse" (não deveria),
 -- fica desfeito automaticamente. Os SELECTs de contagem continuam
 -- aparecendo normalmente nos resultados do SQL Editor antes do
--- rollback acontecer.
+-- rollback acontecer. Nenhuma escrita desta parte fica no banco.
 -- ============================================================
 
 begin;
 
--- ---------- 2.1: impersonando o STAFF DO TENANT DE TESTE ----------
+-- ---------- 2.1: impersonando o usuário REAL movido pro tenant de teste ----------
 select set_config(
   'request.jwt.claims',
   json_build_object(
-    'sub', (select valor from _teste_isolamento_ids where chave = 'profile_teste'),
+    'sub', current_setting('myapp.profile_teste'),
     'role', 'authenticated'
   )::text,
   true
@@ -134,8 +178,8 @@ set local role authenticated;
 -- ver nota abaixo da tabela de resultados esperados).
 with ids as (
   select
-    (select valor from _teste_isolamento_ids where chave = 'tenant_teste') as teste,
-    (select valor from _teste_isolamento_ids where chave = 'tenant_capua') as capua
+    current_setting('myapp.tenant_teste')::uuid as teste,
+    current_setting('myapp.tenant_capua')::uuid as capua
 )
 select 'categories' as tabela,
   count(*) filter (where t.tenant_id = ids.teste) as linhas_proprio_tenant,
@@ -168,11 +212,11 @@ from public.store_settings t, ids
 order by 1;
 
 -- Verificação B — escrita: tentativa de UPDATE em categoria do Cauã
--- impersonando o staff do tenant de teste. Esperado: 0 linhas afetadas.
+-- impersonando o usuário de teste. Esperado: 0 linhas afetadas.
 with tentativa as (
   update public.categories
   set descricao = 'TENTATIVA DE ESCRITA CROSS-TENANT — não deveria afetar nada'
-  where tenant_id = (select valor from _teste_isolamento_ids where chave = 'tenant_capua')
+  where tenant_id = current_setting('myapp.tenant_capua')::uuid
   returning 1
 )
 select 'UPDATE em categories do Cauã, impersonando TESTE' as tentativa, count(*) as linhas_afetadas from tentativa;
@@ -181,18 +225,18 @@ select 'UPDATE em categories do Cauã, impersonando TESTE' as tentativa, count(*
 with tentativa as (
   update public.delivery_cities
   set observacoes = 'TENTATIVA DE ESCRITA CROSS-TENANT — não deveria afetar nada'
-  where tenant_id = (select valor from _teste_isolamento_ids where chave = 'tenant_capua')
+  where tenant_id = current_setting('myapp.tenant_capua')::uuid
   returning 1
 )
 select 'UPDATE em delivery_cities do Cauã, impersonando TESTE' as tentativa, count(*) as linhas_afetadas from tentativa;
 
 reset role;
 
--- ---------- 2.2: impersonando o STAFF DO CAUÃ (sentido inverso) ----------
+-- ---------- 2.2: impersonando um STAFF REAL DO CAUÃ (sentido inverso) ----------
 select set_config(
   'request.jwt.claims',
   json_build_object(
-    'sub', (select valor from _teste_isolamento_ids where chave = 'profile_capua'),
+    'sub', current_setting('myapp.profile_capua'),
     'role', 'authenticated'
   )::text,
   true
@@ -203,8 +247,8 @@ set local role authenticated;
 -- tem que ser 0 em toda linha, exceto store_settings.
 with ids as (
   select
-    (select valor from _teste_isolamento_ids where chave = 'tenant_capua') as capua,
-    (select valor from _teste_isolamento_ids where chave = 'tenant_teste') as teste
+    current_setting('myapp.tenant_capua')::uuid as capua,
+    current_setting('myapp.tenant_teste')::uuid as teste
 )
 select 'categories' as tabela,
   count(*) filter (where t.tenant_id = ids.capua) as linhas_proprio_tenant,
@@ -241,7 +285,7 @@ order by 1;
 with tentativa as (
   update public.categories
   set descricao = 'TENTATIVA DE ESCRITA CROSS-TENANT — não deveria afetar nada'
-  where tenant_id = (select valor from _teste_isolamento_ids where chave = 'tenant_teste')
+  where tenant_id = current_setting('myapp.tenant_teste')::uuid
   returning 1
 )
 select 'UPDATE em categories do TESTE, impersonando CAUÃ' as tentativa, count(*) as linhas_afetadas from tentativa;
@@ -252,47 +296,36 @@ rollback;
 
 
 -- ============================================================
--- PARTE 3 — LIMPEZA (OPCIONAL, NÃO AUTOMÁTICA)
--- Escolha UM dos dois blocos abaixo e rode manualmente, depois de
--- já ter visto os resultados da Parte 2. Não rode os dois.
+-- PARTE 3 — SITUAÇÃO FINAL (sem limpeza automática)
+--
+-- Decisão já tomada: manter o canário permanente. Como NENHUMA FK
+-- foi tocada em nenhum momento (diferente da v1 deste script), NÃO
+-- HÁ NADA A RESTAURAR — o banco já fica no estado final assim que a
+-- Parte 1 termina de rodar. O que ficou no banco, pra sempre (até
+-- decisão em contrário):
+--   - tenant '_teste_isolamento' (ativo=false)
+--   - profile de 8c0c4252-a38e-406f-94f7-a6f2aa3b7dcb, agora
+--     pertencendo a esse tenant, role='admin' — este usuário PODE
+--     logar de verdade na UI (é um Auth user real) e vai cair no
+--     contexto do tenant de teste, nunca no do Cauã, a partir de agora
+--   - 1 categoria e 1 cidade de teste vinculadas a esse tenant
+--
+-- Bônus sobre a v1: como agora é um usuário real, esse canário
+-- também serve pra confirmação "Chromium real" (login de verdade),
+-- não só pra impersonação via SQL Editor.
+--
+-- Reversão (opcional, comentada) — só se um dia quiser desfazer e
+-- devolver este usuário pro Cauã:
 -- ============================================================
 
--- ---------- OPÇÃO A: manter como canário permanente (decisão já tomada) ----------
--- Restaura o FK como NOT VALID: protege todo INSERT/UPDATE futuro em
--- profiles.id (exige auth.users real dali pra frente), sem exigir
--- validar a linha sintética já existente (que não tem auth.users
--- correspondente, de propósito). O canário continua só utilizável via
--- impersonação SQL (Parte 2) — nunca vai conseguir logar de verdade
--- na UI, porque não existe usuário real no Auth por trás dele. Se no
--- futuro quiser também testar via login real (Chromium), crie um
--- usuário de verdade no Auth com este mesmo tenant separadamente —
--- ação adicional, fora deste script.
-do $$
-declare
-  v_fk_name text;
-begin
-  select conname into v_fk_name
-  from pg_constraint
-  where conrelid = 'public.profiles'::regclass and confrelid = 'auth.users'::regclass and contype = 'f';
-
-  if v_fk_name is null then
-    execute 'alter table public.profiles add constraint profiles_id_fkey foreign key (id) references auth.users(id) on delete cascade not valid';
-    raise notice 'FK restaurado como NOT VALID — canário mantido.';
-  else
-    raise notice 'FK já existe (%), nada a fazer.', v_fk_name;
-  end if;
-end $$;
-
-drop table if exists _teste_isolamento_ids;
-
-
--- ---------- OPÇÃO B: descartar tudo (não manter canário) ----------
--- Todas as linhas comentadas de propósito — descomente e rode só se
--- realmente quiser apagar o tenant de teste e tudo que está nele.
--- delete from public.categories where tenant_id = (select id from public.tenants where slug = '_teste_isolamento');
--- delete from public.delivery_cities where tenant_id = (select id from public.tenants where slug = '_teste_isolamento');
--- delete from public.profiles where tenant_id = (select id from public.tenants where slug = '_teste_isolamento');
--- delete from public.tenants where slug = '_teste_isolamento';
--- -- restaura o FK validado de verdade (sem linha violando, valida limpo):
--- alter table public.profiles add constraint profiles_id_fkey foreign key (id) references auth.users(id) on delete cascade;
--- drop table if exists _teste_isolamento_ids;
+-- do $$
+-- declare
+--   v_uuid_teste   uuid := '8c0c4252-a38e-406f-94f7-a6f2aa3b7dcb';
+--   v_tenant_capua uuid;
+-- begin
+--   select id into v_tenant_capua from public.tenants where slug = 'capua';
+--   update public.profiles set tenant_id = v_tenant_capua where id = v_uuid_teste;
+--   delete from public.categories where tenant_id = (select id from public.tenants where slug = '_teste_isolamento');
+--   delete from public.delivery_cities where tenant_id = (select id from public.tenants where slug = '_teste_isolamento');
+--   delete from public.tenants where slug = '_teste_isolamento';
+-- end $$;
