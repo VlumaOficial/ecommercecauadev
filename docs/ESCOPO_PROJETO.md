@@ -69,7 +69,31 @@ A sessão Supabase é gravada em cookie **`httpOnly: true`** (proteção contra 
 
 ### Padrão de multi-tenant nas escritas
 
-Colunas `tenant_id` ganham `DEFAULT public.current_tenant_id()` (função SQL que resolve o tenant do usuário autenticado via `profiles`/`customers`). Assim nenhum Route Handler precisa descobrir/hardcodar o tenant no `insert()` — já feito para `delivery_cities` (migration `008`), `categories` (migration `010`) e `category_attributes` (migration `012`); qualquer tabela nova gerida pelo painel deve repetir o padrão.
+Colunas `tenant_id` ganham `DEFAULT public.current_tenant_id()` (função SQL que resolve o tenant do usuário autenticado via `profiles`/`customers`). Assim nenhum Route Handler precisa descobrir/hardcodar o tenant no `insert()` — já feito para `delivery_cities` (migration `008`), `categories` (migration `010`) e `category_attributes` (migration `012`); qualquer tabela nova gerida pelo painel deve repetir o padrão. `products` e `product_variants` tinham esse mesmo gap desde as migrations `003`/`009` (nunca corrigido, só notado ao planejar o CRUD de Produtos) — corrigido na migration `013`.
+
+**⚠️ Gap de isolamento multi-tenant identificado em 30/07/2026 (não corrigido ainda):** `is_admin()`/`is_staff()` (`002_core.sql`) são checagens **globais**, não filtram por `tenant_id`. Nenhuma policy de RLS de escrita staff hoje (`categories_staff_write`, `products_staff_write`, `product_variants_staff_write`, `category_attributes_staff_write`, etc.) restringe por tenant — só exige `is_staff()`. Hoje é inofensivo porque existe um único tenant (`capua`); mas antes de um segundo tenant entrar, **todas as policies `*_staff_write` precisam ganhar `and tenant_id = current_tenant_id()`** (ou equivalente), senão staff de um tenant enxergaria/escreveria dados de outro via PostgREST direto. As RPCs `gerar_codigo_produto` e `criar_produto_com_variacoes` (migration `014`) já fazem essa checagem explicitamente no corpo da função (obrigatório ali por serem `SECURITY DEFINER`, que ignora RLS) — mas isso não substitui o conserto das policies em si.
+
+### Padrão de mensagens de erro (voltadas ao usuário)
+
+**✅ Em vigor a partir de 30/07/2026** — aplicar em toda funcionalidade nova; retroaplicar às existentes quando conveniente. Regra completa em `REGRAS_DE_NEGOCIO.md` §9: português claro, orienta a próxima ação, zero jargão técnico (nada de código de erro Postgres, nome de constraint/tabela/coluna, "RPC", stack trace). Detalhe técnico completo continua existindo — só que **apenas em log de servidor/console**, nunca na tela do usuário.
+
+Catálogo de mensagens da feature **Código do Produto** (migration `014`), como referência de implementação para os Route Handlers de `/api/painel/produtos` (ainda não escritos — Etapa 1 em andamento):
+
+| Situação técnica | Mensagem ao usuário |
+|---|---|
+| Categoria sem `prefixo_codigo` | "Esta categoria ainda não tem um prefixo de código. Abra o cadastro da categoria e salve para gerá-lo." |
+| `category_id` inexistente ou de outro tenant | "Categoria não encontrada." |
+| Nenhuma variação enviada na criação | "Adicione pelo menos uma variação para o produto." |
+| Colisão `unique(tenant_id, codigo)` (código manual) | "Já existe um produto com este código. Escolha outro." |
+| Colisão `unique(tenant_id, slug)` | "Já existe um produto com esse nome. Ajuste o nome." |
+| Colisão `unique(tenant_id, sku)` em variação | "Já existe uma variação com este SKU. Ajuste o SKU." |
+| `chk_variant_preco_promo` (promo ≥ preço) | "O preço promocional deve ser menor que o preço normal." |
+| `chk_variant_preco`/`chk_variant_estoque`/`chk_variant_qtd_min` | "O preço/estoque não pode ser negativo." / "A quantidade mínima deve ser pelo menos 1." |
+| Colisão `unique(tenant_id, prefixo_codigo)` (prefixo manual na categoria) | "Já existe uma categoria com este prefixo. Escolha outro." |
+| Tentativa de alterar `codigo` após criado | "O código do produto não pode ser alterado depois de criado." |
+| Erro genérico/não mapeado | "Não foi possível salvar o produto. Tente novamente." |
+
+As mensagens acima já estão implementadas nas RPCs `gerar_codigo_produto` e `criar_produto_com_variacoes` (via `raise exception` com texto amigável, capturando `unique_violation`/`check_violation` e traduzindo pelo nome da constraint). As linhas de colisão de slug/prefixo de categoria dependem dos Route Handlers ainda não escritos — devem seguir esta tabela literalmente quando implementados.
 
 ### Padrão de CRUD administrativo (fixado a partir de Cidades, replicado em Categorias)
 
@@ -220,7 +244,9 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | 15 | **Auditoria** (`audit_log`): toda escrita do painel passa a chamar `registrarAuditoria()` na aplicação (não trigger de banco), pra capturar contexto de negócio (ex.: qual usuário, se foi cascata). Uso: rastreabilidade do Super Admin VLUMA, não do admin do tenant. Candidata a feature premium | 📐 Decidido; não implementado — ver §2, "Auditoria" |
 | 16 | **Vocabulário de interface**: telas voltadas ao lojista usam "Características" (nunca "atributos") e "Variações" (nunca "SKU"/"variants") — termos técnicos ficam só no código/banco. Decisão de UX baseada em pesquisa de mercado (Nuvemshop/Shopify) | ✅ Já seguido no CRUD de Categorias (rótulo "Características"); aplicar também ao CRUD de Produtos — ver `REGRAS_DE_NEGOCIO.md` §4.1 |
 | 17 | **Documentos Legais e Aceite (LGPD)**: aceite obrigatório (checkbox + links) de Política de Privacidade e Termos de Uso no cadastro do cliente; aceite registrado com quem/quando/versão/IP para comprovação; documentos **versionados por tenant** (nova versão pode exigir re-aceite); páginas públicas linkadas no rodapé; texto-base gerado por IA **com ressalva explícita de revisão jurídica obrigatória antes de produção**. Sequenciado para depois da vitrine (F4) | 📐 Decidido; não implementado — ver `REGRAS_DE_NEGOCIO.md` §7 |
-| 18 | **Código do Produto**: identificação/referência do produto, distinta do SKU (que é da variação, para estoque). Prefixo vem da **categoria** (`categories.prefixo_codigo`, derivado do nome se vazio, ex. "Ciclídeos" → `CIC`, único por tenant). Formato `PREFIXO-NNNN`, sequência própria por categoria (cada uma começa do zero). Gerado na criação do produto, **imutável** mesmo que o produto mude de categoria. Lojista escolhe automático ou manual (editável — migração de outro sistema). Toggle `codigo_visivel` controla se aparece e é buscável na vitrine | 📐 Decidido; não implementado — ver §3 "Codificação de produtos" e `REGRAS_DE_NEGOCIO.md` §4.6 |
+| 18 | **Código do Produto**: identificação/referência do produto, distinta do SKU (que é da variação, para estoque). Prefixo vem da **categoria** (`categories.prefixo_codigo`, derivado do nome se vazio, ex. "Ciclídeos" → `CIC`, único por tenant). Formato `PREFIXO-NNNN`, sequência própria por categoria (cada uma começa do zero). Gerado na criação do produto, **imutável** mesmo que o produto mude de categoria. Lojista escolhe automático ou manual (editável — migração de outro sistema). Toggle `codigo_visivel` controla se aparece e é buscável na vitrine | 📐 Decidido; migrations `013`/`014` criadas (não aplicadas) — telas do CRUD de Produtos (Etapa 1) ainda não implementadas — ver §3 "Codificação de produtos" e `REGRAS_DE_NEGOCIO.md` §4.6 |
+| 19 | **Padrão de mensagens de erro**: toda mensagem voltada ao usuário final é em português claro, orienta a ação, nunca expõe jargão técnico (código de erro, nome de constraint/tabela, "RPC"). Detalhe técnico só em log de servidor. Vale para todas as features, não só Produtos | ✅ Decidido e em vigor a partir de 30/07/2026 — ver §2 "Padrão de mensagens de erro" e `REGRAS_DE_NEGOCIO.md` §9 |
+| 20 | **Gap de isolamento multi-tenant em RLS**: policies de escrita staff (`*_staff_write`) checam só `is_staff()`, não `tenant_id` — staff de um tenant teoricamente acessaria dados de outro. Inofensivo hoje (1 tenant só); precisa ser corrigido antes do 2º tenant | ⚠️ Identificado, não corrigido — ver §2 |
 
 ---
 
@@ -250,6 +276,8 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | 010 | `categories` ganha `DEFAULT current_tenant_id()` | ✅ |
 | 011 | `categories` ganha `inativado_em_cascata` + RPC `set_category_ativo_cascade` (cascata) | ✅ |
 | 012 | `category_attributes` ganha `DEFAULT current_tenant_id()` | ✅ |
+| 013 | `products`/`product_variants` ganham `DEFAULT current_tenant_id()` | ❌ Criada, aguardando revisão/aplicação |
+| 014 | Código do Produto: `categories.prefixo_codigo`, `products.codigo`/`codigo_visivel`, `category_code_sequences`, RPCs `gerar_codigo_produto` e `criar_produto_com_variacoes` | ❌ Criada, aguardando revisão/aplicação |
 
 ### Variáveis de ambiente
 
@@ -292,7 +320,7 @@ src/
 ├── types/database.ts       tipos gerados/ajustados a mao do schema Supabase
 └── proxy.ts                somente leitura: redireciona /entrar <-> /painel
 
-supabase/migrations/        001 a 012, ver secao 6
+supabase/migrations/        001 a 014, ver secao 6 (013/014 criadas, aguardando aplicacao)
 docs/                        VISAO_CAUA.md (visao original) + este documento + REGRAS_DE_NEGOCIO.md
 ```
 

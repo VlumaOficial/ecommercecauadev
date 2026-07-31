@@ -200,6 +200,22 @@ As seções abaixo serão preenchidas conforme cada módulo for desenhado — ma
 
 ---
 
+## 9. Mensagens de erro — padrão geral do sistema
+
+**✅ Em vigor a partir de 30/07/2026** — aplicar em toda funcionalidade nova; retroaplicar às existentes quando conveniente.
+
+Toda mensagem de erro que o lojista ou o cliente final vê na tela segue três regras:
+
+1. **Português claro** — sem tradução literal de termo técnico, sem inglês de banco de dados.
+2. **Orienta a próxima ação** — diz o que fazer agora, não só descreve o problema (ex.: "Escolha outro" em vez de só "código duplicado").
+3. **Zero jargão técnico** — nunca aparece código de erro (ex.: "23505"), nome de constraint/tabela/coluna, "RPC", stack trace, ou qualquer termo interno do sistema.
+
+Exemplos: *"Já existe um produto com este código. Escolha outro."* em vez de *"duplicate key value violates unique constraint"*; *"Não foi possível salvar o produto. Tente novamente."* como mensagem genérica de fallback — nunca a mensagem crua do banco.
+
+O detalhe técnico completo (código do erro do Postgres, nome da constraint, stack trace) continua existindo normalmente — só que **apenas no log do servidor/console**, nunca na tela do usuário. Ver `ESCOPO_PROJETO.md` §2 "Padrão de mensagens de erro" para o catálogo de mensagens já definido para a feature Código do Produto.
+
+---
+
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
 
 *Entregável planejado: ao final do desenvolvimento, este documento é a base para gerar o **manual formal do usuário/lojista** — por isso a linguagem aqui evita jargão técnico desde o início.*
