@@ -21,6 +21,10 @@ Ao concluir cada feature, **antes de considerá-la pronta**:
 
 Se a sessão estiver longa, encerrar com os docs atualizados e commitados, para que uma sessão nova possa retomar lendo só os documentos.
 
+### Rastreabilidade de migrations ajustadas ou descartadas
+
+Migration criada e commitada, mas **ainda não aplicada**, pode precisar mudar antes de ir pro banco (ex.: dependência de uma decisão posterior, como o isolamento por tenant — decisão #21). Quando isso acontecer: **nunca apagar o registro da decisão original em silêncio**. Documentar aqui (tabela de migrations em §6, e no ponto onde a feature é descrita): o que foi descartado/ajustado, por quê, e o que substituiu — mantendo visível o histórico de que a versão original existiu e a razão da mudança. O arquivo `.sql` em si pode ser removido/renomeado do `supabase/migrations/` (não faz sentido manter SQL morto versionado), mas a **decisão e o motivo continuam registrados nos docs**.
+
 **Ao iniciar qualquer sessão nova**, o primeiro passo é ler `docs/ESCOPO_PROJETO.md` e `docs/REGRAS_DE_NEGOCIO.md` para recuperar o contexto.
 
 ### Registro de tempo por feature
@@ -38,6 +42,18 @@ E-commerce para o **Criatório Capuã** (peixes ornamentais e animais exóticos)
 O produto é **arquitetado como SaaS multi-tenant desde a primeira tabela**, mas roda hoje em modo **single-tenant** (um único tenant, `capua`, com `tenant_id` fixo). Isso significa: toda tabela de domínio já tem `tenant_id`, toda escrita passa por RLS que valida `is_staff()`/`is_admin()`, e não há atalhos client-side que hardcodem o tenant — colunas `tenant_id` recebem `DEFAULT public.current_tenant_id()` no banco (não o client que descobre/envia o tenant). Quando o segundo cliente chegar, a evolução para multi-tenant não deve exigir reescrever o modelo de dados, só resolver o tenant a partir do subdomínio (`src/lib/tenant.ts` já isola essa lógica, hoje retornando uma constante).
 
 **Cliente piloto:** Criatório Capuã. **Desenvolvimento:** VLUMA Tecnologia.
+
+### Estratégia de evolução para SaaS (roadmap arquitetural)
+
+**📐 Decidida em 31/07/2026 — ver decisão #22 em §5.** Define a ordem macro do projeto daqui pra frente:
+
+1. **Isolamento total por tenant, agora** — antes de seguir com qualquer feature nova (a começar por Produtos), fechar a base de RLS/RPCs pra garantir que o modelo multi-tenant já declarado (§1) funcione de verdade, não só na estrutura das tabelas. Ver decisão #21.
+2. **Desenvolvimento do produto para o Cauã continua sobre essa base isolada** — Produtos, Vitrine, Carrinho/Checkout, Pedidos etc., seguindo o roadmap de §4.
+3. **Cauã fechado (produto completo) → vai para produção como tenant único.** Primeiro cliente real, ambiente de produção, mas ainda um deploy essencialmente single-tenant em uso (mesmo com a arquitetura multi-tenant por baixo).
+4. **Fase SaaS**: nesse ponto, **clona-se código + banco** para um novo projeto/ambiente SaaS. A partir da clonagem, **o projeto do Cauã congela** — só recebe correções de bug que façam sentido replicar pros dois lados (Cauã e SaaS), nenhuma feature nova. Todo o trabalho de SaaS de verdade (Super Admin VLUMA, cadastro automático de novo cliente/tenant, cobrança, resolução de tenant por subdomínio real, etc.) evolui **só no clone**, sem arriscar o ambiente de produção do cliente pagante.
+5. **SaaS pronto** → decisão futura (não tomada agora): migrar o Cauã pra rodar dentro da plataforma SaaS unificada, ou mantê-lo standalone indefinidamente.
+
+**Por quê clonar em vez de evoluir o mesmo ambiente direto pra SaaS:** o Cauã é cliente pagante rodando em produção nesse ponto — mudanças estruturais de SaaS (novo onboarding, billing, multi-tenant real) têm risco de regressão alto demais pra testar direto contra o ambiente de quem já depende do sistema no dia a dia. Clonar isola o risco.
 
 ---
 
@@ -147,6 +163,8 @@ Funções: `set_updated_at()` (trigger genérico), `current_tenant_id()`, `is_ad
 
 ### Codificação de produtos — Código vs SKU (planejada — 📐 decidida, não implementada)
 
+**⏸️ Em espera desde 31/07/2026:** migrations `013`/`014` já criadas e commitadas (ver §6), mas **não aplicadas** — decidiu-se resolver primeiro o isolamento total por tenant (decisão #21) antes de seguir com o CRUD de Produtos. Não assumir que o modelo abaixo já existe no banco.
+
 Decisão de produto fechada em 30/07/2026 (ver decisão #18 em §5), registrada antes de iniciar o CRUD de Produtos. Formaliza dois identificadores distintos:
 
 - **Código** — por *produto*: identificação/referência, pensado inclusive para lojistas migrando de outro sistema que já têm códigos próprios. Prefixo vem sempre da **categoria** do produto, nunca de um prefixo genérico de loja. Visibilidade na vitrine é configurável (toggle) — quando visível, aparece na ficha do produto e é buscável pelo cliente.
@@ -246,7 +264,9 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | 17 | **Documentos Legais e Aceite (LGPD)**: aceite obrigatório (checkbox + links) de Política de Privacidade e Termos de Uso no cadastro do cliente; aceite registrado com quem/quando/versão/IP para comprovação; documentos **versionados por tenant** (nova versão pode exigir re-aceite); páginas públicas linkadas no rodapé; texto-base gerado por IA **com ressalva explícita de revisão jurídica obrigatória antes de produção**. Sequenciado para depois da vitrine (F4) | 📐 Decidido; não implementado — ver `REGRAS_DE_NEGOCIO.md` §7 |
 | 18 | **Código do Produto**: identificação/referência do produto, distinta do SKU (que é da variação, para estoque). Prefixo vem da **categoria** (`categories.prefixo_codigo`, derivado do nome se vazio, ex. "Ciclídeos" → `CIC`, único por tenant). Formato `PREFIXO-NNNN`, sequência própria por categoria (cada uma começa do zero). Gerado na criação do produto, **imutável** mesmo que o produto mude de categoria. Lojista escolhe automático ou manual (editável — migração de outro sistema). Toggle `codigo_visivel` controla se aparece e é buscável na vitrine | 📐 Decidido; migrations `013`/`014` criadas (não aplicadas) — telas do CRUD de Produtos (Etapa 1) ainda não implementadas — ver §3 "Codificação de produtos" e `REGRAS_DE_NEGOCIO.md` §4.6 |
 | 19 | **Padrão de mensagens de erro**: toda mensagem voltada ao usuário final é em português claro, orienta a ação, nunca expõe jargão técnico (código de erro, nome de constraint/tabela, "RPC"). Detalhe técnico só em log de servidor. Vale para todas as features, não só Produtos | ✅ Decidido e em vigor a partir de 30/07/2026 — ver §2 "Padrão de mensagens de erro" e `REGRAS_DE_NEGOCIO.md` §9 |
-| 20 | **Gap de isolamento multi-tenant em RLS**: policies de escrita staff (`*_staff_write`) checam só `is_staff()`, não `tenant_id` — staff de um tenant teoricamente acessaria dados de outro. Inofensivo hoje (1 tenant só); precisa ser corrigido antes do 2º tenant | ⚠️ Identificado, não corrigido — ver §2 |
+| 20 | **Gap de isolamento multi-tenant em RLS**: policies de escrita staff (`*_staff_write`) checam só `is_staff()`, não `tenant_id` — staff de um tenant teoricamente acessaria dados de outro. Inofensivo hoje (1 tenant só); precisa ser corrigido antes do 2º tenant | ⚠️ Identificado, não corrigido — ver §2. **Revisado em 31/07/2026**: decidido corrigir AGORA, de forma completa, antes de seguir com Produtos — ver decisão #21 (levantamento completo de tabelas/policies/RPCs feito em sessão, plano apresentado, implementação ainda pendente de aprovação) |
+| 21 | **Isolamento total por tenant priorizado antes de Produtos**: pausar o CRUD de Produtos (Etapa 1) e corrigir primeiro TODAS as policies de RLS e RPCs `SECURITY DEFINER` do projeto para restringir leitura/escrita por `tenant_id = current_tenant_id()`, não só `is_staff()`/`is_admin()`. Migrations `013`/`014` (Código do Produto) ficam em espera — ver §6 — até essa base estar pronta | 📐 Decidido em 31/07/2026; plano de implementação levantado (tabela por tabela, RPCs, estratégia de migration e teste) — implementação ainda não iniciada, aguardando aprovação |
+| 22 | **Estratégia de evolução para SaaS**: isolar tenant agora → desenvolver Cauã sobre a base isolada → Cauã completo vai a produção como tenant único → clonar código+banco pra abrir a fase SaaS (Cauã congela, só bugfix compartilhado) → SaaS pronto decide se migra o Cauã pra plataforma ou mantém standalone | 📐 Decidido em 31/07/2026 — ver §1 "Estratégia de evolução para SaaS" |
 
 ---
 
@@ -276,8 +296,8 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | 010 | `categories` ganha `DEFAULT current_tenant_id()` | ✅ |
 | 011 | `categories` ganha `inativado_em_cascata` + RPC `set_category_ativo_cascade` (cascata) | ✅ |
 | 012 | `category_attributes` ganha `DEFAULT current_tenant_id()` | ✅ |
-| 013 | `products`/`product_variants` ganham `DEFAULT current_tenant_id()` | ❌ Criada, aguardando revisão/aplicação |
-| 014 | Código do Produto: `categories.prefixo_codigo`, `products.codigo`/`codigo_visivel`, `category_code_sequences`, RPCs `gerar_codigo_produto` e `criar_produto_com_variacoes` | ❌ Criada, aguardando revisão/aplicação |
+| 013 | `products`/`product_variants` ganham `DEFAULT current_tenant_id()` | ⏸️ Criada e commitada, **NÃO aplicada no banco** — em espera: decidido tratar o isolamento total por tenant (decisão #21) antes de seguir com Produtos. **Nenhuma sessão futura deve assumir que esta migration está no banco** até esta linha ser atualizada para ✅. |
+| 014 | Código do Produto: `categories.prefixo_codigo`, `products.codigo`/`codigo_visivel`, `category_code_sequences`, RPCs `gerar_codigo_produto` e `criar_produto_com_variacoes` | ⏸️ Criada e commitada, **NÃO aplicada no banco** — mesma espera da `013`. Pode ser **renumerada e/ou ajustada** quando o isolamento for implementado (ex.: a policy de `category_code_sequences` já nasceria com o filtro de tenant, sem precisar de migration de correção posterior) — ver regra de rastreabilidade em §0 e plano na decisão #21. |
 
 ### Variáveis de ambiente
 
