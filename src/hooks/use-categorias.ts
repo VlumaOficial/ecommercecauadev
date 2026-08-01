@@ -12,6 +12,9 @@ export type CategoriaFormValues = {
   parent_id: string | null
   descricao: string
   ativo: boolean
+  // Prefixo do codigo de produto (decisao #18). Vazio = servidor deriva
+  // do nome e persiste; string = valor digitado manualmente.
+  prefixo_codigo: string
 }
 
 // Mesmo motivo do Cidades: sessao httpOnly, entao as mutations passam

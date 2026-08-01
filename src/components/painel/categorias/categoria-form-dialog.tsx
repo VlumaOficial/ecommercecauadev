@@ -20,6 +20,7 @@ import {
   ComboboxTrigger,
 } from '@/components/ui/combobox'
 import { getDescendantIds, getPath, slugify, type CategoriaNode } from '@/lib/category-tree'
+import { derivarPrefixo } from '@/lib/produto-codigo'
 import type { Categoria, CategoriaFormValues } from '@/hooks/use-categorias'
 
 const categoriaSchema = z.object({
@@ -28,6 +29,7 @@ const categoriaSchema = z.object({
   parent_id: z.string().nullable(),
   descricao: z.string().trim(),
   ativo: z.boolean(),
+  prefixo_codigo: z.string().trim(),
 })
 
 const VALORES_PADRAO: CategoriaFormValues = {
@@ -36,6 +38,7 @@ const VALORES_PADRAO: CategoriaFormValues = {
   parent_id: null,
   descricao: '',
   ativo: true,
+  prefixo_codigo: '',
 }
 
 function valoresIniciais(categoria: Categoria | null): CategoriaFormValues {
@@ -46,6 +49,7 @@ function valoresIniciais(categoria: Categoria | null): CategoriaFormValues {
     parent_id: categoria.parent_id,
     descricao: categoria.descricao ?? '',
     ativo: categoria.ativo,
+    prefixo_codigo: categoria.prefixo_codigo ?? '',
   }
 }
 
@@ -73,6 +77,10 @@ export function CategoriaFormDialog({
   // useState(false)/defaultValues estaticos ficavam reféns de um
   // reset() em useEffect que corria contra o efeito de auto-slug.
   const [slugManual, setSlugManual] = useState(() => !!categoria)
+  // Mesmo raciocinio do slug: prefixo so continua sendo auto-derivado
+  // enquanto o lojista nao digitou nada nele proprio (transparencia -
+  // decisao #18, nunca caixa-preta).
+  const [prefixoManual, setPrefixoManual] = useState(() => !!categoria?.prefixo_codigo)
 
   const {
     register,
@@ -94,6 +102,7 @@ export function CategoriaFormDialog({
   useEffect(() => {
     if (!open) return
     setSlugManual(!!categoria)
+    setPrefixoManual(!!categoria?.prefixo_codigo)
     reset(valoresIniciais(categoria))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -102,6 +111,11 @@ export function CategoriaFormDialog({
     if (!open || slugManual) return
     setValue('slug', slugify(nome || ''))
   }, [nome, slugManual, open, setValue])
+
+  useEffect(() => {
+    if (!open || prefixoManual) return
+    setValue('prefixo_codigo', derivarPrefixo(nome || ''))
+  }, [nome, prefixoManual, open, setValue])
 
   // Exclui a propria categoria e toda a sua subarvore das opcoes de
   // pai (validacao anti-ciclo no formulario).
@@ -148,6 +162,29 @@ export function CategoriaFormDialog({
           })}
         />
         {errors.slug && <p className="text-xs text-destructive">{errors.slug.message}</p>}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="categoria-prefixo">Prefixo do código</Label>
+        <Input
+          id="categoria-prefixo"
+          placeholder="Ex.: CIC"
+          maxLength={10}
+          aria-invalid={!!errors.prefixo_codigo}
+          {...register('prefixo_codigo', {
+            onChange: (e) => {
+              setPrefixoManual(true)
+              e.target.value = e.target.value.toUpperCase()
+            },
+          })}
+        />
+        <p className="text-xs text-muted-foreground">
+          Usado no código dos produtos desta categoria (ex.: CIC-0001). Se deixar em branco, é gerado
+          automaticamente a partir do nome.
+        </p>
+        {errors.prefixo_codigo && (
+          <p className="text-xs text-destructive">{errors.prefixo_codigo.message}</p>
+        )}
       </div>
 
       <div className="space-y-1.5">

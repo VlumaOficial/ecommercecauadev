@@ -7,6 +7,9 @@ export type CategoriaNode = {
   ordem: number
   ativo: boolean
   inativado_em_cascata: boolean
+  // Prefixo do codigo de produto (migration 016, decisao #18). Nulo
+  // ate a categoria ser salva com o prefixo derivado/digitado.
+  prefixo_codigo: string | null
 }
 
 export type CategoriaTreeNode = CategoriaNode & { filhos: CategoriaTreeNode[] }
