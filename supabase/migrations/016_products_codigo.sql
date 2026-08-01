@@ -22,6 +22,13 @@
 -- abaixo, que ja nasce com o filtro de tenant embutido (nao precisa de
 -- patch depois) -- ver ESCOPO_PROJETO.md §6 para o historico completo
 -- da renumeracao.
+--
+-- Correcao de 31/07/2026 (1a tentativa de aplicacao falhou): o passo 6
+-- (view products_com_status) usava CREATE OR REPLACE VIEW, que o
+-- Postgres recusou com "cannot change name of view column ... " -
+-- trocado por DROP VIEW IF EXISTS + CREATE VIEW (ver comentario no
+-- proprio passo 6 mais abaixo para a explicacao completa). Todo o
+-- resto do arquivo ja era idempotente e nao mudou.
 -- Projeto: Criatorio Capua
 -- =====================================================
 
@@ -248,7 +255,20 @@ $$;
 -- ---------- 6. products_com_status ganha nome da categoria ----------
 -- Evita N+1 na listagem do painel (join direto na view). p.* ja traz
 -- codigo/codigo_visivel automaticamente, sem precisar tocar nisso aqui.
-create or replace view public.products_com_status as
+--
+-- DROP + CREATE em vez de CREATE OR REPLACE: a view original (009) nao
+-- tinha "categoria_nome" nem as colunas codigo/codigo_visivel dentro de
+-- p.*. CREATE OR REPLACE VIEW so aceita ACRESCENTAR coluna no final da
+-- lista - nao reordena nem insere no meio. Como "categoria_nome" entra
+-- ANTES de "estoque_total" (que ja existia numa posicao especifica) e
+-- p.* cresceu com codigo/codigo_visivel, o Postgres recusa com
+-- "cannot change name of view column ... to ...". Nenhum outro objeto
+-- do banco depende desta view (nao ha RPC/view/materialized view que a
+-- referencie - conferido em toda a arvore de migrations), entao dropar
+-- e seguro: view nao guarda dado, so a definicao da consulta.
+drop view if exists public.products_com_status;
+
+create view public.products_com_status as
 select
   p.*,
   c.nome as categoria_nome,
