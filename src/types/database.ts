@@ -23,6 +23,10 @@ export type Database = {
           nome: string
           ordem: number
           parent_id: string | null
+          // prefixo_codigo adicionado na migration 016 (Codigo do Produto).
+          // Opcional: vazio ate o lojista salvar a categoria (deriva do
+          // nome) ou digitar um proprio. Unico por tenant (indice parcial).
+          prefixo_codigo: string | null
           slug: string
           tenant_id: string
           updated_at: string
@@ -35,6 +39,7 @@ export type Database = {
           nome: string
           ordem?: number
           parent_id?: string | null
+          prefixo_codigo?: string | null
           slug: string
           // tenant_id ganha DEFAULT current_tenant_id() na migration 010;
           // opcional no insert. Ajustado a mao (sem acesso ao projeto pra
@@ -50,6 +55,7 @@ export type Database = {
           nome?: string
           ordem?: number
           parent_id?: string | null
+          prefixo_codigo?: string | null
           slug?: string
           tenant_id?: string
           updated_at?: string
@@ -130,6 +136,46 @@ export type Database = {
           },
           {
             foreignKeyName: "category_attributes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      // Adicionada na migration 016 (Codigo do Produto): contador de
+      // sequencia por categoria, usado pela RPC gerar_codigo_produto pra
+      // montar PREFIXO-NNNN de forma atomica. tenant_id ganha DEFAULT
+      // current_tenant_id() ja na criacao (016), sem gap de isolamento.
+      category_code_sequences: {
+        Row: {
+          category_id: string
+          tenant_id: string
+          ultimo_numero: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          tenant_id?: string
+          ultimo_numero?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          tenant_id?: string
+          ultimo_numero?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_code_sequences_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: true
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_code_sequences_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -452,7 +498,10 @@ export type Database = {
           quantidade_minima?: number
           saldo_estoque?: number
           sku?: string | null
-          tenant_id: string
+          // tenant_id ganha DEFAULT current_tenant_id() na migration 015;
+          // opcional no insert. Ajustado a mao (sem acesso ao projeto pra
+          // `npm run types`).
+          tenant_id?: string
           updated_at?: string
         }
         Update: {
@@ -492,6 +541,13 @@ export type Database = {
         Row: {
           ativo: boolean
           category_id: string
+          // codigo/codigo_visivel adicionados na migration 016 (Codigo do
+          // Produto). codigo e imutavel apos criado (trigger
+          // trg_products_codigo_imutavel) - gerado pela RPC
+          // gerar_codigo_produto (automatico) ou digitado (manual). Unico
+          // por tenant (indice parcial, aceita null).
+          codigo: string | null
+          codigo_visivel: boolean
           created_at: string
           descricao: string | null
           destaque: boolean
@@ -506,6 +562,8 @@ export type Database = {
         Insert: {
           ativo?: boolean
           category_id: string
+          codigo?: string | null
+          codigo_visivel?: boolean
           created_at?: string
           descricao?: string | null
           destaque?: boolean
@@ -513,13 +571,18 @@ export type Database = {
           nome: string
           ordem?: number
           slug: string
-          tenant_id: string
+          // tenant_id ganha DEFAULT current_tenant_id() na migration 015;
+          // opcional no insert. Ajustado a mao (sem acesso ao projeto pra
+          // `npm run types`).
+          tenant_id?: string
           unidade_venda?: string
           updated_at?: string
         }
         Update: {
           ativo?: boolean
           category_id?: string
+          codigo?: string | null
+          codigo_visivel?: boolean
           created_at?: string
           descricao?: string | null
           destaque?: boolean
@@ -675,6 +738,13 @@ export type Database = {
         Row: {
           ativo: boolean | null
           category_id: string | null
+          // categoria_nome, codigo, codigo_visivel adicionados na migration
+          // 016 (view recriada com DROP+CREATE - ver comentario no arquivo
+          // .sql). categoria_nome vem do join com categories, evita N+1 na
+          // listagem do painel.
+          categoria_nome: string | null
+          codigo: string | null
+          codigo_visivel: boolean | null
           created_at: string | null
           descricao: string | null
           destaque: boolean | null
@@ -716,6 +786,15 @@ export type Database = {
       set_category_ativo_cascade: {
         Args: { p_category_id: string; p_ativo: boolean }
         Returns: undefined
+      }
+      // Adicionadas na migration 016 (Codigo do Produto).
+      gerar_codigo_produto: {
+        Args: { p_category_id: string }
+        Returns: string
+      }
+      criar_produto_com_variacoes: {
+        Args: { p_produto: Json; p_variacoes: Json }
+        Returns: Database["public"]["Tables"]["products"]["Row"]
       }
     }
     Enums: {
