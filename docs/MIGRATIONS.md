@@ -22,7 +22,7 @@
 
 ---
 
-## Tabela completa (001–016)
+## Tabela completa (001–017)
 
 | # | Arquivo | O que faz | Status |
 |---|---|---|---|
@@ -36,18 +36,19 @@
 | 008 | `008_delivery_cities_tenant_default.sql` | `delivery_cities.tenant_id` ganha `DEFAULT current_tenant_id()`. | ✅ Aplicada |
 | 009 | `009_catalog_v2.sql` | Catálogo v2: `categories` vira árvore (`parent_id`), `category_attributes` substitui `subcategory_fields`, `product_variants` (SKU) nasce e assume preço/estoque/promoção, `products` perde essas colunas, view `products_com_status` (status derivado), `product_field_values`→`product_attribute_values`. Dropa `subcategories`/`subcategory_fields`. | ✅ Aplicada |
 | 010 | `010_categories_tenant_default.sql` | `categories.tenant_id` ganha `DEFAULT current_tenant_id()`. | ✅ Aplicada |
-| 011 | `011_categories_inativado_em_cascata.sql` | `categories.inativado_em_cascata` + RPC `set_category_ativo_cascade` (cascata atômica de inativação/reativação em subárvore). **RPC corrigida na `013`** (gap de tenant). | ✅ Aplicada (RPC revisada pela `013`, ainda não aplicada) |
+| 011 | `011_categories_inativado_em_cascata.sql` | `categories.inativado_em_cascata` + RPC `set_category_ativo_cascade` (cascata atômica de inativação/reativação em subárvore). **RPC corrigida na `013`** (gap de tenant). | ✅ Aplicada (RPC revisada pela `013` — **atualização de 31/07/2026: `013` também já aplicada**, correção em vigor) |
 | 012 | `012_category_attributes_tenant_default.sql` | `category_attributes.tenant_id` ganha `DEFAULT current_tenant_id()`. | ✅ Aplicada |
 | 013 | `013_rls_tenant_isolation.sql` | **Isolamento total por tenant** (decisão #21): todas as policies de leitura privilegiada/escrita staff (tenants, profiles, customers, store_settings, categories, category_attributes, products, product_variants, product_attribute_values, product_images, product_price_history, delivery_cities) ganham `and tenant_id = current_tenant_id()`. Corrige a RPC `set_category_ativo_cascade` (mesmo gap, já em produção). | ✅ **Aplicada** em 31/07/2026 |
 | 014 | `014_rls_select_anon_authenticated_split.sql` | **Fecha o SEGUNDO vazamento** (confirmado por teste real com o tenant sintético, depois da `013` aplicada): as policies `*_select_public` valiam com a mesma condição pra `anon` e `authenticated`, e a branch pública (`ativo = true`/`using(true)`, sem tenant) vazava leitura cross-tenant pra qualquer sessão autenticada — staff **e** cliente logado. Separa em `_select_anon` (mantém aberta, pra vitrine pública) e `_select_authenticated` (sempre `tenant_id = current_tenant_id()`) nas 8 tabelas afetadas: categories, category_attributes, products, product_variants, delivery_cities, store_settings, product_attribute_values, product_images. **Não é o "buraco" original preenchido por engano — é migration nova, ver nota acima.** | ✅ **Aplicada e validada** em 31/07/2026 — reteste do isolamento confirmou `categorias_do_caua_que_vejo = 0` (era 6 antes da correção) |
 | 015 | `015_products_tenant_default.sql` | `products.tenant_id` e `product_variants.tenant_id` ganham `DEFAULT current_tenant_id()` (mesmo gap de `008`/`010`/`012`, nunca corrigido desde a `003`/`009`). Renumerada de `013` (nome original, 30/07/2026). | ✅ **Aplicada e validada** em 31/07/2026 |
 | 016 | `016_products_codigo.sql` | Feature **Código do Produto** (decisão #18): `categories.prefixo_codigo`, `products.codigo`/`codigo_visivel`, tabela `category_code_sequences`, RPCs `gerar_codigo_produto` e `criar_produto_com_variacoes` (criação atômica produto+variações). Renumerada de `014` (nome original, 30/07/2026); policy de `category_code_sequences` já nasce com filtro de tenant embutido. Corrigida em 31/07/2026 (`CREATE OR REPLACE VIEW` → `DROP`+`CREATE` em `products_com_status`, ver commit `8cf3593`). | ✅ **Aplicada e validada** em 31/07/2026 — colunas/tabela/RPCs conferidas presentes no banco; `npm run build` (typecheck) passou depois de `src/types/database.ts` atualizado |
+| 017 | `017_atualizar_produto_com_variacoes.sql` | Edição atômica de produto+variações (RPC `atualizar_produto_com_variacoes`, simétrica à `criar_produto_com_variacoes`) — `codigo` nunca entra no payload (imutável), variações removidas viram soft delete (`ativo=false`). Também revisa `criar_produto_com_variacoes` (016, **já aplicada**) via `create or replace` — não é descarte, é extensão de comportamento (SKU automático), rastreabilidade no cabeçalho do arquivo. Novas funções auxiliares `abreviar_rotulo`, `gerar_sku_variacao`, `mensagem_erro_variacao`. | ⏳ **Não aplicada** — criada e commitada em 31/07/2026, aguardando revisão/aplicação manual (peça delicada, RPC atômica) |
 
 ---
 
 ## Ordem de aplicação recomendada (das pendentes)
 
-`014` → `015` → `016`, nessa ordem (`013` já aplicada) — `015`/`016` dependem do isolamento (`013`/`014`) já estar totalmente em vigor pra fazerem sentido dentro da estratégia adotada (decisão #21). **Atualização de 31/07/2026: `013` e `014` já aplicadas e validadas — só `015` e `016` seguem pendentes.** **Atualização final de 31/07/2026: as quatro migrations desta lista (`013`, `014`, `015`, `016`) estão todas aplicadas e validadas. Nenhuma migration pendente no momento — o próximo trabalho (CRUD de Produtos) não depende de nenhuma migration nova além das que já existem.**
+`014` → `015` → `016`, nessa ordem (`013` já aplicada) — `015`/`016` dependem do isolamento (`013`/`014`) já estar totalmente em vigor pra fazerem sentido dentro da estratégia adotada (decisão #21). **Atualização de 31/07/2026: `013` e `014` já aplicadas e validadas — só `015` e `016` seguem pendentes.** **Atualização final de 31/07/2026: as quatro migrations desta lista (`013`, `014`, `015`, `016`) estão todas aplicadas e validadas. Nenhuma migration pendente no momento — o próximo trabalho (CRUD de Produtos) não depende de nenhuma migration nova além das que já existem.** **Nova atualização de 31/07/2026: migration `017` criada (edição atômica de produto+variações + SKU automático) — pendente de revisão e aplicação manual. Não bloqueia a criação de produtos (que já usa a `016`), só a edição.**
 
 ---
 
