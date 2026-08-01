@@ -1,6 +1,6 @@
 # REGRAS DE NEGÓCIO — E-commerce Criatório Capuã
 
-**Última atualização:** 30/07/2026
+**Última atualização:** 01/08/2026 (data original de criação do documento: 30/07/2026)
 **Propósito:** descrever o comportamento do sistema em linguagem clara, sem jargão técnico onde possível. Este documento é a base do futuro manual do usuário/lojista.
 
 ---

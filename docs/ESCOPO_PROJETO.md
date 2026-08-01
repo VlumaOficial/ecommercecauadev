@@ -1,9 +1,17 @@
 # ESCOPO DO PROJETO — E-commerce Criatório Capuã / VLUMA
 
-**Última atualização:** 30/07/2026
+**Última atualização:** 01/08/2026 (data original de criação do documento: 30/07/2026)
 **Baseado em:** leitura completa do código-fonte, migrations `001` a `012`, histórico de commits e `docs/VISAO_CAUA.md`.
 
 > **Princípio norteador:** este é um produto **SaaS** (VLUMA). O Criatório Capuã é o primeiro cliente e validador, mas as decisões são de **produto** — o critério é "isso serve qualquer lojista do segmento?", não "o Cauã precisa disso?". Justificativas de arquitetura baseadas só na realidade de um cliente devem ser evitadas.
+
+### 📌 Pendências abertas agora (checar primeiro, 01/08/2026)
+
+1. **Re-teste da Etapa 1 de Produtos contra a URL pública** (`ecommercecauahml.vluma.com.br`), não `localhost` — o teste anterior rodou local antes do push, ver "Correção crítica" em §0 abaixo. Deploy da Vercel já confirmado no ar (commit `8da62b8`, rota `/painel/produtos` responde 307 pra `/entrar`, não 404).
+2. **Sessão expirando (~1h) sem renovação — suspeita não confirmada, pode impactar o Cauã em produção.** Ver nota detalhada em §2 "Padrão de autenticação" (`proxy.ts` tem `setAll()` vazio de propósito; comentário em `server.ts` contradiz isso). Não reproduzido ao vivo ainda — precisa investigar antes de decidir a correção.
+3. Migrations `015`–`017` já aplicadas, tudo commitado e pushado (`git log origin/main` = `git log` local) — sem pendência de banco ou de git no momento em que este documento foi escrito.
+4. `product_images` (Etapa 3, fotos de produto) e `product_attribute_values` (Etapa 2, ficha técnica por produto) do CRUD de Produtos — não iniciados, fora do escopo da Etapa 1.
+5. Arquivo `supabase/migrations/novo 6.txt` não rastreado pelo git — não foi criado por nenhuma sessão do assistente (verificado: já aparecia como untracked no primeiro `git status` desta sessão). Provavelmente rascunho do usuário; não mexer sem perguntar.
 
 ---
 
@@ -99,6 +107,12 @@ A sessão Supabase é gravada em cookie **`httpOnly: true`** (proteção contra 
 - **Logout precisa ser POST, nunca GET.** O Next.js faz *prefetch* automático de `<Link>` visíveis na viewport; um `GET /sair` que efetua `signOut()` é derrubado pelo próprio prefetch do framework, matando a sessão sem o usuário clicar em nada. Bug real, também já caçado.
 - **Toda tela do painel que precisa ler dados além do que a RLS libera para `anon`/leitura pública (ex.: categorias inativas, criar/editar registros) passa por Route Handlers em `/api/painel/<entidade>`**, que usam o client server-side (`src/lib/supabase/server.ts`, lê o cookie via `cookies()` do `next/headers`, autenticado de verdade). Os hooks TanStack Query do painel fazem `fetch()` contra essas rotas — **não** chamam `supabase.from(...)` direto do browser. Esse é o padrão fixado para todo CRUD administrativo daqui pra frente.
 - `src/proxy.ts` (renomeado de `middleware.ts` na convenção do Next 16) é **somente leitura**: nunca grava cookie, só decide redirect (`/entrar` ↔ `/painel`) a partir da sessão já existente.
+
+**⚠️ Pendência reportada em 01/08/2026, não confirmada por teste ainda — sessão expirando (~1h) sem renovação, impacto no Cauã em produção.** Achado ao reler o código (não reproduzido ao vivo nesta sessão — a suspeita inicial de expiração durante o teste de Produtos se mostrou ser outra causa, um bug no script de teste clicando no botão errado, não isso). O que o código mostra:
+- `proxy.ts` tem `setAll()` **intencionalmente vazio** ("proxy nao renova nem grava cookies" — comentário no próprio arquivo).
+- `src/lib/supabase/server.ts` tem um comentário que diz o oposto: "Server Component: ignorado, middleware cuida da renovação" — mas o middleware (`proxy.ts`), como acabamos de confirmar, **não cuida** de renovação nenhuma. Os dois comentários se contradizem.
+- Combinado, isso sugere que **nenhuma camada do app renova o token proativamente** fora de um Route Handler específico que já esteja fazendo outra operação Supabase. Um staff que navega só por Server Components (sem disparar POST/PATCH) por mais tempo que o access token dura pode, em tese, cair sem aviso.
+- **Não investigado**: se o refresh token do Supabase está configurado com rotação (nesse caso, tentativas de refresh "descartadas" — nunca persistidas de volta no cookie pelo `setAll` vazio — podem invalidar o refresh token depois de algumas tentativas, tornando o problema pior). Precisa checar a configuração de Auth do projeto Supabase e, idealmente, reproduzir o logout de verdade (deixar uma aba do painel aberta e parada por >1h, ou ajustar a duração do JWT em ambiente de teste pra acelerar) antes de decidir a correção.
 
 ### Padrão de multi-tenant nas escritas
 
@@ -330,7 +344,7 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 
 ### Estado das migrations
 
-> **Ver `docs/MIGRATIONS.md`** para o mapa completo migration a migration (001–016), incluindo a explicação do número `014` que não existe (renumeração da feature Código do Produto — nenhum conteúdo perdido, só o arquivo pulou de número).
+> **Ver `docs/MIGRATIONS.md`** para o mapa completo migration a migration (001–017, todas aplicadas), incluindo a explicação do número `014` que não existe (renumeração da feature Código do Produto — nenhum conteúdo perdido, só o arquivo pulou de número).
 
 | # | Arquivo | Aplicada? |
 |---|---|---|
@@ -371,27 +385,35 @@ src/
 │   ├── (loja)/           vazio — vitrine ainda nao construida
 │   ├── api/
 │   │   ├── auth/login/   POST — login (303 + Set-Cookie atomico)
-│   │   └── painel/       Route Handlers de CRUD (cidades, categorias + caracteristicas/reorder — GET/POST/PATCH)
+│   │   └── painel/       Route Handlers de CRUD (cidades, categorias + caracteristicas/reorder,
+│   │                     produtos + [id] + codigo-sugerido — GET/POST/PATCH)
 │   ├── auth/callback/    callback de confirmacao de e-mail / magic link
-│   ├── painel/           layout protegido (so staff) + cidades/ + categorias/
+│   ├── painel/           layout protegido (so staff) + cidades/ + categorias/ + produtos/ (novo/, [id]/)
 │   └── sair/             POST — logout
 ├── components/
 │   ├── painel/
 │   │   ├── crud/         StatusFilterTabs, SearchInput, StatusBadge, ConfirmDialog, FormDialog
 │   │   ├── cidades/
-│   │   └── categorias/   arvore, form, Sheet+lista+form de Caracteristicas (drag-and-drop)
+│   │   ├── categorias/   arvore, form (com prefixo_codigo), Sheet+lista+form de Caracteristicas (drag-and-drop)
+│   │   └── produtos/     produtos-view/table, produto-form (3 blocos: dados-basicos,
+│   │                     codigo-section, variacoes-section)
 │   └── ui/                20 componentes shadcn (preset Base UI) + combobox.tsx, sheet.tsx (custom/reaproveitado)
-├── hooks/                 use-cidades, use-categorias, use-caracteristicas, use-delivery-cities, use-query-param-state
+├── hooks/                 use-cidades, use-categorias, use-caracteristicas, use-delivery-cities,
+│                          use-produtos, use-query-param-state
 ├── lib/
 │   ├── supabase/          client.ts (browser), server.ts (SSR/Route Handlers), admin.ts (service_role)
 │   ├── auth.ts             getStaffProfile()
 │   ├── category-tree.ts   buildTree, getDescendantIds (anti-ciclo), computeVisibleIds, getPath, slugify
+│   ├── produto-codigo.ts  derivarPrefixo, formatarCodigo
 │   └── tenant.ts           resolucao de tenant (hoje constante)
 ├── types/database.ts       tipos gerados/ajustados a mao do schema Supabase
 └── proxy.ts                somente leitura: redireciona /entrar <-> /painel
 
-supabase/migrations/        001 a 017, ver secao 6 (001-016 aplicadas e validadas; 017 criada, aguardando aplicacao)
-docs/                        VISAO_CAUA.md (visao original) + este documento + REGRAS_DE_NEGOCIO.md
+supabase/
+├── migrations/             001 a 017, ver secao 6 (todas aplicadas e validadas)
+└── tests/                  isolamento_test.sql (script de verificacao RLS, nao e migration)
+
+docs/                        VISAO_CAUA.md (visao original) + este documento + REGRAS_DE_NEGOCIO.md + MIGRATIONS.md
 ```
 
 ### Débito técnico conhecido
