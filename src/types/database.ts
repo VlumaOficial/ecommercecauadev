@@ -556,7 +556,11 @@ export type Database = {
           ordem: number
           slug: string
           tenant_id: string
-          unidade_venda: string
+          // unidade_venda (texto livre) substituida por unidade_venda_id na
+          // migration 019/020 (cadastro de Unidades de Venda por tenant) -
+          // coluna antiga dropada na 020 (view products_com_status recriada
+          // com security_invoker=true, ver comentario no arquivo .sql).
+          unidade_venda_id: string
           updated_at: string
         }
         Insert: {
@@ -575,7 +579,7 @@ export type Database = {
           // opcional no insert. Ajustado a mao (sem acesso ao projeto pra
           // `npm run types`).
           tenant_id?: string
-          unidade_venda?: string
+          unidade_venda_id: string
           updated_at?: string
         }
         Update: {
@@ -591,7 +595,7 @@ export type Database = {
           ordem?: number
           slug?: string
           tenant_id?: string
-          unidade_venda?: string
+          unidade_venda_id?: string
           updated_at?: string
         }
         Relationships: [
@@ -604,6 +608,53 @@ export type Database = {
           },
           {
             foreignKeyName: "products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_unidade_venda_id_fkey"
+            columns: ["unidade_venda_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_venda"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unidades_venda: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          // tenant_id ganha DEFAULT current_tenant_id() desde a criacao
+          // (migration 019) - opcional no insert.
+          tenant_id?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unidades_venda_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -758,7 +809,7 @@ export type Database = {
           preco_a_partir_de: number | null
           slug: string | null
           tenant_id: string | null
-          unidade_venda: string | null
+          unidade_venda_id: string | null
           updated_at: string | null
         }
         Relationships: [
@@ -767,6 +818,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_unidade_venda_id_fkey"
+            columns: ["unidade_venda_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_venda"
             referencedColumns: ["id"]
           },
           {

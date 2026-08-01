@@ -25,7 +25,7 @@ export type ProdutoFormValues = {
   category_id: string
   nome: string
   descricao: string
-  unidade_venda: string
+  unidade_venda_id: string
   destaque: boolean
   ativo: boolean
   codigo_modo: 'automatico' | 'manual'
@@ -70,7 +70,7 @@ export function useCreateProduto() {
             category_id: values.category_id,
             nome: values.nome,
             descricao: values.descricao,
-            unidade_venda: values.unidade_venda,
+            unidade_venda_id: values.unidade_venda_id,
             destaque: values.destaque,
             ativo: values.ativo,
             codigo_visivel: values.codigo_visivel,
@@ -142,7 +142,7 @@ export function useUpdateProduto() {
             category_id: values.category_id,
             nome: values.nome,
             descricao: values.descricao,
-            unidade_venda: values.unidade_venda,
+            unidade_venda_id: values.unidade_venda_id,
             destaque: values.destaque,
             ativo: values.ativo,
             codigo_visivel: values.codigo_visivel,

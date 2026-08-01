@@ -42,7 +42,7 @@ function buildProdutoSchema(modo: 'novo' | 'editar') {
     category_id: z.string().uuid('Selecione uma categoria.'),
     nome: z.string().trim().min(1, 'Informe o nome do produto.'),
     descricao: z.string().trim(),
-    unidade_venda: z.string().trim().min(1, 'Informe a unidade de venda.'),
+    unidade_venda_id: z.string().uuid('Selecione a unidade de venda.'),
     destaque: z.boolean(),
     ativo: z.boolean(),
     codigo_modo: z.enum(['automatico', 'manual']),
@@ -64,7 +64,12 @@ const VALORES_PADRAO_NOVO: ProdutoFormValues = {
   category_id: '',
   nome: '',
   descricao: '',
-  unidade_venda: 'unidade',
+  // Vazio de proposito: nao da pra saber o id da unidade "Unidade" em
+  // tempo de compilacao (e por tenant, gerado no seed da migration
+  // 019). ProdutoDadosBasicos auto-seleciona "Unidade" assim que a
+  // lista carrega, se nada tiver sido escolhido ainda - ver comentario
+  // la.
+  unidade_venda_id: '',
   destaque: false,
   ativo: true,
   codigo_modo: 'automatico',
@@ -88,7 +93,7 @@ function valoresIniciaisEdicao(produto: ProdutoDetalhe): ProdutoFormValues {
     category_id: produto.category_id,
     nome: produto.nome,
     descricao: produto.descricao ?? '',
-    unidade_venda: produto.unidade_venda,
+    unidade_venda_id: produto.unidade_venda_id,
     destaque: produto.destaque,
     ativo: produto.ativo,
     codigo_modo: 'manual', // nao usado em edicao, so pra satisfazer o tipo
