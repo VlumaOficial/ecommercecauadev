@@ -1,6 +1,7 @@
 'use client'
 
-import { PowerIcon, RotateCcwIcon } from 'lucide-react'
+import Link from 'next/link'
+import { PencilIcon, PowerIcon, RotateCcwIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -73,6 +74,15 @@ export function ProdutosTable({
             </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  render={<Link href={`/painel/produtos/${produto.id}`} />}
+                  nativeButton={false}
+                  aria-label="Editar produto"
+                >
+                  <PencilIcon />
+                </Button>
                 {produto.ativo ? (
                   <Button
                     variant="ghost"

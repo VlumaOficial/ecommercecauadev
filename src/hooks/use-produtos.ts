@@ -6,8 +6,12 @@ import type { Tables } from '@/types/database'
 import type { StatusFiltro } from '@/components/painel/crud/status-filter-tabs'
 
 export type Produto = Tables<'products_com_status'>
+export type Variacao = Tables<'product_variants'>
+export type ProdutoDetalhe = Tables<'products'> & { variacoes: Variacao[] }
 
 export type VariacaoFormValues = {
+  // Presente = variacao ja existente (edicao); ausente = nova.
+  id?: string
   nome: string
   sku: string
   preco: number
@@ -104,6 +108,56 @@ export function useSetProdutoAtivo() {
       toast.success(ativo ? 'Produto reativado.' : 'Produto inativado.')
     },
     onError: () => toast.error('Não foi possível atualizar o status do produto.'),
+  })
+}
+
+export function useProduto(id: string) {
+  return useQuery({
+    queryKey: ['produto', id],
+    queryFn: async (): Promise<ProdutoDetalhe> => {
+      const response = await fetch(`/api/painel/produtos/${id}`)
+      const body = await parseJsonOrThrow(response)
+      return body.data
+    },
+    enabled: !!id,
+  })
+}
+
+export function useUpdateProduto() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      values,
+    }: {
+      id: string
+      values: Omit<ProdutoFormValues, 'codigo_modo' | 'codigo_manual'>
+    }) => {
+      const response = await fetch(`/api/painel/produtos/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          produto: {
+            category_id: values.category_id,
+            nome: values.nome,
+            descricao: values.descricao,
+            unidade_venda: values.unidade_venda,
+            destaque: values.destaque,
+            ativo: values.ativo,
+            codigo_visivel: values.codigo_visivel,
+          },
+          variacoes: values.variacoes,
+        }),
+      })
+      return parseJsonOrThrow(response)
+    },
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['produtos'] })
+      queryClient.invalidateQueries({ queryKey: ['produto', id] })
+      toast.success('Produto atualizado com sucesso.')
+    },
+    onError: (error: Error) => toast.error(error.message || 'Não foi possível atualizar o produto.'),
   })
 }
 

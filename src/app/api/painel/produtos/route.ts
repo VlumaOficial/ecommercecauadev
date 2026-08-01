@@ -46,7 +46,7 @@ const variacaoInputSchema = z.object({
   sku: z.string().trim().optional().default(''),
   preco: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
   preco_promocional: z
-    .union([z.coerce.number(), z.literal('')])
+    .union([z.literal(''), z.coerce.number()])
     .optional()
     .transform((v) => (v === '' || v === undefined ? null : v)),
   modo_estoque: z.enum(['quantitativo', 'disponibilidade']).optional().default('quantitativo'),

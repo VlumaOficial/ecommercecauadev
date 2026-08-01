@@ -63,7 +63,7 @@ export function ProdutosView() {
           <h1 className="font-display text-2xl font-bold text-[var(--brand-navy)]">Produtos</h1>
           <p className="text-muted-foreground mt-1">Gerencie o catálogo de produtos da loja.</p>
         </div>
-        <Button render={<Link href="/painel/produtos/novo" />}>
+        <Button render={<Link href="/painel/produtos/novo" />} nativeButton={false}>
           <PlusIcon />
           Adicionar produto
         </Button>

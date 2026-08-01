@@ -796,6 +796,11 @@ export type Database = {
         Args: { p_produto: Json; p_variacoes: Json }
         Returns: Database["public"]["Tables"]["products"]["Row"]
       }
+      // Adicionada na migration 017.
+      atualizar_produto_com_variacoes: {
+        Args: { p_product_id: string; p_produto: Json; p_variacoes: Json }
+        Returns: Database["public"]["Tables"]["products"]["Row"]
+      }
     }
     Enums: {
       field_type: "texto" | "numero" | "selecao" | "booleano" | "data"

@@ -84,7 +84,6 @@ export function ProdutoVariacoesSection() {
                   id={`variacao-${index}-preco`}
                   type="number"
                   step="0.01"
-                  min="0"
                   aria-invalid={!!errors.variacoes?.[index]?.preco}
                   {...register(`variacoes.${index}.preco`)}
                 />
@@ -98,7 +97,6 @@ export function ProdutoVariacoesSection() {
                   id={`variacao-${index}-promo`}
                   type="number"
                   step="0.01"
-                  min="0"
                   aria-invalid={!!errors.variacoes?.[index]?.preco_promocional}
                   {...register(`variacoes.${index}.preco_promocional`)}
                 />
@@ -116,7 +114,6 @@ export function ProdutoVariacoesSection() {
                 <Input
                   id={`variacao-${index}-estoque`}
                   type="number"
-                  min="0"
                   {...register(`variacoes.${index}.saldo_estoque`)}
                 />
               </div>
@@ -125,7 +122,6 @@ export function ProdutoVariacoesSection() {
                 <Input
                   id={`variacao-${index}-qtd-min`}
                   type="number"
-                  min="1"
                   {...register(`variacoes.${index}.quantidade_minima`)}
                 />
               </div>
