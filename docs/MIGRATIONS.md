@@ -22,7 +22,7 @@
 
 ---
 
-## Tabela completa (001–017)
+## Tabela completa (001–018)
 
 | # | Arquivo | O que faz | Status |
 |---|---|---|---|
@@ -43,12 +43,17 @@
 | 015 | `015_products_tenant_default.sql` | `products.tenant_id` e `product_variants.tenant_id` ganham `DEFAULT current_tenant_id()` (mesmo gap de `008`/`010`/`012`, nunca corrigido desde a `003`/`009`). Renumerada de `013` (nome original, 30/07/2026). | ✅ **Aplicada e validada** em 31/07/2026 |
 | 016 | `016_products_codigo.sql` | Feature **Código do Produto** (decisão #18): `categories.prefixo_codigo`, `products.codigo`/`codigo_visivel`, tabela `category_code_sequences`, RPCs `gerar_codigo_produto` e `criar_produto_com_variacoes` (criação atômica produto+variações). Renumerada de `014` (nome original, 30/07/2026); policy de `category_code_sequences` já nasce com filtro de tenant embutido. Corrigida em 31/07/2026 (`CREATE OR REPLACE VIEW` → `DROP`+`CREATE` em `products_com_status`, ver commit `8cf3593`). | ✅ **Aplicada e validada** em 31/07/2026 — colunas/tabela/RPCs conferidas presentes no banco; `npm run build` (typecheck) passou depois de `src/types/database.ts` atualizado |
 | 017 | `017_atualizar_produto_com_variacoes.sql` | Edição atômica de produto+variações (RPC `atualizar_produto_com_variacoes`, simétrica à `criar_produto_com_variacoes`) — `codigo` nunca entra no payload (imutável), variações removidas viram soft delete (`ativo=false`). Também revisa `criar_produto_com_variacoes` (016, **já aplicada**) via `create or replace` — não é descarte, é extensão de comportamento (SKU automático), rastreabilidade no cabeçalho do arquivo. Novas funções auxiliares `abreviar_rotulo`, `gerar_sku_variacao`, `mensagem_erro_variacao`. | ✅ **Aplicada e validada** em 01/08/2026 — revisada e aprovada pelo usuário antes da aplicação; testada via edição de produto com Chromium (contra `localhost`, re-teste na URL pública ainda pendente — ver `ESCOPO_PROJETO.md` §0) |
+| 018 | `018_products_com_status_security_invoker.sql` | **Fecha o TERCEIRO vazamento cross-tenant** (decisão #21), desta vez numa **view**, não numa policy: `products_com_status` (009, redefinida na 016) foi criada sem `security_invoker = true`, então roda com os privilégios de quem a criou, não de quem consulta — ignora o RLS de `products`/`categories`/`product_variants` por completo, mesmo com `013`/`014` corretas nas tabelas. Efeito real: staff do Cauã via produtos do tenant sintético `_teste_isolamento` na listagem `/painel/produtos` (que consulta a view), enquanto a edição (lê `products` direto) isolava certo — foi essa discrepância que revelou o bug. Diagnóstico confirmado: `select reloptions from pg_class where relname = 'products_com_status'` retornou `null`. Correção: `alter view ... set (security_invoker = true)`. Levantamento em toda a árvore de migrations confirma que é a **única view** do projeto — nenhuma outra a corrigir. | ✅ **Aplicada e validada** em 01/08/2026 — `reloptions` reconferido no banco (`security_invoker=true`); reteste de isolamento com o canário, desta vez consultando a view diretamente, confirmou `de_outro_tenant=0` |
 
 ---
 
 ## Ordem de aplicação recomendada (das pendentes)
 
 `014` → `015` → `016`, nessa ordem (`013` já aplicada) — `015`/`016` dependem do isolamento (`013`/`014`) já estar totalmente em vigor pra fazerem sentido dentro da estratégia adotada (decisão #21). **Atualização de 31/07/2026: `013` e `014` já aplicadas e validadas — só `015` e `016` seguem pendentes.** **Atualização final de 31/07/2026: as quatro migrations desta lista (`013`, `014`, `015`, `016`) estão todas aplicadas e validadas. Nenhuma migration pendente no momento — o próximo trabalho (CRUD de Produtos) não depende de nenhuma migration nova além das que já existem.** **Nova atualização de 31/07/2026: migration `017` criada (edição atômica de produto+variações + SKU automático) — pendente de revisão e aplicação manual. Não bloqueia a criação de produtos (que já usa a `016`), só a edição.** **Atualização final de 01/08/2026: `017` revisada, aprovada e aplicada. Todas as migrations `001`–`017` estão aplicadas no banco. Nenhuma migration pendente — a pendência atual é de re-teste (Chromium contra a URL pública), não de banco. Ver `ESCOPO_PROJETO.md` §0.**
+
+**Nova atualização de 01/08/2026: migration `018` criada** (fecha o terceiro vazamento cross-tenant, desta vez numa view — `products_com_status` sem `security_invoker`) — pendente de revisão e aplicação manual pelo usuário. Diferente de `013`–`017`, não depende de nenhuma outra migration pendente pra fazer sentido; é uma correção isolada e idempotente. Depois de aplicada, o isolamento por tenant precisa ser reconfirmado incluindo views (não só tabelas), reaproveitando o canário `_teste_isolamento`.
+
+**Atualização final de 01/08/2026: `018` revisada, aprovada e aplicada pelo usuário.** Todas as migrations `001`–`018` estão aplicadas no banco. `reloptions` da view reconferido (`security_invoker=true`); reteste de isolamento com o canário, agora cobrindo a view (não só tabela), confirmou `de_outro_tenant=0`. Nenhuma migration pendente no momento.
 
 ---
 

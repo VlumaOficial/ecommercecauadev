@@ -1,0 +1,49 @@
+-- =====================================================
+-- Fecha o TERCEIRO vazamento cross-tenant encontrado na investigacao de
+-- isolamento (decisao #21, ver ESCOPO_PROJETO.md §2 e §5) — desta vez numa
+-- VIEW, nao numa policy de RLS.
+--
+-- Incidente: a listagem do painel de Produtos (`/painel/produtos`, que
+-- consulta a view `products_com_status`) mostrava produtos do tenant
+-- sintetico `_teste_isolamento` para staff do Cauã (e, em tese, o inverso
+-- tambem) — enquanto a tela de EDICAO de produto, que le `products`
+-- diretamente (sem passar pela view), isolava corretamente. Essa
+-- discrepancia entre as duas telas foi o que levou ao diagnostico.
+--
+-- Causa raiz: uma view do Postgres, por padrao, executa com os privilegios
+-- de quem a CRIOU (dono da view), nao de quem a CONSULTA. Isso faz a view
+-- IGNORAR o RLS das tabelas de base (`products`, `categories`,
+-- `product_variants`) por completo — mesmo com as policies de tenant da
+-- `013`/`014` corretas e em vigor nas tabelas em si, a view enxerga (e
+-- devolve) linhas de QUALQUER tenant, pra qualquer sessao que a consulte.
+--
+-- Diagnostico confirmado via:
+--   select relname, reloptions from pg_class where relname = 'products_com_status';
+-- `reloptions` retornou null — a view nunca teve `security_invoker`
+-- habilitado, nem na criacao original (migration 009) nem na redefinicao
+-- via DROP+CREATE (migration 016).
+--
+-- Levantamento em toda a arvore de `supabase/migrations/` confirma que
+-- `products_com_status` e a UNICA view do projeto — nao ha outras
+-- views/materialized views sem `security_invoker` a corrigir aqui.
+--
+-- Correcao: habilitar `security_invoker = true` na view. A partir disso,
+-- a view passa a executar com os privilegios/RLS de quem a CONSULTA — as
+-- policies `_select_anon`/`_select_authenticated` (014) e `tenant_id =
+-- current_tenant_id()` (013) passam a valer tambem para leituras feitas
+-- atraves da view, igualando o comportamento da listagem ao da edicao.
+-- Requer Postgres 15+ (Supabase ja esta nessa versao).
+--
+-- Idempotente: ALTER VIEW ... SET e seguro de rodar mais de uma vez (so
+-- redefine o reloption da view existente, nao recria nem apaga dado).
+--
+-- Projeto: Criatorio Capua
+-- =====================================================
+
+alter view if exists public.products_com_status
+  set (security_invoker = true);
+
+-- Verificacao pos-aplicacao (rodar manualmente no SQL Editor, nao faz
+-- parte da migration):
+--   select relname, reloptions from pg_class where relname = 'products_com_status';
+--   -- esperado: reloptions = {security_invoker=true}
