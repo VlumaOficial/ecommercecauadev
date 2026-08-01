@@ -109,17 +109,19 @@ Cada categoria pode ter uma lista configurável de **características** (ficha t
 
 ### 4.4 Produtos e variações (SKU)
 
-**📐 Modelado — sem interface ainda.**
+**📐 Modelado — sem interface ainda.** **✅ Etapa 1 implementada e testada com Chromium real em 01/08/2026** — cadastro e edição de produto com variações em `/painel/produtos` (ver `ESCOPO_PROJETO.md` §4, tabela "Concluídas").
 
 - O **produto** é a entidade de vitrine: nome, descrição, categoria, fotos.
 - Cada produto tem uma ou mais **variações** (SKU) — por exemplo, "Pequeno"/"Médio"/"Grande", ou "500g"/"1kg". Um produto simples (sem variação de verdade) ainda assim tem exatamente 1 variação, chamada "Padrão".
 - **Preço, promoção, estoque e quantidade mínima de compra vivem na variação, não no produto.** Um produto com 3 tamanhos pode ter 3 preços e 3 saldos de estoque diferentes.
 
-**Formato do SKU automático (📐 decidido em 31/07/2026):** quando o lojista não digita um SKU manual pra uma variação, o sistema gera um automaticamente: `[código do produto]-[abreviação do rótulo da variação]`. Exemplo: produto com código `CIC-0042` → variação "Pequeno" vira `CIC-0042-PQ`, "Médio" vira `CIC-0042-MD`, "Padrão" vira `CIC-0042-PAD`. A abreviação usa até ~4 letras/números do rótulo (sem acento, maiúsculo); se duas variações do mesmo produto gerariam a mesma abreviação, a segunda ganha um número no final pra não colidir. Como o código do produto só é definido no momento de salvar (ver §4.6), o SKU automático também só é calculado nesse momento — o formulário mostra "SKU: automático" como indicação até lá, e o valor final aparece depois de salvar, sempre editável se o lojista quiser trocar.
+**Formato do SKU automático (📐 decidido em 31/07/2026, ✅ implementado e testado em 01/08/2026):** quando o lojista não digita um SKU manual pra uma variação, o sistema gera um automaticamente: `[código do produto]-[abreviação do rótulo da variação]`. Exemplo original de decisão: produto com código `CIC-0042` → variação "Pequeno" vira `CIC-0042-PQ`, "Médio" vira `CIC-0042-MD`, "Padrão" vira `CIC-0042-PAD`. A abreviação usa até ~4 letras/números do rótulo (sem acento, maiúsculo); se duas variações do mesmo produto gerariam a mesma abreviação, a segunda ganha um número no final pra não colidir. Como o código do produto só é definido no momento de salvar (ver §4.6), o SKU automático também só é calculado nesse momento — o formulário mostra "SKU: automático" como indicação até lá, e o valor final aparece depois de salvar, sempre editável se o lojista quiser trocar.
+
+**Nota de implementação (01/08/2026):** a abreviação implementada é um corte simples dos primeiros 4 caracteres alfanuméricos (sem tentar preservar só consoantes) — testado ao vivo, "Padrão" gerou `PADR` (não `PAD` como no exemplo ilustrativo original) e "Grande" gerou `GRAN`. Mantido assim por ser determinístico e simples de auditar; se o formato "estilo apelido" (`PQ`, `MD`, `PAD`) for realmente desejado, precisa de uma regra explícita de abreviação (ex.: remover vogais) a ser decidida — não implementado.
 
 ### 4.5 Status do produto — sempre calculado
 
-**📐 Modelado — sem interface ainda.**
+**📐 Modelado — sem interface ainda.** **✅ Em uso desde 01/08/2026** na listagem `/painel/produtos` (badges "Esgotado"/"Promoção" via `products_com_status`, confirmados com Chromium real).
 
 Nenhum desses status é um campo que alguém marca manualmente — são sempre calculados a partir dos dados reais no momento da consulta:
 
@@ -129,7 +131,7 @@ Nenhum desses status é um campo que alguém marca manualmente — são sempre c
 
 ### 4.6 Código do Produto (identificação/referência)
 
-**📐 Decidida — não implementada.**
+**📐 Decidida — não implementada.** **✅ Implementada e testada com Chromium real em 01/08/2026** — prefixo por categoria, geração automática com prévia, código manual, imutabilidade após criação, todos confirmados ao vivo em `/painel/produtos`.
 
 Além do SKU (código da variação, usado para controle de estoque — ver §4.4), cada produto tem um **Código** próprio: serve para identificação, referência e busca — inclusive pensado para lojistas que estão migrando de outro sistema e já têm uma codificação própria de produtos.
 
