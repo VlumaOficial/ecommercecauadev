@@ -18,8 +18,18 @@ Ao concluir cada feature, **antes de considerá-la pronta**:
 1. Código commitado e build passando.
 2. `ESCOPO_PROJETO.md` e `REGRAS_DE_NEGOCIO.md` atualizados — **adicionar/complementar, nunca remover histórico**.
 3. Commit dos docs (separado ou junto do commit de código).
+4. **Toda feature com UI testada com Chromium real (headless) contra o ambiente**, não só `npm run build`/typecheck — ver padrão detalhado abaixo.
 
 Se a sessão estiver longa, encerrar com os docs atualizados e commitados, para que uma sessão nova possa retomar lendo só os documentos.
+
+### Padrão de teste: Chromium real antes de considerar pronto
+
+**✅ Formalizado em 31/07/2026** — já vinha sendo seguido informalmente desde Características de categoria, o fix do bug de slug e a cascata de inativação/reativação (todas pegaram bug real assim, antes da revisão humana). Agora é regra obrigatória, não boa prática opcional.
+
+- Toda feature que envolve UI (tela nova, formulário, listagem, fluxo do painel) é testada com **Chromium real em modo headless** contra o ambiente rodando, antes de ser considerada pronta — `npm run build` (compilação/typecheck) sozinho não é suficiente, ele não pega bug de comportamento em runtime.
+- O teste cobre os **fluxos principais** da feature (ex.: criar, editar, listar) e os **casos de borda relevantes** (ex.: validação, mensagem de erro, estado vazio).
+- Quando a feature grava no banco, o teste **confirma a persistência real** (reconsultando o dado após a ação, não só confiando no retorno visual da tela).
+- O resultado do teste (o que foi testado, o que passou, qualquer ajuste feito por causa dele) é **reportado junto com a entrega da feature** — mesmo padrão de transparência já usado nas entregas anteriores ("Testado com Chromium real: ...").
 
 ### Rastreabilidade de migrations ajustadas ou descartadas
 
