@@ -29,7 +29,10 @@ async function atualizarComPrefixo(
   const maxTentativas = derivando ? 20 : 1
 
   for (let tentativa = 0; tentativa < maxTentativas; tentativa++) {
-    const prefixoTentativa = tentativa === 0 ? prefixoBase : `${prefixoBase}${tentativa + 1}`
+    // Mesmo formato de sufixo do POST (ver route.ts da listagem):
+    // BET, BET0001, BET0002...
+    const prefixoTentativa =
+      tentativa === 0 ? prefixoBase : `${prefixoBase}${String(tentativa).padStart(4, '0')}`
     const { data, error } = await supabase
       .from('categories')
       .update({ ...dados, prefixo_codigo: prefixoTentativa || null })

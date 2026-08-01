@@ -136,7 +136,16 @@ export function CategoriaFormDialog({
       onOpenChange={onOpenChange}
       title={categoria ? 'Editar categoria' : 'Nova categoria'}
       description="Categorias organizam o catalogo em arvore, com quantos niveis forem necessarios."
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={handleSubmit((values) =>
+        // Prefixo so vai pro servidor como "digitado" se o usuario de
+        // fato editou o campo (prefixoManual) - senao manda vazio pra
+        // deixar o servidor derivar E resolver colisao sozinho (rede
+        // de seguranca do auto-sufixo, ver route.ts). Sem isso, o
+        // valor pre-preenchido pelo useEffect acima sempre chegava
+        // "digitado" no servidor, que nunca tentava o sufixo BET0001
+        // em caso de colisao (bug real, achado em produção 01/08/2026).
+        onSubmit(prefixoManual ? values : { ...values, prefixo_codigo: '' })
+      )}
       submitLabel={categoria ? 'Salvar alteracoes' : 'Criar categoria'}
       loading={loading}
     >

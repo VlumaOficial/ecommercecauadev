@@ -31,7 +31,11 @@ async function inserirComPrefixo(
   const maxTentativas = derivando ? 20 : 1
 
   for (let tentativa = 0; tentativa < maxTentativas; tentativa++) {
-    const prefixoTentativa = tentativa === 0 ? prefixoBase : `${prefixoBase}${tentativa + 1}`
+    // Colidiu? Desempata com um sufixo numerico de 4 digitos colado no
+    // prefixo (BET, BET0001, BET0002...) - formato decidido com o
+    // usuario em 01/08/2026 (mais previsivel que BET2/BET3).
+    const prefixoTentativa =
+      tentativa === 0 ? prefixoBase : `${prefixoBase}${String(tentativa).padStart(4, '0')}`
     const { data, error } = await supabase
       .from('categories')
       .insert({ ...dados, prefixo_codigo: prefixoTentativa || null })
