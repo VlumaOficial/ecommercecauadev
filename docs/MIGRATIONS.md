@@ -55,6 +55,8 @@
 
 **Nova atualização de 01/08/2026: migration `018` criada** (fecha o terceiro vazamento cross-tenant, desta vez numa view — `products_com_status` sem `security_invoker`) — pendente de revisão e aplicação manual pelo usuário. Diferente de `013`–`017`, não depende de nenhuma outra migration pendente pra fazer sentido; é uma correção isolada e idempotente. Depois de aplicada, o isolamento por tenant precisa ser reconfirmado incluindo views (não só tabelas), reaproveitando o canário `_teste_isolamento`.
 
+**Atualização final de 01/08/2026: `019` aplicada pelo usuário; frontend correspondente (Route Handlers, tipos, Combobox no formulário de produto, tela `/painel/unidades-venda`) implementado e testado com Chromium real contra a URL pública no mesmo dia — ver `ESCOPO_PROJETO.md` §0 itens 7–9 para o histórico completo do incidente de produção que isso causou e como foi fechado. Única migration pendente agora é a `020` (corrigida após 1ª tentativa falhar — ver linha acima), que remove a coluna de texto livre antiga; não bloqueia nenhuma funcionalidade, é só limpeza de schema.**
+
 **Atualização final de 01/08/2026: `018` revisada, aprovada e aplicada pelo usuário.** Todas as migrations `001`–`018` estão aplicadas no banco. `reloptions` da view reconferido (`security_invoker=true`); reteste de isolamento com o canário, agora cobrindo a view (não só tabela), confirmou `de_outro_tenant=0`. Nenhuma migration pendente no momento.
 
 ---
