@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { PlusIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,11 +21,13 @@ import { ConfirmDialog } from '@/components/painel/crud/confirm-dialog'
 import { useCategorias } from '@/hooks/use-categorias'
 import { getPath } from '@/lib/category-tree'
 import { ProdutosTable } from './produtos-table'
+import { ProdutoViewDialog } from './produto-view-dialog'
 import { useProdutos, useSetProdutoAtivo, type Produto } from '@/hooks/use-produtos'
 
 type CategoriaOption = { value: string; label: string }
 
 export function ProdutosView() {
+  const router = useRouter()
   const [status, setStatus] = useQueryParamState('status', 'ativos')
   const [busca, setBusca] = useQueryParamState('busca', '')
   const [categoryId, setCategoryId] = useQueryParamState('categoria', '')
@@ -37,6 +40,7 @@ export function ProdutosView() {
   const { data: categorias = [] } = useCategorias()
 
   const [produtoParaInativar, setProdutoParaInativar] = useState<Produto | null>(null)
+  const [produtoVisualizando, setProdutoVisualizando] = useState<Produto | null>(null)
   const setAtivo = useSetProdutoAtivo()
 
   const opcoesCategoria = useMemo<CategoriaOption[]>(() => {
@@ -103,10 +107,20 @@ export function ProdutosView() {
         <ProdutosTable
           produtos={produtos}
           isLoading={isLoading}
+          onRowClick={setProdutoVisualizando}
           onInativar={setProdutoParaInativar}
           onReativar={(produto) => setAtivo.mutate({ id: produto.id!, ativo: true })}
         />
       </div>
+
+      <ProdutoViewDialog
+        open={!!produtoVisualizando}
+        onOpenChange={(open) => !open && setProdutoVisualizando(null)}
+        produto={produtoVisualizando}
+        onEdit={() => {
+          if (produtoVisualizando) router.push(`/painel/produtos/${produtoVisualizando.id}`)
+        }}
+      />
 
       <ConfirmDialog
         open={!!produtoParaInativar}

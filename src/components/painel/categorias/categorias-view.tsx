@@ -9,6 +9,7 @@ import { SearchInput } from '@/components/painel/crud/search-input'
 import { ConfirmDialog } from '@/components/painel/crud/confirm-dialog'
 import { CategoriasTree } from './categorias-tree'
 import { CategoriaFormDialog } from './categoria-form-dialog'
+import { CategoriaViewDialog } from './categoria-view-dialog'
 import { CaracteristicasSheet } from './caracteristicas-sheet'
 import { buildTree, computeVisibleIds, getDescendantIds, type CategoriaTreeNode } from '@/lib/category-tree'
 import {
@@ -38,6 +39,7 @@ export function CategoriasView() {
   const [categoriaParaInativar, setCategoriaParaInativar] = useState<CategoriaTreeNode | null>(null)
   const [categoriaParaReativar, setCategoriaParaReativar] = useState<CategoriaTreeNode | null>(null)
   const [categoriaCaracteristicas, setCategoriaCaracteristicas] = useState<CategoriaTreeNode | null>(null)
+  const [categoriaVisualizando, setCategoriaVisualizando] = useState<CategoriaTreeNode | null>(null)
 
   const criar = useCreateCategoria()
   const atualizar = useUpdateCategoria()
@@ -133,12 +135,26 @@ export function CategoriasView() {
           visibleIds={visibleIds}
           autoExpand={autoExpand}
           isLoading={isLoading}
+          onView={setCategoriaVisualizando}
           onEdit={abrirEdicao}
           onInativar={setCategoriaParaInativar}
           onReativar={handleReativarClick}
           onCaracteristicas={setCategoriaCaracteristicas}
         />
       </div>
+
+      <CategoriaViewDialog
+        open={!!categoriaVisualizando}
+        onOpenChange={(open) => !open && setCategoriaVisualizando(null)}
+        categoria={categoriaVisualizando}
+        todasCategorias={categorias}
+        onEdit={() => {
+          if (categoriaVisualizando) {
+            setCategoriaVisualizando(null)
+            abrirEdicao(categoriaVisualizando)
+          }
+        }}
+      />
 
       <CaracteristicasSheet
         categoria={categoriaCaracteristicas}

@@ -19,11 +19,13 @@ import type { Produto } from '@/hooks/use-produtos'
 export function ProdutosTable({
   produtos,
   isLoading,
+  onRowClick,
   onInativar,
   onReativar,
 }: {
   produtos: Produto[]
   isLoading: boolean
+  onRowClick: (produto: Produto) => void
   onInativar: (produto: Produto) => void
   onReativar: (produto: Produto) => void
 }) {
@@ -53,7 +55,15 @@ export function ProdutosTable({
       </TableHeader>
       <TableBody>
         {produtos.map((produto) => (
-          <TableRow key={produto.id}>
+          <TableRow
+            key={produto.id}
+            tabIndex={0}
+            onClick={() => onRowClick(produto)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') onRowClick(produto)
+            }}
+            className="cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+          >
             <TableCell className="font-medium">{produto.nome}</TableCell>
             <TableCell className="text-muted-foreground">{produto.codigo ?? '—'}</TableCell>
             <TableCell>{produto.categoria_nome ?? '—'}</TableCell>
@@ -72,7 +82,7 @@ export function ProdutosTable({
                 )}
               </div>
             </TableCell>
-            <TableCell className="text-right">
+            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
               <div className="flex justify-end gap-1">
                 <Button
                   variant="ghost"

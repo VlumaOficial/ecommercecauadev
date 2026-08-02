@@ -13,6 +13,7 @@ function LinhaCategoria({
   autoExpand,
   expandedIds,
   toggleExpand,
+  onView,
   onEdit,
   onInativar,
   onReativar,
@@ -24,6 +25,7 @@ function LinhaCategoria({
   autoExpand: boolean
   expandedIds: Set<string>
   toggleExpand: (id: string) => void
+  onView: (node: CategoriaTreeNode) => void
   onEdit: (node: CategoriaTreeNode) => void
   onInativar: (node: CategoriaTreeNode) => void
   onReativar: (node: CategoriaTreeNode) => void
@@ -38,13 +40,21 @@ function LinhaCategoria({
   return (
     <>
       <div
-        className="flex items-center gap-1.5 rounded-lg py-2 pr-2 hover:bg-muted/50"
+        className="flex items-center gap-1.5 rounded-lg py-2 pr-2 hover:bg-muted/50 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
         style={{ paddingLeft: 8 + nivel * 24 }}
+        tabIndex={0}
+        onClick={() => onView(node)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') onView(node)
+        }}
       >
         {temFilhos ? (
           <button
             type="button"
-            onClick={() => toggleExpand(node.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleExpand(node.id)
+            }}
             className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground"
             aria-label={aberto ? 'Recolher' : 'Expandir'}
           >
@@ -57,7 +67,7 @@ function LinhaCategoria({
         <span className="flex-1 truncate text-sm font-medium text-foreground">{node.nome}</span>
         <StatusBadge ativo={node.ativo} />
 
-        <div className="flex shrink-0 gap-1">
+        <div className="flex shrink-0 gap-1" onClick={(e) => e.stopPropagation()}>
           <Button
             variant="ghost"
             size="icon-sm"
@@ -103,6 +113,7 @@ function LinhaCategoria({
               autoExpand={autoExpand}
               expandedIds={expandedIds}
               toggleExpand={toggleExpand}
+              onView={onView}
               onEdit={onEdit}
               onInativar={onInativar}
               onReativar={onReativar}
@@ -120,6 +131,7 @@ export function CategoriasTree({
   visibleIds,
   autoExpand,
   isLoading,
+  onView,
   onEdit,
   onInativar,
   onReativar,
@@ -129,6 +141,7 @@ export function CategoriasTree({
   visibleIds: Set<string>
   autoExpand: boolean
   isLoading: boolean
+  onView: (node: CategoriaTreeNode) => void
   onEdit: (node: CategoriaTreeNode) => void
   onInativar: (node: CategoriaTreeNode) => void
   onReativar: (node: CategoriaTreeNode) => void
@@ -170,6 +183,7 @@ export function CategoriasTree({
           autoExpand={autoExpand}
           expandedIds={expandedIds}
           toggleExpand={toggleExpand}
+          onView={onView}
           onEdit={onEdit}
           onInativar={onInativar}
           onReativar={onReativar}
