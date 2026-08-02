@@ -27,12 +27,20 @@ const variacaoSchema = z
     preco: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
     preco_promocional: numeroOuVazio,
     modo_estoque: z.enum(['quantitativo', 'disponibilidade']),
-    saldo_estoque: z.coerce.number().min(0, 'O estoque não pode ser negativo.'),
+    // Opcional (variacao NOVA) - variacao ja existente nem mostra o
+    // campo editavel, so exibe saldo_estoque de referencia. Modulo de
+    // Estoque, migration 022.
+    estoque_inicial: numeroOuVazio,
+    saldo_estoque: z.number().optional(),
     quantidade_minima: z.coerce.number().min(1, 'A quantidade mínima deve ser pelo menos 1.'),
   })
   .refine((v) => v.preco_promocional === '' || v.preco_promocional < v.preco, {
     message: 'O preço promocional deve ser menor que o preço normal.',
     path: ['preco_promocional'],
+  })
+  .refine((v) => v.estoque_inicial === '' || v.estoque_inicial >= 0, {
+    message: 'O estoque inicial não pode ser negativo.',
+    path: ['estoque_inicial'],
   })
 
 // Em edicao, "codigo" nao faz parte do formulario (imutavel - exibido
@@ -82,7 +90,7 @@ const VALORES_PADRAO_NOVO: ProdutoFormValues = {
       preco: 0,
       preco_promocional: '',
       modo_estoque: 'quantitativo',
-      saldo_estoque: 0,
+      estoque_inicial: '',
       quantidade_minima: 1,
     },
   ],
@@ -106,6 +114,10 @@ function valoresIniciaisEdicao(produto: ProdutoDetalhe): ProdutoFormValues {
       preco: v.preco,
       preco_promocional: v.preco_promocional ?? '',
       modo_estoque: v.modo_estoque,
+      // Variacao ja existente: campo editavel fica vazio (nao se
+      // aplica mais), so_estoque carrega o saldo atual pra exibicao
+      // read-only.
+      estoque_inicial: '',
       saldo_estoque: v.saldo_estoque,
       quantidade_minima: v.quantidade_minima,
     })),

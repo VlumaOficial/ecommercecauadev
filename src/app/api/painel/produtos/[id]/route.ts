@@ -16,7 +16,13 @@ const variacaoEdicaoSchema = z.object({
     .optional()
     .transform((v) => (v === '' || v === undefined ? null : v)),
   modo_estoque: z.enum(['quantitativo', 'disponibilidade']).optional().default('quantitativo'),
-  saldo_estoque: z.coerce.number().optional().default(0),
+  // So relevante pra variacao NOVA (sem "id") - a RPC (022) ignora
+  // completamente pra variacao existente, nunca mais escreve saldo
+  // direto nela.
+  estoque_inicial: z
+    .union([z.literal(''), z.coerce.number()])
+    .optional()
+    .transform((v) => (v === '' || v === undefined ? null : v)),
   quantidade_minima: z.coerce.number().optional().default(1),
 })
 
@@ -137,7 +143,7 @@ export async function PATCH(
       preco: v.preco,
       preco_promocional: v.preco_promocional ?? undefined,
       modo_estoque: v.modo_estoque,
-      saldo_estoque: v.saldo_estoque,
+      estoque_inicial: v.estoque_inicial ?? undefined,
       quantidade_minima: v.quantidade_minima,
     })),
   })

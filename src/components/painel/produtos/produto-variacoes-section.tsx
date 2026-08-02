@@ -1,6 +1,7 @@
 'use client'
 
-import { Controller, useFieldArray, useFormContext } from 'react-hook-form'
+import Link from 'next/link'
+import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { PlusIcon, Trash2Icon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,7 +22,7 @@ const VARIACAO_PADRAO = {
   preco: 0,
   preco_promocional: '' as const,
   modo_estoque: 'quantitativo' as const,
-  saldo_estoque: 0,
+  estoque_inicial: '' as const,
   quantidade_minima: 1,
 }
 
@@ -33,6 +34,11 @@ export function ProdutoVariacoesSection() {
   } = useFormContext<ProdutoFormValues>()
 
   const { fields, append, remove } = useFieldArray({ control, name: 'variacoes' })
+  // Le o valor ATUAL do form (nao o field.id do useFieldArray, que e
+  // um id interno gerado pelo RHF pra key de renderizacao - diferente
+  // do "id" de dominio da variacao, que so existe quando ela ja
+  // existia no banco antes de abrir o formulario).
+  const variacoesValues = useWatch({ control, name: 'variacoes' })
 
   return (
     <Card>
@@ -52,7 +58,14 @@ export function ProdutoVariacoesSection() {
         {errors.variacoes?.root && (
           <p className="text-xs text-destructive">{errors.variacoes.root.message}</p>
         )}
-        {fields.map((field, index) => (
+        {fields.map((field, index) => {
+        // Domain id (nao o field.id do RHF): presente = variacao ja
+        // existia no banco quando o form abriu (edicao) - so nesse
+        // caso o estoque vira read-only, apontando pro modulo de
+        // Estoque. Ausente = variacao nova (produto novo, ou
+        // adicionada durante uma edicao) - estoque inicial editavel.
+        const isExistente = !!variacoesValues?.[index]?.id
+        return (
           <div key={field.id} className="space-y-3 rounded-lg border border-border p-3">
             <div className="flex items-center justify-between gap-2">
               <div className="space-y-1.5 flex-1">
@@ -110,12 +123,39 @@ export function ProdutoVariacoesSection() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor={`variacao-${index}-estoque`}>Estoque</Label>
-                <Input
-                  id={`variacao-${index}-estoque`}
-                  type="number"
-                  {...register(`variacoes.${index}.saldo_estoque`)}
-                />
+                <Label htmlFor={`variacao-${index}-estoque`}>Estoque inicial</Label>
+                {isExistente ? (
+                  <>
+                    <Input
+                      id={`variacao-${index}-estoque`}
+                      value={variacoesValues?.[index]?.saldo_estoque ?? 0}
+                      disabled
+                      readOnly
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Estoque gerenciado em{' '}
+                      <Link href="/painel/estoque" className="underline hover:text-foreground">
+                        Estoque
+                      </Link>
+                      .
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Input
+                      id={`variacao-${index}-estoque`}
+                      type="number"
+                      placeholder="0"
+                      aria-invalid={!!errors.variacoes?.[index]?.estoque_inicial}
+                      {...register(`variacoes.${index}.estoque_inicial`)}
+                    />
+                    {errors.variacoes?.[index]?.estoque_inicial && (
+                      <p className="text-xs text-destructive">
+                        {errors.variacoes[index]?.estoque_inicial?.message}
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor={`variacao-${index}-qtd-min`}>Quantidade mínima</Label>
@@ -156,7 +196,8 @@ export function ProdutoVariacoesSection() {
               </div>
             </div>
           </div>
-        ))}
+        )
+        })}
       </CardContent>
     </Card>
   )

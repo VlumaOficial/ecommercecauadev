@@ -17,7 +17,15 @@ export type VariacaoFormValues = {
   preco: number
   preco_promocional: number | ''
   modo_estoque: 'quantitativo' | 'disponibilidade'
-  saldo_estoque: number
+  // So editavel quando a variacao NASCE (produto novo, ou variacao
+  // nova adicionada durante uma edicao) - vira movimentacao de
+  // inventario na RPC (022), nunca grava saldo direto. Modulo de
+  // Estoque.
+  estoque_inicial: number | ''
+  // So leitura: saldo atual de uma variacao JA EXISTENTE, pra exibir
+  // no formulario de edicao (nunca enviado no payload - dali pra
+  // frente so muda pelo modulo de Estoque).
+  saldo_estoque?: number
   quantidade_minima: number
 }
 
