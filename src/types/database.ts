@@ -706,6 +706,76 @@ export type Database = {
           },
         ]
       }
+      stock_movements: {
+        Row: {
+          id: string
+          tenant_id: string
+          variant_id: string
+          product_id: string
+          tipo: Database["public"]["Enums"]["stock_movement_type"]
+          quantidade: number
+          saldo_anterior: number
+          saldo_novo: number
+          motivo: string | null
+          referencia_tipo: string | null
+          referencia_id: string | null
+          usuario_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id?: string
+          variant_id: string
+          product_id: string
+          tipo: Database["public"]["Enums"]["stock_movement_type"]
+          quantidade: number
+          saldo_anterior: number
+          saldo_novo: number
+          motivo?: string | null
+          referencia_tipo?: string | null
+          referencia_id?: string | null
+          usuario_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          variant_id?: string
+          product_id?: string
+          tipo?: Database["public"]["Enums"]["stock_movement_type"]
+          quantidade?: number
+          saldo_anterior?: number
+          saldo_novo?: number
+          motivo?: string | null
+          referencia_tipo?: string | null
+          referencia_id?: string | null
+          usuario_id?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_settings: {
         Row: {
           baixa_estoque_na_reserva: boolean
@@ -859,10 +929,27 @@ export type Database = {
         Args: { p_product_id: string; p_produto: Json; p_variacoes: Json }
         Returns: Database["public"]["Tables"]["products"]["Row"]
       }
+      // Adicionada na migration 021 (modulo de Estoque). p_quantidade
+      // (delta assinado) OU p_saldo_novo_desejado (so pra tipo=ajuste,
+      // a funcao calcula o delta) - nunca os dois.
+      registrar_movimentacao_estoque: {
+        Args: {
+          p_variant_id: string
+          p_tipo: Database["public"]["Enums"]["stock_movement_type"]
+          p_quantidade?: number | null
+          p_saldo_novo_desejado?: number | null
+          p_motivo?: string | null
+          p_referencia_tipo?: string | null
+          p_referencia_id?: string | null
+        }
+        Returns: Database["public"]["Tables"]["stock_movements"]["Row"]
+      }
     }
     Enums: {
       field_type: "texto" | "numero" | "selecao" | "booleano" | "data"
       stock_mode: "quantitativo" | "disponibilidade"
+      // Adicionado na migration 021 (modulo de Estoque).
+      stock_movement_type: "entrada" | "saida" | "ajuste" | "inventario" | "devolucao"
       user_role: "admin" | "operador"
     }
     CompositeTypes: {
