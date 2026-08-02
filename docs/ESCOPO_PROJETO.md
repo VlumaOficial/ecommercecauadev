@@ -88,6 +88,16 @@ O produto é **arquitetado como SaaS multi-tenant desde a primeira tabela**, mas
 
 **Por quê clonar em vez de evoluir o mesmo ambiente direto pra SaaS:** o Cauã é cliente pagante rodando em produção nesse ponto — mudanças estruturais de SaaS (novo onboarding, billing, multi-tenant real) têm risco de regressão alto demais pra testar direto contra o ambiente de quem já depende do sistema no dia a dia. Clonar isola o risco.
 
+#### Questões a resolver na Fase SaaS (decididas em 01/08/2026 — a construir no clone, não agora)
+
+**📐 Registradas em 01/08/2026, sem implementação nenhuma ainda — fica para a Fase SaaS (item 4 acima), depois do Cauã congelar.** Três frentes fechadas como escopo da fase, para não perder o fio da meada quando essa fase começar:
+
+1. **Onboarding de comerciantes**: fluxo self-service de cadastro de lojista — o comerciante se cadastra, cria a loja, o sistema provisiona o tenant automaticamente (linha em `tenants`, configuração inicial de `store_settings`, etc.), sem intervenção manual da VLUMA. Hoje `handle_new_user()` (migration `006`) hardcoda `tenant = 'capua'` no signup (ver nota já registrada acima, no início de §2) — na Fase SaaS isso vira dinâmico, resolvido pelo contexto do cadastro (qual loja o comerciante está criando), não mais uma constante fixa no código.
+2. **Acesso por subdomínio nosso OU domínio próprio do cliente**: toda loja nova ganha um subdomínio padrão (ex.: `loja.vluma.com.br`) automaticamente no onboarding (item 1); lojistas mais avançados podem apontar um domínio próprio via CNAME (padrão de mercado — Shopify, Nuvemshop). Isso exige **resolução de tenant por host** (subdomínio ou domínio → `tenant_id`) no servidor, uma peça de infraestrutura nova — `src/lib/tenant.ts` já isola esse ponto de decisão no código (hoje retorna uma constante), mas a lógica real de resolver por host ainda não existe.
+3. **Acesso do cliente-final da loja**: o consumidor final de cada loja acessa a vitrine pública através do subdomínio ou domínio daquela loja específica (uma das duas opções do item 2) — é a camada de storefront público, container onde o cliente-final efetivamente compra.
+
+**Vínculo com a Vitrine (não é só Fase SaaS — chega antes):** a resolução de tenant por host do item 2 **não é exclusiva da Fase SaaS** — já é pré-requisito da fase da **Vitrine** (catálogo público, ver §4 "Planejadas"), bem antes do Cauã congelar. Essa é exatamente a "Opção C" já registrada em §2 "Padrão de multi-tenant nas escritas" (leitura pública via RPC/view parametrizada por tenant, resolvido no servidor a partir do subdomínio) — ou seja, parte da infraestrutura de resolução de tenant por host que a Fase SaaS precisa (item 2) já vai existir, em versão simplificada (só subdomínio nosso, sem domínio próprio de cliente ainda), desde a construção da Vitrine. A Fase SaaS estende essa mesma peça pra também aceitar domínio próprio do cliente (CNAME) e pro fluxo completo de onboarding (item 1).
+
 ---
 
 ## 2. Stack e arquitetura
