@@ -375,6 +375,11 @@ export type Database = {
           product_id: string
           storage_path: string
           tenant_id: string
+          // Adicionado na migration 023 (Produtos Etapa 3): null =
+          // imagem do produto (galeria compartilhada); preenchido =
+          // imagem especifica de uma variacao. Capa (principal) so
+          // pode ser imagem de produto (chk_product_images_capa_so_produto).
+          variant_id: string | null
         }
         Insert: {
           alt_text?: string | null
@@ -384,7 +389,11 @@ export type Database = {
           principal?: boolean
           product_id: string
           storage_path: string
-          tenant_id: string
+          // tenant_id ganhou DEFAULT current_tenant_id() na migration
+          // 023 (gap que product_images nunca tinha corrigido, ao
+          // contrario de toda outra tabela de dominio); opcional no insert.
+          tenant_id?: string
+          variant_id?: string | null
         }
         Update: {
           alt_text?: string | null
@@ -395,6 +404,7 @@ export type Database = {
           product_id?: string
           storage_path?: string
           tenant_id?: string
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -409,6 +419,13 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_images_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -943,6 +960,13 @@ export type Database = {
           p_referencia_id?: string | null
         }
         Returns: Database["public"]["Tables"]["stock_movements"]["Row"]
+      }
+      // Adicionada na migration 023 (Produtos Etapa 3 - Imagens). So
+      // aceita imagem de PRODUTO (variant_id null) - recusa imagem de
+      // variacao.
+      definir_imagem_principal: {
+        Args: { p_image_id: string }
+        Returns: undefined
       }
     }
     Enums: {

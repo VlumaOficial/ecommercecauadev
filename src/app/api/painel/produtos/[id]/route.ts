@@ -73,7 +73,17 @@ export async function GET(
     return NextResponse.json({ error: 'Não foi possível carregar as variações do produto.' }, { status: 400 })
   }
 
-  return NextResponse.json({ data: { ...produto, variacoes: variacoes ?? [] } })
+  const { data: imagens, error: imagensError } = await supabase
+    .from('product_images')
+    .select('*')
+    .eq('product_id', id)
+    .order('ordem', { ascending: true })
+
+  if (imagensError) {
+    return NextResponse.json({ error: 'Não foi possível carregar as imagens do produto.' }, { status: 400 })
+  }
+
+  return NextResponse.json({ data: { ...produto, variacoes: variacoes ?? [], imagens: imagens ?? [] } })
 }
 
 export async function PATCH(

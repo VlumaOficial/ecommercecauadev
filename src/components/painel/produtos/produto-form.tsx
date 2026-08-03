@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { ArrowLeftIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   useCreateProduto,
   useUpdateProduto,
@@ -16,6 +17,7 @@ import {
 import { ProdutoDadosBasicos } from './produto-dados-basicos'
 import { ProdutoCodigoSection } from './produto-codigo-section'
 import { ProdutoVariacoesSection } from './produto-variacoes-section'
+import { ProdutoImagensSection } from './produto-imagens-section'
 
 const numeroOuVazio = z.union([z.literal(''), z.coerce.number()])
 
@@ -177,6 +179,25 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
         <ProdutoDadosBasicos />
         <ProdutoCodigoSection codigoAtual={produto?.codigo ?? null} />
         <ProdutoVariacoesSection />
+        {produto ? (
+          <ProdutoImagensSection
+            produtoId={produto.id}
+            imagens={produto.imagens.filter((img) => !img.variant_id)}
+            maxImagens={10}
+            titulo="Imagens do produto"
+          />
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Imagens do produto</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Salve o produto primeiro para poder adicionar imagens.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </form>
     </FormProvider>
   )

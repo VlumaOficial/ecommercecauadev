@@ -7,7 +7,8 @@ import type { StatusFiltro } from '@/components/painel/crud/status-filter-tabs'
 
 export type Produto = Tables<'products_com_status'>
 export type Variacao = Tables<'product_variants'>
-export type ProdutoDetalhe = Tables<'products'> & { variacoes: Variacao[] }
+export type ImagemProduto = Tables<'product_images'>
+export type ProdutoDetalhe = Tables<'products'> & { variacoes: Variacao[]; imagens: ImagemProduto[] }
 
 export type VariacaoFormValues = {
   // Presente = variacao ja existente (edicao); ausente = nova.
