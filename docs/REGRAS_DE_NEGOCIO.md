@@ -57,6 +57,11 @@ Regra de combinação:
 - **Confirmação é pedida só ao inativar** (ação com efeito colateral, reversível mas não trivial de perceber). Reativar é instantâneo — **exceto** quando reativar também tem efeito em cascata (ver §3.1), caso em que também pede confirmação.
 - Cliente final só enxerga registros **ativos** (a menos que a regra de visibilidade da entidade diga o contrário — ver `RLS` no `ESCOPO_PROJETO.md`).
 
+### 3.2 Exceção ao soft delete universal: Imagens de produto
+
+**📐 Decidida em 02/08/2026, ✅ implementada em 03/08/2026.** Imagens de produto/variação (Produtos Etapa 3) são a **única exceção** à regra de soft delete universal desta seção — remover uma imagem é uma **exclusão real** (`DELETE` de verdade, tanto do arquivo no Storage quanto da linha no banco), sem confirmação estilo "inativar/reativar".
+
+**Por quê**: soft delete existe pra entidades que fazem sentido **reativar** depois (uma cidade, uma categoria, um produto podem voltar a ficar disponíveis). Uma foto removida não tem um fluxo de "reativar" que faça sentido pro lojista — ele não vai querer trazer de volta uma imagem específica que decidiu tirar. Manter linha + arquivo órfãos no Storage pra sempre só acumula custo de armazenamento sem nenhum benefício real. A remoção ainda pede confirmação (é uma ação destrutiva, igual a inativar), só não existe um estado "inativo" intermediário — é apagar de vez.
 ### 3.1 Cascata de inativação/reativação em Categorias
 
 **✅ Em vigor** (migration `011`, RPC `set_category_ativo_cascade`) — testada com Chromium real contra o banco: filha já inativa por decisão própria não é tocada em nenhum dos dois sentidos; filha ativa é cascateada ao inativar o pai e restaurada corretamente ao reativá-lo.
