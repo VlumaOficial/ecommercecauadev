@@ -65,6 +65,8 @@
 
 **Atualização de fechamento de sessão, 03/08/2026: migrations `019`–`023` também aplicadas.** `001`–`023` estão **todas aplicadas e validadas** no banco — nenhuma pendente. Resumo do que cada uma trouxe (detalhe completo nas linhas da tabela acima e em `ESCOPO_PROJETO.md`): `019`/`020` — cadastro de Unidades de Venda; `021`/`022` — módulo de Estoque (ledger de movimentações); `023` — Produtos Etapa 3, `product_images` ganha `variant_id` + bucket do Storage. Próxima migration a criar (quando o trabalho retomar) seria pra Produtos Etapa 2 (Características por produto, `product_attribute_values`) — ainda não desenhada.
 
+**Atualização de fechamento de sessão, 03/08/2026 (continuação) — Produtos Etapa 3 (Imagens) incremento 2 (mini-uploader por variação) não precisou de nenhuma migration nova.** A `023` já tinha sido desenhada desde o início pensando em `variant_id` (coluna nullable, `check` de capa só em imagem de produto, contagem de limite escopável) — o incremento 2 foi 100% frontend em cima do que já estava no banco. Continua nenhuma migration pendente; `001`–`023` seguem sendo o estado completo aplicado. Ver `ESCOPO_PROJETO.md` §0 item 11 e §4 (tabela "Concluídas") para o detalhe do teste.
+
 ---
 
 *Ver `docs/ESCOPO_PROJETO.md` §6 "Ambientes e referências" para o contexto completo de como as migrations são versionadas e aplicadas, e §0 para a regra de rastreabilidade de migrations ajustadas/descartadas.*

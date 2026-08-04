@@ -124,6 +124,8 @@ Cada categoria pode ter uma lista configurável de **características** (ficha t
 
 **Nota de implementação (01/08/2026):** a abreviação implementada é um corte simples dos primeiros 4 caracteres alfanuméricos (sem tentar preservar só consoantes) — testado ao vivo, "Padrão" gerou `PADR` (não `PAD` como no exemplo ilustrativo original) e "Grande" gerou `GRAN`. Mantido assim por ser determinístico e simples de auditar; se o formato "estilo apelido" (`PQ`, `MD`, `PAD`) for realmente desejado, precisa de uma regra explícita de abreviação (ex.: remover vogais) a ser decidida — não implementado.
 
+**Fotos por variação (📐 decidida e ✅ implementada em 03/08/2026):** além das fotos gerais do produto (galeria principal, até 10 imagens — ver `ESCOPO_PROJETO.md` §4), cada variação pode opcionalmente ter suas próprias fotos (até 5), pensado para o caso de tamanhos/cores visualmente diferentes entre si dentro do mesmo produto. É **opcional**: uma variação sem fotos próprias simplesmente usa as fotos gerais do produto — o lojista só precisa fotografar a variação separadamente quando isso realmente ajudar o cliente a diferenciar (ex.: "Pequeno" e "Grande" de um peixe que muda de cor com a idade). No painel, o uploader de cada variação fica **recolhido por padrão** dentro do formulário de edição, para não sobrecarregar a tela de quem só usa a galeria geral. Segue a mesma regra de exclusão real (não soft delete) já registrada em §3.2.
+
 ### 4.5 Status do produto — sempre calculado
 
 **📐 Modelado — sem interface ainda.** **✅ Em uso desde 01/08/2026** na listagem `/painel/produtos` (badges "Esgotado"/"Promoção" via `products_com_status`, confirmados com Chromium real).
