@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
-import { PlusIcon, Trash2Icon } from 'lucide-react'
+import { ChevronDownIcon, ImagesIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -14,7 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { ProdutoFormValues } from '@/hooks/use-produtos'
+import { ProdutoImagensSection } from './produto-imagens-section'
+import type { ImagemProduto, ProdutoFormValues } from '@/hooks/use-produtos'
+
+const LIMITE_IMAGENS_VARIACAO = 5
 
 const VARIACAO_PADRAO = {
   nome: '',
@@ -26,7 +30,13 @@ const VARIACAO_PADRAO = {
   quantidade_minima: 1,
 }
 
-export function ProdutoVariacoesSection() {
+export function ProdutoVariacoesSection({
+  produtoId,
+  imagens,
+}: {
+  produtoId?: string
+  imagens?: ImagemProduto[]
+}) {
   const {
     register,
     control,
@@ -195,6 +205,30 @@ export function ProdutoVariacoesSection() {
                 />
               </div>
             </div>
+
+            {isExistente && produtoId && (
+              <Collapsible>
+                <CollapsibleTrigger className="group flex w-full items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
+                  <ImagesIcon className="size-4" />
+                  Fotos específicas desta variação — opcional
+                  <ChevronDownIcon className="size-4 transition-transform group-data-[panel-open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="pt-3">
+                    <ProdutoImagensSection
+                      produtoId={produtoId}
+                      variantId={variacoesValues?.[index]?.id}
+                      imagens={(imagens ?? []).filter(
+                        (img) => img.variant_id === variacoesValues?.[index]?.id
+                      )}
+                      maxImagens={LIMITE_IMAGENS_VARIACAO}
+                      titulo="Fotos desta variação"
+                      descricao="Aparecem só quando o cliente escolhe esta variação. Opcional — sem fotos aqui, valem as imagens gerais do produto."
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
           </div>
         )
         })}

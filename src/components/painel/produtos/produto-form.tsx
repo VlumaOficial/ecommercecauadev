@@ -178,7 +178,7 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
 
         <ProdutoDadosBasicos />
         <ProdutoCodigoSection codigoAtual={produto?.codigo ?? null} />
-        <ProdutoVariacoesSection />
+        <ProdutoVariacoesSection produtoId={produto?.id} imagens={produto?.imagens} />
         {produto ? (
           <ProdutoImagensSection
             produtoId={produto.id}
