@@ -361,7 +361,9 @@ export type Database = {
           created_at?: string
           id?: string
           product_id: string
-          tenant_id: string
+          // Opcional desde a migration 025 (DEFAULT current_tenant_id()) -
+          // mesmo gap ja fechado nas outras tabelas de dominio.
+          tenant_id?: string
           updated_at?: string
           valor?: string | null
         }
@@ -977,13 +979,15 @@ export type Database = {
         Args: { p_prefixo: string }
         Returns: string
       }
+      // p_caracteristicas adicionado na migration 025 (Etapa 2,
+      // Caracteristicas) - opcional, default '[]'::jsonb no banco.
       criar_produto_com_variacoes: {
-        Args: { p_produto: Json; p_variacoes: Json }
+        Args: { p_produto: Json; p_variacoes: Json; p_caracteristicas?: Json }
         Returns: Database["public"]["Tables"]["products"]["Row"]
       }
-      // Adicionada na migration 017.
+      // Adicionada na migration 017. p_caracteristicas adicionado na 025.
       atualizar_produto_com_variacoes: {
-        Args: { p_product_id: string; p_produto: Json; p_variacoes: Json }
+        Args: { p_product_id: string; p_produto: Json; p_variacoes: Json; p_caracteristicas?: Json }
         Returns: Database["public"]["Tables"]["products"]["Row"]
       }
       // Adicionada na migration 021 (modulo de Estoque). p_quantidade

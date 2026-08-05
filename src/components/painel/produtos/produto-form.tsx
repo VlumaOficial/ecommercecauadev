@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { FormProvider, useForm } from 'react-hook-form'
+import { FormProvider, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { ArrowLeftIcon } from 'lucide-react'
@@ -13,11 +13,13 @@ import {
   useUpdateProduto,
   type ProdutoFormValues,
   type ProdutoDetalhe,
+  type CaracteristicaPayload,
 } from '@/hooks/use-produtos'
 import { ProdutoDadosBasicos } from './produto-dados-basicos'
 import { ProdutoCodigoSection } from './produto-codigo-section'
 import { ProdutoVariacoesSection } from './produto-variacoes-section'
 import { ProdutoImagensSection } from './produto-imagens-section'
+import { ProdutoCaracteristicasSection, useCaracteristicasAtivas } from './produto-caracteristicas-section'
 
 const numeroOuVazio = z.union([z.literal(''), z.coerce.number()])
 
@@ -59,6 +61,14 @@ function buildProdutoSchema(modo: 'novo' | 'editar') {
     codigo_manual: z.string().trim(),
     codigo_visivel: z.boolean(),
     variacoes: z.array(variacaoSchema).min(1, 'Adicione pelo menos uma variação para o produto.'),
+    // Etapa 2 (Caracteristicas): attribute_id -> valor. Obrigatoriedade
+    // NAO e validada aqui de proposito - depende da categoria
+    // selecionada (dado externo, buscado via query), nao de uma regra
+    // estatica do schema. Validado no onSubmit do ProdutoForm via
+    // methods.setError, contra a lista de caracteristicas ATIVAS da
+    // categoria no momento do submit (mesma fonte de verdade do
+    // servidor).
+    caracteristicas: z.record(z.string(), z.string()),
   })
 
   if (modo === 'novo') {
@@ -85,6 +95,7 @@ const VALORES_PADRAO_NOVO: ProdutoFormValues = {
   codigo_modo: 'automatico',
   codigo_manual: '',
   codigo_visivel: false,
+  caracteristicas: {},
   variacoes: [
     {
       nome: 'Padrão',
@@ -109,6 +120,13 @@ function valoresIniciaisEdicao(produto: ProdutoDetalhe): ProdutoFormValues {
     codigo_modo: 'manual', // nao usado em edicao, so pra satisfazer o tipo
     codigo_manual: produto.codigo ?? '',
     codigo_visivel: produto.codigo_visivel,
+    // attribute_id -> valor, a partir das linhas ja existentes em
+    // product_attribute_values (GET /api/painel/produtos/[id] ja
+    // devolve isso). Caracteristica sem valor preenchido simplesmente
+    // nao tem chave aqui - o campo renderiza vazio.
+    caracteristicas: Object.fromEntries(
+      produto.caracteristicas.map((c) => [c.attribute_id, c.valor ?? ''])
+    ),
     variacoes: produto.variacoes.map((v) => ({
       id: v.id,
       nome: v.nome,
@@ -145,14 +163,40 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
 
   const salvando = criar.isPending || atualizar.isPending
 
+  const categoryId = useWatch({ control: methods.control, name: 'category_id' }) ?? ''
+  const caracteristicasAtivas = useCaracteristicasAtivas(categoryId)
+
   function onSubmit(values: ProdutoFormValues) {
+    // Obrigatoriedade das caracteristicas: nao da pra validar no
+    // schema estatico (depende da categoria, dado buscado). Fonte da
+    // verdade e a mesma lista de caracteristicas ATIVAS usada pra
+    // montar o payload logo abaixo - se mudou de categoria, valida
+    // contra a nova.
+    methods.clearErrors('caracteristicas')
+    let temCampoObrigatorioVazio = false
+    for (const attr of caracteristicasAtivas) {
+      if (attr.obrigatorio && !(values.caracteristicas[attr.id] ?? '').trim()) {
+        methods.setError(`caracteristicas.${attr.id}`, { message: 'Obrigatório.' })
+        temCampoObrigatorioVazio = true
+      }
+    }
+    if (temCampoObrigatorioVazio) return
+
+    const caracteristicasPayload: CaracteristicaPayload[] = caracteristicasAtivas.map((attr) => ({
+      attribute_id: attr.id,
+      valor: values.caracteristicas[attr.id] ?? '',
+    }))
+
     if (produto) {
       atualizar.mutate(
-        { id: produto.id, values },
+        { id: produto.id, values, caracteristicas: caracteristicasPayload },
         { onSuccess: () => router.push('/painel/produtos') }
       )
     } else {
-      criar.mutate(values, { onSuccess: () => router.push('/painel/produtos') })
+      criar.mutate(
+        { values, caracteristicas: caracteristicasPayload },
+        { onSuccess: () => router.push('/painel/produtos') }
+      )
     }
   }
 
@@ -179,6 +223,7 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
         <ProdutoDadosBasicos />
         <ProdutoCodigoSection codigoAtual={produto?.codigo ?? null} />
         <ProdutoVariacoesSection produtoId={produto?.id} imagens={produto?.imagens} />
+        <ProdutoCaracteristicasSection categoryId={categoryId} />
         {produto ? (
           <ProdutoImagensSection
             produtoId={produto.id}

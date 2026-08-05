@@ -26,6 +26,14 @@ const variacaoEdicaoSchema = z.object({
   quantidade_minima: z.coerce.number().optional().default(1),
 })
 
+// Etapa 2 (Caracteristicas): mesmo formato usado na criacao (route.ts,
+// POST) - um item por caracteristica preenchida, "valor" vazio e
+// valido. Obrigatoriedade e responsabilidade da RPC.
+const caracteristicaEdicaoSchema = z.object({
+  attribute_id: z.string().uuid(),
+  valor: z.string().optional().default(''),
+})
+
 const produtoEdicaoSchema = z.object({
   produto: z.object({
     category_id: z.string().uuid('Selecione uma categoria.'),
@@ -37,6 +45,7 @@ const produtoEdicaoSchema = z.object({
     codigo_visivel: z.boolean().optional().default(false),
   }),
   variacoes: z.array(variacaoEdicaoSchema).min(1, 'Adicione pelo menos uma variação para o produto.'),
+  caracteristicas: z.array(caracteristicaEdicaoSchema).optional().default([]),
 })
 
 // Produto + variacoes ativas, pra hidratar o formulario de edicao.
@@ -83,7 +92,21 @@ export async function GET(
     return NextResponse.json({ error: 'Não foi possível carregar as imagens do produto.' }, { status: 400 })
   }
 
-  return NextResponse.json({ data: { ...produto, variacoes: variacoes ?? [], imagens: imagens ?? [] } })
+  const { data: caracteristicas, error: caracteristicasError } = await supabase
+    .from('product_attribute_values')
+    .select('*')
+    .eq('product_id', id)
+
+  if (caracteristicasError) {
+    return NextResponse.json(
+      { error: 'Não foi possível carregar as características do produto.' },
+      { status: 400 }
+    )
+  }
+
+  return NextResponse.json({
+    data: { ...produto, variacoes: variacoes ?? [], imagens: imagens ?? [], caracteristicas: caracteristicas ?? [] },
+  })
 }
 
 export async function PATCH(
@@ -125,7 +148,7 @@ export async function PATCH(
     )
   }
 
-  const { produto, variacoes } = parsed.data
+  const { produto, variacoes, caracteristicas } = parsed.data
   const slugFinal = slugify(produto.nome)
   if (!slugFinal) {
     return NextResponse.json(
@@ -156,6 +179,7 @@ export async function PATCH(
       estoque_inicial: v.estoque_inicial ?? undefined,
       quantidade_minima: v.quantidade_minima,
     })),
+    p_caracteristicas: caracteristicas,
   })
 
   if (error) {

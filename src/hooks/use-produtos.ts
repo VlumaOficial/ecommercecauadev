@@ -8,7 +8,20 @@ import type { StatusFiltro } from '@/components/painel/crud/status-filter-tabs'
 export type Produto = Tables<'products_com_status'>
 export type Variacao = Tables<'product_variants'>
 export type ImagemProduto = Tables<'product_images'>
-export type ProdutoDetalhe = Tables<'products'> & { variacoes: Variacao[]; imagens: ImagemProduto[] }
+export type ValorCaracteristica = Tables<'product_attribute_values'>
+export type ProdutoDetalhe = Tables<'products'> & {
+  variacoes: Variacao[]
+  imagens: ImagemProduto[]
+  caracteristicas: ValorCaracteristica[]
+}
+
+// Payload enviado pra RPC (p_caracteristicas): um item por
+// caracteristica ATIVA da categoria - o form monta essa lista a partir
+// do Record<attribute_id, valor> (ver ProdutoFormValues.caracteristicas
+// abaixo) cruzado com a lista de caracteristicas ativas da categoria
+// selecionada, sempre incluindo as vazias (pra permitir limpar um
+// valor ja preenchido, nao so preencher).
+export type CaracteristicaPayload = { attribute_id: string; valor: string }
 
 export type VariacaoFormValues = {
   // Presente = variacao ja existente (edicao); ausente = nova.
@@ -41,6 +54,13 @@ export type ProdutoFormValues = {
   codigo_manual: string
   codigo_visivel: boolean
   variacoes: VariacaoFormValues[]
+  // Etapa 2 (Caracteristicas): attribute_id -> valor digitado. Chave
+  // de acesso direto (nao array) porque os campos sao renderizados
+  // dinamicamente por ProdutoCaracteristicasSection, um por
+  // caracteristica ativa da categoria - nao precisa de semantica de
+  // lista ordenada/insercao do useFieldArray, so leitura/escrita por
+  // attribute_id. Convertido pra CaracteristicaPayload[] no submit.
+  caracteristicas: Record<string, string>
 }
 
 // Mesmo motivo de Cidades/Categorias: sessao httpOnly, mutations
@@ -70,7 +90,13 @@ export function useCreateProduto() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (values: ProdutoFormValues) => {
+    mutationFn: async ({
+      values,
+      caracteristicas,
+    }: {
+      values: ProdutoFormValues
+      caracteristicas: CaracteristicaPayload[]
+    }) => {
       const response = await fetch('/api/painel/produtos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,6 +113,7 @@ export function useCreateProduto() {
           codigo_modo: values.codigo_modo,
           codigo_manual: values.codigo_manual,
           variacoes: values.variacoes,
+          caracteristicas,
         }),
       })
       return parseJsonOrThrow(response)
@@ -139,9 +166,11 @@ export function useUpdateProduto() {
     mutationFn: async ({
       id,
       values,
+      caracteristicas,
     }: {
       id: string
       values: Omit<ProdutoFormValues, 'codigo_modo' | 'codigo_manual'>
+      caracteristicas: CaracteristicaPayload[]
     }) => {
       const response = await fetch(`/api/painel/produtos/${id}`, {
         method: 'PATCH',
@@ -157,6 +186,7 @@ export function useUpdateProduto() {
             codigo_visivel: values.codigo_visivel,
           },
           variacoes: values.variacoes,
+          caracteristicas,
         }),
       })
       return parseJsonOrThrow(response)

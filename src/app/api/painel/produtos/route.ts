@@ -80,6 +80,17 @@ const variacaoInputSchema = z.object({
   quantidade_minima: z.coerce.number().optional().default(1),
 })
 
+// Etapa 2 (Caracteristicas): um item por caracteristica preenchida no
+// form (o client so envia as ATIVAS da categoria selecionada, ver
+// produto-form.tsx). "valor" vazio e valido (limpa/nao preenche) - a
+// RPC trata via nullif. Obrigatoriedade e responsabilidade da RPC
+// (fonte da verdade), nao validada aqui - mensagem amigavel ja vem
+// pronta do "raise exception" dela.
+const caracteristicaInputSchema = z.object({
+  attribute_id: z.string().uuid(),
+  valor: z.string().optional().default(''),
+})
+
 const produtoInputSchema = z.object({
   produto: z.object({
     category_id: z.string().uuid('Selecione uma categoria.'),
@@ -93,6 +104,7 @@ const produtoInputSchema = z.object({
   codigo_modo: z.enum(['automatico', 'categoria', 'manual']),
   codigo_manual: z.string().trim().optional().default(''),
   variacoes: z.array(variacaoInputSchema).min(1, 'Adicione pelo menos uma variação para o produto.'),
+  caracteristicas: z.array(caracteristicaInputSchema).optional().default([]),
 })
 
 export async function POST(request: NextRequest) {
@@ -110,7 +122,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { produto, codigo_modo, codigo_manual, variacoes } = parsed.data
+  const { produto, codigo_modo, codigo_manual, variacoes, caracteristicas } = parsed.data
   const supabase = await createClient()
 
   let codigoFinal: string
@@ -178,6 +190,7 @@ export async function POST(request: NextRequest) {
       estoque_inicial: v.estoque_inicial ?? undefined,
       quantidade_minima: v.quantidade_minima,
     })),
+    p_caracteristicas: caracteristicas,
   })
 
   if (error) {
