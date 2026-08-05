@@ -37,7 +37,7 @@ export type ProdutoFormValues = {
   unidade_venda_id: string
   destaque: boolean
   ativo: boolean
-  codigo_modo: 'automatico' | 'manual'
+  codigo_modo: 'automatico' | 'categoria' | 'manual'
   codigo_manual: string
   codigo_visivel: boolean
   variacoes: VariacaoFormValues[]
@@ -170,17 +170,31 @@ export function useUpdateProduto() {
   })
 }
 
-// Peek do codigo automatico: so leitura, nao reserva nada. Chamado
-// toda vez que a categoria muda no formulario de criacao.
-export function useCodigoSugerido(categoryId: string) {
+// Peek do codigo: so leitura, nao reserva nada. Dois modos (migration
+// 024, decisao #24): "nome" reage ao nome do produto (modo automatico
+// novo), "categoria" reage a categoria selecionada (modo "herdar da
+// categoria", comportamento original desde a 016).
+export type CodigoSugeridoParams =
+  | { modo: 'nome'; nome: string }
+  | { modo: 'categoria'; categoryId: string }
+
+export function useCodigoSugerido(params: CodigoSugeridoParams) {
+  const habilitado = params.modo === 'nome' ? params.nome.trim().length > 0 : !!params.categoryId
+
   return useQuery({
-    queryKey: ['codigo-sugerido', categoryId],
+    queryKey:
+      params.modo === 'nome'
+        ? ['codigo-sugerido', 'nome', params.nome]
+        : ['codigo-sugerido', 'categoria', params.categoryId],
     queryFn: async (): Promise<{ codigo: string; prefixo: string }> => {
-      const response = await fetch(`/api/painel/produtos/codigo-sugerido?category_id=${categoryId}`)
+      const search = new URLSearchParams({ modo: params.modo })
+      if (params.modo === 'nome') search.set('nome', params.nome)
+      else search.set('category_id', params.categoryId)
+      const response = await fetch(`/api/painel/produtos/codigo-sugerido?${search.toString()}`)
       const body = await parseJsonOrThrow(response)
       return body.data
     },
-    enabled: !!categoryId,
+    enabled: habilitado,
     retry: false,
   })
 }

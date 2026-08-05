@@ -55,15 +55,15 @@ function buildProdutoSchema(modo: 'novo' | 'editar') {
     unidade_venda_id: z.string().uuid('Selecione a unidade de venda.'),
     destaque: z.boolean(),
     ativo: z.boolean(),
-    codigo_modo: z.enum(['automatico', 'manual']),
+    codigo_modo: z.enum(['automatico', 'categoria', 'manual']),
     codigo_manual: z.string().trim(),
     codigo_visivel: z.boolean(),
     variacoes: z.array(variacaoSchema).min(1, 'Adicione pelo menos uma variação para o produto.'),
   })
 
   if (modo === 'novo') {
-    return base.refine((v) => v.codigo_modo === 'automatico' || v.codigo_manual.trim().length > 0, {
-      message: 'Informe um código ou escolha o modo automático.',
+    return base.refine((v) => v.codigo_modo !== 'manual' || v.codigo_manual.trim().length > 0, {
+      message: 'Informe um código ou escolha um modo automático.',
       path: ['codigo_manual'],
     })
   }

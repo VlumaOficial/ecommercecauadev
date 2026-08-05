@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Controller, useFormContext, useWatch } from 'react-hook-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -9,6 +10,15 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCodigoSugerido } from '@/hooks/use-produtos'
 import type { ProdutoFormValues } from '@/hooks/use-produtos'
 
+// Descricao curta de cada modo - complementa o rotulo da aba (curto
+// demais pra caber o exemplo inteiro) com o que o lojista precisa
+// entender pra escolher entre os 3. Decisao #24.
+const DESCRICAO_MODO: Record<'automatico' | 'categoria' | 'manual', string> = {
+  automatico: 'Prefixo gerado a partir do nome do produto (ex.: RAFP-0001).',
+  categoria: 'Prefixo da categoria selecionada (ex.: RAC-0001) — mesmo modelo de antes.',
+  manual: 'Você escolhe o código livremente.',
+}
+
 export function ProdutoCodigoSection({ codigoAtual }: { codigoAtual: string | null }) {
   const {
     register,
@@ -16,15 +26,36 @@ export function ProdutoCodigoSection({ codigoAtual }: { codigoAtual: string | nu
     formState: { errors },
   } = useFormContext<ProdutoFormValues>()
 
+  const nome = useWatch({ control, name: 'nome' })
   const categoryId = useWatch({ control, name: 'category_id' })
   const codigoModo = useWatch({ control, name: 'codigo_modo' })
   const codigoVisivel = useWatch({ control, name: 'codigo_visivel' })
 
-  // So dispara o peek em modo criacao (codigoAtual null) - em edicao o
-  // codigo ja existe e e imutavel, nao faz sentido sugerir nada.
-  const { data: sugestao, isLoading, error } = useCodigoSugerido(codigoAtual ? '' : categoryId)
-  const semPrefixo = !!error
   const emEdicao = codigoAtual !== null
+
+  // Debounce do nome pro peek do modo "automatico" - mesmo padrao
+  // (400ms) do SearchInput do painel, evita bater na API a cada tecla.
+  const [nomeDebounced, setNomeDebounced] = useState(nome)
+  useEffect(() => {
+    const timer = setTimeout(() => setNomeDebounced(nome), 400)
+    return () => clearTimeout(timer)
+  }, [nome])
+
+  // So dispara o peek em modo criacao (codigoAtual null) - em edicao o
+  // codigo ja existe e e imutavel, nao faz sentido sugerir nada. Cada
+  // modo automatico tem seu proprio peek (nome vs. categoria).
+  const peekNome = useCodigoSugerido(
+    !emEdicao && codigoModo === 'automatico'
+      ? { modo: 'nome', nome: nomeDebounced ?? '' }
+      : { modo: 'nome', nome: '' }
+  )
+  const peekCategoria = useCodigoSugerido(
+    !emEdicao && codigoModo === 'categoria'
+      ? { modo: 'categoria', categoryId: categoryId ?? '' }
+      : { modo: 'categoria', categoryId: '' }
+  )
+
+  const sugestaoAtiva = codigoModo === 'categoria' ? peekCategoria : peekNome
 
   return (
     <Card>
@@ -50,49 +81,61 @@ export function ProdutoCodigoSection({ codigoAtual }: { codigoAtual: string | nu
                 render={({ field }) => (
                   <Tabs value={field.value} onValueChange={field.onChange}>
                     <TabsList>
-                      <TabsTrigger value="automatico" disabled={!categoryId || semPrefixo}>
-                        Automático
+                      <TabsTrigger value="automatico">Automático</TabsTrigger>
+                      <TabsTrigger value="categoria" disabled={!categoryId || !!peekCategoria.error}>
+                        Herdar da categoria
                       </TabsTrigger>
                       <TabsTrigger value="manual">Manual</TabsTrigger>
                     </TabsList>
                   </Tabs>
                 )}
               />
+              <p className="text-xs text-muted-foreground">
+                {DESCRICAO_MODO[codigoModo as 'automatico' | 'categoria' | 'manual']}
+              </p>
             </div>
 
-            {!categoryId && (
+            {codigoModo === 'categoria' && !categoryId && (
               <p className="text-xs text-muted-foreground">Selecione uma categoria para ver o código sugerido.</p>
             )}
 
-            {categoryId && error && (
-              <p className="text-xs text-destructive">{error.message}</p>
+            {codigoModo === 'categoria' && categoryId && peekCategoria.error && (
+              <p className="text-xs text-destructive">{peekCategoria.error.message}</p>
             )}
 
-            {codigoModo === 'automatico' ? (
-              <div className="space-y-1.5">
-                <Label htmlFor="produto-codigo-preview">Código (gerado automaticamente)</Label>
-                <Input
-                  id="produto-codigo-preview"
-                  value={isLoading ? 'Calculando...' : sugestao?.codigo ?? ''}
-                  disabled
-                  readOnly
-                />
-                <p className="text-xs text-muted-foreground">
-                  O código definitivo é gerado ao salvar — este é só uma prévia.
-                </p>
-              </div>
-            ) : (
+            {codigoModo === 'automatico' && !nome.trim() && (
+              <p className="text-xs text-muted-foreground">Preencha o nome do produto para ver o código sugerido.</p>
+            )}
+
+            {codigoModo === 'automatico' && nome.trim() && peekNome.error && (
+              <p className="text-xs text-destructive">{peekNome.error.message}</p>
+            )}
+
+            {codigoModo === 'manual' ? (
               <div className="space-y-1.5">
                 <Label htmlFor="produto-codigo-manual">Código *</Label>
                 <Input
                   id="produto-codigo-manual"
-                  placeholder={sugestao?.codigo ?? 'Ex.: CIC-0001'}
+                  placeholder={sugestaoAtiva.data?.codigo ?? 'Ex.: CIC-0001'}
                   aria-invalid={!!errors.codigo_manual}
                   {...register('codigo_manual')}
                 />
                 {errors.codigo_manual && (
                   <p className="text-xs text-destructive">{errors.codigo_manual.message}</p>
                 )}
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label htmlFor="produto-codigo-preview">Código (gerado automaticamente)</Label>
+                <Input
+                  id="produto-codigo-preview"
+                  value={sugestaoAtiva.isLoading ? 'Calculando...' : sugestaoAtiva.data?.codigo ?? ''}
+                  disabled
+                  readOnly
+                />
+                <p className="text-xs text-muted-foreground">
+                  O código definitivo é gerado ao salvar — este é só uma prévia.
+                </p>
               </div>
             )}
           </>

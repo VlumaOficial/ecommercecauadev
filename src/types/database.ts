@@ -313,6 +313,39 @@ export type Database = {
         }
         Relationships: []
       }
+      // Adicionada na migration 024 (Codigo do Produto - modo
+      // "automatico" derivado do NOME, decisao #24): contador de
+      // sequencia por PREFIXO (nao por categoria nem por produto),
+      // usado pela RPC gerar_codigo_produto_por_prefixo.
+      product_code_sequences: {
+        Row: {
+          prefixo: string
+          tenant_id: string
+          ultimo_numero: number
+          updated_at: string
+        }
+        Insert: {
+          prefixo: string
+          tenant_id?: string
+          ultimo_numero?: number
+          updated_at?: string
+        }
+        Update: {
+          prefixo?: string
+          tenant_id?: string
+          ultimo_numero?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_code_sequences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_attribute_values: {
         Row: {
           attribute_id: string
@@ -935,6 +968,13 @@ export type Database = {
       // Adicionadas na migration 016 (Codigo do Produto).
       gerar_codigo_produto: {
         Args: { p_category_id: string }
+        Returns: string
+      }
+      // Adicionada na migration 024 (modo "automatico" derivado do
+      // NOME do produto, decisao #24) - recebe o prefixo ja derivado
+      // em TypeScript (derivarPrefixo), so reserva o proximo numero.
+      gerar_codigo_produto_por_prefixo: {
+        Args: { p_prefixo: string }
         Returns: string
       }
       criar_produto_com_variacoes: {

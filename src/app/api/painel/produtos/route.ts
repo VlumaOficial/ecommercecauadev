@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getStaffProfile } from '@/lib/auth'
 import { slugify } from '@/lib/category-tree'
+import { derivarPrefixo } from '@/lib/produto-codigo'
 
 // Sanitiza a busca antes de montar o filtro .or() do PostgREST: virgula
 // e parenteses tem significado especial na sintaxe do or-filter e
@@ -31,7 +32,26 @@ export async function GET(request: NextRequest) {
   if (status === 'ativos') query = query.eq('ativo', true)
   else if (status === 'inativos') query = query.eq('ativo', false)
   if (categoryId) query = query.eq('category_id', categoryId)
-  if (busca) query = query.or(`nome.ilike.%${busca}%,codigo.ilike.%${busca}%`)
+
+  if (busca) {
+    // Busca tambem por SKU/rotulo de variacao: acha os product_id que
+    // batem numa query separada (product_variants nao e' exposto pela
+    // view products_com_status, que agrega/agrupa as variacoes) e
+    // inclui no .or() principal via id.in.(...). Nao filtra por
+    // variacao ativa/inativa de proposito - staff pode estar
+    // procurando o produto por um SKU ja inativado.
+    const { data: variantMatches } = await supabase
+      .from('product_variants')
+      .select('product_id')
+      .or(`sku.ilike.%${busca}%,nome.ilike.%${busca}%`)
+    const idsPorVariacao = [...new Set((variantMatches ?? []).map((v) => v.product_id))]
+
+    const condicoes = [`nome.ilike.%${busca}%`, `codigo.ilike.%${busca}%`]
+    if (idsPorVariacao.length > 0) {
+      condicoes.push(`id.in.(${idsPorVariacao.join(',')})`)
+    }
+    query = query.or(condicoes.join(','))
+  }
 
   const { data, error } = await query
   if (error) {
@@ -70,7 +90,7 @@ const produtoInputSchema = z.object({
     ativo: z.boolean().optional().default(true),
     codigo_visivel: z.boolean().optional().default(false),
   }),
-  codigo_modo: z.enum(['automatico', 'manual']),
+  codigo_modo: z.enum(['automatico', 'categoria', 'manual']),
   codigo_manual: z.string().trim().optional().default(''),
   variacoes: z.array(variacaoInputSchema).min(1, 'Adicione pelo menos uma variação para o produto.'),
 })
@@ -95,6 +115,26 @@ export async function POST(request: NextRequest) {
 
   let codigoFinal: string
   if (codigo_modo === 'automatico') {
+    // Prefixo derivado do NOME DO PRODUTO (decisao #24), calculado no
+    // servidor a partir do nome ja validado - nunca confia num prefixo
+    // vindo do client, mesmo que o peek (codigo-sugerido) ja tenha
+    // mostrado a mesma coisa. Sequencia propria por prefixo (migration
+    // 024), independente da sequencia por categoria.
+    const prefixo = derivarPrefixo(produto.nome)
+    if (!prefixo) {
+      return NextResponse.json(
+        { error: 'Não foi possível gerar um código a partir do nome do produto.' },
+        { status: 400 }
+      )
+    }
+    const { data: codigoGerado, error: codigoError } = await supabase.rpc('gerar_codigo_produto_por_prefixo', {
+      p_prefixo: prefixo,
+    })
+    if (codigoError) {
+      return NextResponse.json({ error: codigoError.message }, { status: 400 })
+    }
+    codigoFinal = codigoGerado as string
+  } else if (codigo_modo === 'categoria') {
     const { data: codigoGerado, error: codigoError } = await supabase.rpc('gerar_codigo_produto', {
       p_category_id: produto.category_id,
     })
@@ -104,7 +144,7 @@ export async function POST(request: NextRequest) {
     codigoFinal = codigoGerado as string
   } else {
     if (!codigo_manual) {
-      return NextResponse.json({ error: 'Informe um código ou escolha o modo automático.' }, { status: 400 })
+      return NextResponse.json({ error: 'Informe um código ou escolha um modo automático.' }, { status: 400 })
     }
     codigoFinal = codigo_manual
   }

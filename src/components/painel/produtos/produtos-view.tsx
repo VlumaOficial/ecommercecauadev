@@ -97,7 +97,7 @@ export function ProdutosView() {
           <SearchInput
             defaultValue={busca}
             onChange={setBusca}
-            placeholder="Buscar por nome ou código..."
+            placeholder="Buscar por nome, código, SKU ou variação..."
             className="w-full sm:w-64"
           />
         </div>
