@@ -1,0 +1,45 @@
+-- =====================================================
+-- Correcao da migration 025 (aplicada, mas com efeito colateral nao
+-- previsto): CREATE OR REPLACE FUNCTION so substitui uma funcao
+-- existente quando a assinatura bate EXATAMENTE (mesmo nome + mesma
+-- lista de tipos de parametro, na mesma ordem) - nao basta o nome
+-- bater. A 025 acrescentou um parametro novo (p_caracteristicas) em
+-- criar_produto_com_variacoes e atualizar_produto_com_variacoes,
+-- mudando a assinatura de cada uma - o Postgres nao reconheceu como
+-- "a mesma funcao" e CRIOU uma versao nova ao lado da antiga
+-- (overloading por numero de argumentos), em vez de substituir.
+--
+-- Efeito real, confirmado pelo usuario direto no banco (pg_proc):
+-- duas versoes de cada RPC convivendo -
+--   criar_produto_com_variacoes:    2 args (antiga) E 3 args (nova)
+--   atualizar_produto_com_variacoes: 3 args (antiga) E 4 args (nova)
+-- Risco: chamada via supabase.rpc() com os parametros antigos pode
+-- resolver pra qualquer uma das duas (a antiga por bater exato, ou a
+-- nova por causa do DEFAULT do parametro extra) - comportamento nao
+-- garantido, ou erro de "function is not unique" do PostgREST.
+--
+-- Correcao: DROP explicito das duas versoes ANTIGAS (assinatura sem
+-- p_caracteristicas). As versoes NOVAS (com o parametro, corpo com a
+-- logica de caracteristicas) nao precisam ser recriadas - ja existem
+-- corretas, foram criadas pela propria 025.
+--
+-- Assinaturas das versoes antigas confirmadas de duas formas:
+-- (1) historico de migrations - criar_produto_com_variacoes(jsonb,
+--     jsonb) e atualizar_produto_com_variacoes(uuid, jsonb, jsonb)
+--     nunca mudaram de assinatura da criacao (016/017) ate a ultima
+--     revisao antes da 025 (022) - so o corpo da funcao mudou nas
+--     revisoes intermediarias (017/019/022), nunca a lista de
+--     parametros;
+-- (2) pg_proc ao vivo, reportado pelo usuario: pronargs = 2 e 3 pras
+--     versoes antigas, 3 e 4 pras novas, exatamente como esperado.
+--
+-- Verificacao sugerida depois de aplicar esta migration (deve
+-- retornar so 1 linha de cada, pronargs 3 e 4 respectivamente):
+--   select proname, pronargs from pg_proc
+--   where proname in ('criar_produto_com_variacoes', 'atualizar_produto_com_variacoes');
+--
+-- Projeto: Criatorio Capua
+-- =====================================================
+
+drop function if exists public.criar_produto_com_variacoes(jsonb, jsonb);
+drop function if exists public.atualizar_produto_com_variacoes(uuid, jsonb, jsonb);

@@ -1,4 +1,17 @@
 -- =====================================================
+-- ⚠️→✅ Efeito colateral encontrado apos aplicar esta migration,
+-- corrigido pela 026_fix_overload_produto_variacoes.sql: os `create or
+-- replace function` abaixo mudam a ASSINATURA de criar_produto_com_
+-- variacoes/atualizar_produto_com_variacoes (parametro novo
+-- p_caracteristicas) - o Postgres so substitui uma funcao quando a
+-- assinatura bate exatamente, entao isso CRIOU uma versao nova ao lado
+-- da antiga (overloading) em vez de substituir. Se estiver aplicando
+-- esta migration pela primeira vez (banco novo, sequencia 001-026 em
+-- ordem), rode a 026 logo em seguida - ela remove as versoes antigas
+-- (sem p_caracteristicas) que este arquivo, sozinho, deixa penduradas.
+-- =====================================================
+
+-- =====================================================
 -- Produtos Etapa 2: Caracteristicas por produto (ficha tecnica).
 -- Lojista preenche, no cadastro/edicao do produto, os valores das
 -- caracteristicas configuraveis da categoria escolhida
