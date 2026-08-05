@@ -126,6 +126,8 @@ Cada categoria pode ter uma lista configurável de **características** (ficha t
 
 **Fotos por variação (📐 decidida e ✅ implementada em 03/08/2026):** além das fotos gerais do produto (galeria principal, até 10 imagens — ver `ESCOPO_PROJETO.md` §4), cada variação pode opcionalmente ter suas próprias fotos (até 5), pensado para o caso de tamanhos/cores visualmente diferentes entre si dentro do mesmo produto. É **opcional**: uma variação sem fotos próprias simplesmente usa as fotos gerais do produto — o lojista só precisa fotografar a variação separadamente quando isso realmente ajudar o cliente a diferenciar (ex.: "Pequeno" e "Grande" de um peixe que muda de cor com a idade). No painel, o uploader de cada variação fica **recolhido por padrão** dentro do formulário de edição, para não sobrecarregar a tela de quem só usa a galeria geral. Segue a mesma regra de exclusão real (não soft delete) já registrada em §3.2.
 
+**Busca da listagem inclui SKU e rótulo de variação (📐 decidida e ✅ implementada em 05/08/2026):** na tela `/painel/produtos`, o campo de busca não procura mais só por nome/código do produto — também encontra o produto quando o texto digitado bate com o **SKU** ou o **rótulo** de qualquer uma das suas variações (ativa ou inativa). Útil pro lojista que só lembra do SKU de uma variação específica, não do nome/código do produto inteiro.
+
 ### 4.5 Status do produto — sempre calculado
 
 **📐 Modelado — sem interface ainda.** **✅ Em uso desde 01/08/2026** na listagem `/painel/produtos` (badges "Esgotado"/"Promoção" via `products_com_status`, confirmados com Chromium real).
@@ -161,6 +163,14 @@ Regras do Código:
 - O código é gerado no momento da criação do produto e **nunca muda depois** — mesmo que o produto seja movido para outra categoria no futuro, o código original é mantido (garante que pedidos e histórico do cliente continuem apontando para a referência certa).
 - Ao cadastrar o produto, o lojista escolhe entre **código automático** (segue a regra acima) ou **código manual** (o sistema sugere o automático, mas o campo pode ser editado livremente — útil para quem está migrando de outro sistema e quer manter os códigos antigos).
 - Cada produto tem um interruptor **"código visível na vitrine"**: se ligado, o código aparece na página do produto e o cliente consegue buscar por ele na loja; se desligado, o código existe só para uso interno do lojista.
+
+**Revisão de 04/08/2026, ✅ implementada e testada em 05/08/2026 — o modo automático descrito acima (prefixo da categoria) não foi removido, virou uma opção explícita.** O cadastro de produto agora oferece **3 modos** de geração, claramente rotulados:
+
+1. **Automático (novo padrão)** — o prefixo vem do **nome do produto** (mesma regra de derivação por palavras já usada em categoria: ex. "Ração de Fundo Pyotar" → `RAFP-0001`). Pensado para o caso comum de lojista que não quer se preocupar com prefixo de categoria — o sistema deriva sozinho do nome de cada produto.
+2. **Herdar da categoria** — é exatamente o modo "automático" original descrito acima nesta seção (prefixo da categoria, ex. `RAC-0001`), preservado sem nenhuma mudança de comportamento para quem já usa esse padrão.
+3. **Manual** — sem mudança, o lojista digita.
+
+A sequência numérica do modo 1 é **por prefixo derivado**, não por categoria nem por produto — dois produtos com nomes diferentes que coincidentemente derivam o mesmo prefixo (ex.: dois produtos cujo nome deriva `RAFP`) dividem a mesma contagem (`RAFP-0001`, `RAFP-0002`), o mesmo papel do sufixo numérico como rede de segurança já usado no prefixo de categoria. Continuam valendo para os 3 modos: código gerado na criação, **nunca muda depois**, e o interruptor "código visível na vitrine".
 
 ---
 
