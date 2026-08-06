@@ -25,6 +25,13 @@ type OpcaoSelecao = { value: string; label: string }
 // register/Controller (validate/rules) - fonte unica de erros vem de
 // methods.setError no onSubmit do pai, lido aqui via errors.caracteristicas.
 //
+// Controller SEMPRE com defaultValue="" (selecao/booleano): sem isso,
+// um campo nunca tocado fica "undefined" no form state (nao ""), o
+// que quebra o schema caracteristicas: z.record(z.string(), z.string())
+// no resolver ANTES do onSubmit do pai rodar - handleSubmit nem chega
+// a chamar onSubmit, e o erro que aparece e um "Invalid input" cru do
+// Zod, nao a mensagem "Obrigatorio." esperada. Bug real pego em teste.
+//
 // "ativas" vem PRONTA do pai (ProdutoForm), nao e buscada aqui de novo -
 // de proposito: o pai usa a MESMA lista pra montar o payload do submit
 // (onSubmit) e pra validar obrigatoriedade. Ter duas chamadas separadas
@@ -75,6 +82,7 @@ export function ProdutoCaracteristicasSection({
                 <Controller
                   control={control}
                   name={path}
+                  defaultValue=""
                   render={({ field }) => (
                     <Switch
                       id={path}
@@ -95,6 +103,7 @@ export function ProdutoCaracteristicasSection({
                 <Controller
                   control={control}
                   name={path}
+                  defaultValue=""
                   render={({ field }) => {
                     const selecionada = opcoes.find((o) => o.value === field.value) ?? null
                     return (
