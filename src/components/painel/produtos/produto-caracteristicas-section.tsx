@@ -14,7 +14,7 @@ import {
   ComboboxItem,
   ComboboxTrigger,
 } from '@/components/ui/combobox'
-import { useCaracteristicas } from '@/hooks/use-caracteristicas'
+import type { Caracteristica } from '@/hooks/use-caracteristicas'
 import type { ProdutoFormValues } from '@/hooks/use-produtos'
 
 type OpcaoSelecao = { value: string; label: string }
@@ -24,18 +24,32 @@ type OpcaoSelecao = { value: string; label: string }
 // nao aqui: o form usa zodResolver, que ignora as regras nativas do
 // register/Controller (validate/rules) - fonte unica de erros vem de
 // methods.setError no onSubmit do pai, lido aqui via errors.caracteristicas.
-// Reage a mudanca de categoria de graca: useCaracteristicas(categoryId)
-// troca a lista quando category_id muda no form pai, sem logica extra.
-export function ProdutoCaracteristicasSection({ categoryId }: { categoryId: string }) {
+//
+// "ativas" vem PRONTA do pai (ProdutoForm), nao e buscada aqui de novo -
+// de proposito: o pai usa a MESMA lista pra montar o payload do submit
+// (onSubmit) e pra validar obrigatoriedade. Ter duas chamadas separadas
+// de useCaracteristicas (uma aqui, outra no pai) sujeitava as duas a
+// resolverem/rerenderizarem em momentos ligeiramente diferentes (mesmo
+// compartilhando cache do React Query) - risco real observado em teste:
+// o form as vezes submetia com a lista do pai ainda vazia, mesmo com os
+// campos ja renderizados na tela (lista do filho ja preenchida). Uma
+// unica fonte elimina essa janela de inconsistencia.
+export function ProdutoCaracteristicasSection({
+  categoryId,
+  ativas,
+  carregando,
+}: {
+  categoryId: string
+  ativas: Caracteristica[]
+  carregando: boolean
+}) {
   const { register, control, formState: { errors } } = useFormContext<ProdutoFormValues>()
-  const { data: todas = [], isLoading } = useCaracteristicas(categoryId || null)
-  const ativas = todas.filter((c) => c.ativo)
 
   const caracteristicasErrors = errors.caracteristicas as
     | Record<string, { message?: string } | undefined>
     | undefined
 
-  if (!categoryId || isLoading || ativas.length === 0) return null
+  if (!categoryId || carregando || ativas.length === 0) return null
 
   return (
     <Card>
@@ -126,12 +140,4 @@ export function ProdutoCaracteristicasSection({ categoryId }: { categoryId: stri
       </CardContent>
     </Card>
   )
-}
-
-// Reexportado pro ProdutoForm montar o payload no submit sem duplicar
-// a query (React Query dedupe por queryKey - mesma chamada, mesmo
-// cache, sem custo extra de rede).
-export function useCaracteristicasAtivas(categoryId: string) {
-  const { data: todas = [] } = useCaracteristicas(categoryId || null)
-  return todas.filter((c) => c.ativo)
 }

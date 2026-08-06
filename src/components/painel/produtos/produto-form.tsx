@@ -19,7 +19,8 @@ import { ProdutoDadosBasicos } from './produto-dados-basicos'
 import { ProdutoCodigoSection } from './produto-codigo-section'
 import { ProdutoVariacoesSection } from './produto-variacoes-section'
 import { ProdutoImagensSection } from './produto-imagens-section'
-import { ProdutoCaracteristicasSection, useCaracteristicasAtivas } from './produto-caracteristicas-section'
+import { ProdutoCaracteristicasSection } from './produto-caracteristicas-section'
+import { useCaracteristicas } from '@/hooks/use-caracteristicas'
 
 const numeroOuVazio = z.union([z.literal(''), z.coerce.number()])
 
@@ -164,7 +165,13 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
   const salvando = criar.isPending || atualizar.isPending
 
   const categoryId = useWatch({ control: methods.control, name: 'category_id' }) ?? ''
-  const caracteristicasAtivas = useCaracteristicasAtivas(categoryId)
+  // Fonte unica: ProdutoCaracteristicasSection recebe "ativas" pronta
+  // via prop (nao busca de novo) - garante que a lista usada pra
+  // renderizar os campos e a lista usada pra validar/montar o payload
+  // no onSubmit sejam exatamente a mesma instancia, no mesmo render.
+  const { data: caracteristicasDaCategoria = [], isLoading: carregandoCaracteristicas } =
+    useCaracteristicas(categoryId || null)
+  const caracteristicasAtivas = caracteristicasDaCategoria.filter((c) => c.ativo)
 
   function onSubmit(values: ProdutoFormValues) {
     // Obrigatoriedade das caracteristicas: nao da pra validar no
@@ -215,15 +222,25 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
               <p className="text-muted-foreground mt-1">Preencha os dados, o código e as variações do produto.</p>
             </div>
           </div>
-          <Button type="submit" disabled={salvando}>
-            {salvando ? 'Salvando...' : produto ? 'Salvar alterações' : 'Criar produto'}
+          <Button type="submit" disabled={salvando || carregandoCaracteristicas}>
+            {salvando
+              ? 'Salvando...'
+              : carregandoCaracteristicas
+                ? 'Carregando características...'
+                : produto
+                  ? 'Salvar alterações'
+                  : 'Criar produto'}
           </Button>
         </div>
 
         <ProdutoDadosBasicos />
         <ProdutoCodigoSection codigoAtual={produto?.codigo ?? null} />
         <ProdutoVariacoesSection produtoId={produto?.id} imagens={produto?.imagens} />
-        <ProdutoCaracteristicasSection categoryId={categoryId} />
+        <ProdutoCaracteristicasSection
+          categoryId={categoryId}
+          ativas={caracteristicasAtivas}
+          carregando={carregandoCaracteristicas}
+        />
         {produto ? (
           <ProdutoImagensSection
             produtoId={produto.id}
