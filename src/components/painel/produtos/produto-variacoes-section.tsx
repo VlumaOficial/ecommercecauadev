@@ -1,20 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { ChevronDownIcon, ImagesIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { ProdutoImagensSection } from './produto-imagens-section'
 import type { ImagemProduto, ProdutoFormValues } from '@/hooks/use-produtos'
 
@@ -75,13 +68,6 @@ export function ProdutoVariacoesSection({
         // Estoque. Ausente = variacao nova (produto novo, ou
         // adicionada durante uma edicao) - estoque inicial editavel.
         const isExistente = !!variacoesValues?.[index]?.id
-        // Modo "disponibilidade" nao controla saldo por quantidade -
-        // registrar_estoque_inicial_variacao (migration 022) ja ignora
-        // "estoque_inicial" silenciosamente nesse modo, mas o campo
-        // continuava editavel sem nenhum aviso: lojista digitava um
-        // numero, ele desaparecia sem explicacao nenhuma no salvar.
-        // Bug real reportado pelo usuario em 06/08/2026.
-        const modoDisponibilidade = variacoesValues?.[index]?.modo_estoque === 'disponibilidade'
         return (
           <div key={field.id} className="space-y-3 rounded-lg border border-border p-3">
             <div className="flex items-center justify-between gap-2">
@@ -157,13 +143,6 @@ export function ProdutoVariacoesSection({
                       .
                     </p>
                   </>
-                ) : modoDisponibilidade ? (
-                  <>
-                    <Input id={`variacao-${index}-estoque`} value="" disabled readOnly placeholder="Não se aplica" />
-                    <p className="text-xs text-muted-foreground">
-                      Não se aplica no modo "Só disponível/indisponível" — esse modo não controla quantidade.
-                    </p>
-                  </>
                 ) : (
                   <>
                     <Input
@@ -191,33 +170,25 @@ export function ProdutoVariacoesSection({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor={`variacao-${index}-modo`}>Modo de estoque</Label>
-                <Controller
-                  control={control}
-                  name={`variacoes.${index}.modo_estoque`}
-                  render={({ field: selectField }) => (
-                    <Select value={selectField.value} onValueChange={selectField.onChange}>
-                      <SelectTrigger id={`variacao-${index}-modo`} className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="quantitativo">Controlar quantidade</SelectItem>
-                        <SelectItem value="disponibilidade">Só disponível/indisponível</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor={`variacao-${index}-sku`}>SKU</Label>
-                <Input
-                  id={`variacao-${index}-sku`}
-                  placeholder="Automático"
-                  {...register(`variacoes.${index}.sku`)}
-                />
-              </div>
+            {/* Modo de estoque removido da UI (decisao de produto,
+            06/08/2026): o negocio sempre controla quantidade, o modo
+            "disponibilidade" so gerava confusao (estoque inicial
+            preenchido no formulario, silenciosamente ignorado ao
+            salvar - ver fix anterior). Enum/coluna no banco continuam
+            existindo, so nao expomos mais escolha nenhuma na tela -
+            registrado como campo oculto pra nao perder o valor de
+            variacoes ja existentes que ainda estejam em
+            "disponibilidade" (nao migradas de proposito, sem alterar
+            dado historico so por causa de uma mudanca de tela). */}
+            <input type="hidden" {...register(`variacoes.${index}.modo_estoque`)} />
+
+            <div className="space-y-1.5">
+              <Label htmlFor={`variacao-${index}-sku`}>SKU</Label>
+              <Input
+                id={`variacao-${index}-sku`}
+                placeholder="Automático"
+                {...register(`variacoes.${index}.sku`)}
+              />
             </div>
 
             {isExistente && produtoId && (
