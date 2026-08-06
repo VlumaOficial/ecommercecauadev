@@ -75,6 +75,13 @@ export function ProdutoVariacoesSection({
         // Estoque. Ausente = variacao nova (produto novo, ou
         // adicionada durante uma edicao) - estoque inicial editavel.
         const isExistente = !!variacoesValues?.[index]?.id
+        // Modo "disponibilidade" nao controla saldo por quantidade -
+        // registrar_estoque_inicial_variacao (migration 022) ja ignora
+        // "estoque_inicial" silenciosamente nesse modo, mas o campo
+        // continuava editavel sem nenhum aviso: lojista digitava um
+        // numero, ele desaparecia sem explicacao nenhuma no salvar.
+        // Bug real reportado pelo usuario em 06/08/2026.
+        const modoDisponibilidade = variacoesValues?.[index]?.modo_estoque === 'disponibilidade'
         return (
           <div key={field.id} className="space-y-3 rounded-lg border border-border p-3">
             <div className="flex items-center justify-between gap-2">
@@ -148,6 +155,13 @@ export function ProdutoVariacoesSection({
                         Estoque
                       </Link>
                       .
+                    </p>
+                  </>
+                ) : modoDisponibilidade ? (
+                  <>
+                    <Input id={`variacao-${index}-estoque`} value="" disabled readOnly placeholder="Não se aplica" />
+                    <p className="text-xs text-muted-foreground">
+                      Não se aplica no modo "Só disponível/indisponível" — esse modo não controla quantidade.
                     </p>
                   </>
                 ) : (
