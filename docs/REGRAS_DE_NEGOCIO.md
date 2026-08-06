@@ -172,6 +172,16 @@ Regras do Código:
 
 A sequência numérica do modo 1 é **por prefixo derivado**, não por categoria nem por produto — dois produtos com nomes diferentes que coincidentemente derivam o mesmo prefixo (ex.: dois produtos cujo nome deriva `RAFP`) dividem a mesma contagem (`RAFP-0001`, `RAFP-0002`), o mesmo papel do sufixo numérico como rede de segurança já usado no prefixo de categoria. Continuam valendo para os 3 modos: código gerado na criação, **nunca muda depois**, e o interruptor "código visível na vitrine".
 
+### 4.7 Características por produto (ficha técnica)
+
+**📐 Decidida — ✅ implementada e testada com Chromium real em 06/08/2026.** No cadastro/edição do produto, o lojista preenche os valores das características configuráveis da categoria escolhida (§4.3 — "Características por categoria": nome, tipo, opções, obrigatória, definidas pelo próprio lojista por categoria). É a ficha técnica do produto.
+
+- **Aparece automaticamente ao escolher a categoria**: um bloco "Características" no formulário mostra um campo por característica **ativa** daquela categoria, com o controle certo para o tipo (texto → campo de texto, número → campo numérico, seleção → lista das opções cadastradas, sim/não → interruptor). Categoria sem nenhuma característica configurada simplesmente não mostra o bloco.
+- **Reage à categoria selecionada**: mudar a categoria no formulário troca os campos mostrados para os da nova categoria — não existe herança entre categorias (já registrado em §4.3).
+- **Obrigatoriedade**: característica marcada como obrigatória na categoria (§4.3) exige preenchimento para salvar o produto, tanto ao criar quanto ao editar. Validado no formulário (mensagem imediata, sem precisar tentar salvar pra descobrir) e novamente no servidor (garantia final, caso algo escape do formulário).
+- **Troca de categoria na edição apaga os valores da categoria antiga**: se o lojista move um produto de categoria, os valores preenchidos para as características da categoria anterior são **descartados** (não ficam guardados escondidos) — o produto passa a usar só a ficha técnica da nova categoria, que começa vazia (a menos que já existisse algo salvo para ela antes, caso raro de ida-e-volta).
+- **Característica inativada preserva o valor já preenchido**: se o lojista inativar uma característica na categoria (§4.3), ela some do formulário de produto imediatamente, mas o valor que já estava preenchido nos produtos **não é apagado** — fica guardado, pronto para reaparecer exatamente como estava se a característica for reativada depois. Evita perda de dado por uma decisão de configuração que pode ser revertida.
+
 ---
 
 ## 5. Entrega
