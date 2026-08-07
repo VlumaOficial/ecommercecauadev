@@ -28,7 +28,10 @@ export type VariacaoFormValues = {
   id?: string
   nome: string
   sku: string
-  preco: number
+  // Vazio enquanto digita (CurrencyInput comeca sem valor pre-preenchido,
+  // nao "0") - obrigatorio na validacao do schema (produto-form.tsx),
+  // nunca chega '' de fato no payload enviado ao servidor.
+  preco: number | ''
   preco_promocional: number | ''
   modo_estoque: 'quantitativo' | 'disponibilidade'
   // So editavel quando a variacao NASCE (produto novo, ou variacao

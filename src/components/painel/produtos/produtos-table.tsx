@@ -13,7 +13,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { StatusBadge } from '@/components/painel/crud/status-badge'
-import { formatarMoeda } from '@/lib/utils'
 import type { Produto } from '@/hooks/use-produtos'
 
 export function ProdutosTable({
@@ -48,7 +47,6 @@ export function ProdutosTable({
           <TableHead>Nome</TableHead>
           <TableHead>Código</TableHead>
           <TableHead>Categoria</TableHead>
-          <TableHead>Preço a partir de</TableHead>
           <TableHead>Status</TableHead>
           <TableHead className="text-right">Ações</TableHead>
         </TableRow>
@@ -67,7 +65,6 @@ export function ProdutosTable({
             <TableCell className="font-medium">{produto.nome}</TableCell>
             <TableCell className="text-muted-foreground">{produto.codigo ?? '—'}</TableCell>
             <TableCell>{produto.categoria_nome ?? '—'}</TableCell>
-            <TableCell>{formatarMoeda(produto.preco_a_partir_de)}</TableCell>
             <TableCell>
               <div className="flex flex-wrap items-center gap-1.5">
                 <StatusBadge ativo={!!produto.ativo} />

@@ -71,7 +71,6 @@ export function ProdutoViewDialog({
             <Campo rotulo="Código" valor={produto.codigo ?? '—'} />
             <Campo rotulo="Categoria" valor={produto.categoria_nome ?? '—'} />
             <Campo rotulo="Unidade de venda" valor={nomeUnidade} />
-            <Campo rotulo="Preço a partir de" valor={formatarMoeda(produto.preco_a_partir_de)} />
           </div>
 
           <Campo

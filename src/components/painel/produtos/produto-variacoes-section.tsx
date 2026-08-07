@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { ChevronDownIcon, ImagesIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { CurrencyInput } from '@/components/ui/currency-input'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ProdutoImagensSection } from './produto-imagens-section'
@@ -16,7 +17,9 @@ const LIMITE_IMAGENS_VARIACAO = 5
 const VARIACAO_PADRAO = {
   nome: '',
   sku: '',
-  preco: 0,
+  // Vazio, nao 0 - "0" pre-preenchido fazia o lojista ter que apagar
+  // toda vez antes de digitar o preco de verdade.
+  preco: '' as const,
   preco_promocional: '' as const,
   modo_estoque: 'quantitativo' as const,
   estoque_inicial: '' as const,
@@ -96,12 +99,18 @@ export function ProdutoVariacoesSection({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor={`variacao-${index}-preco`}>Preço *</Label>
-                <Input
-                  id={`variacao-${index}-preco`}
-                  type="number"
-                  step="0.01"
-                  aria-invalid={!!errors.variacoes?.[index]?.preco}
-                  {...register(`variacoes.${index}.preco`)}
+                <Controller
+                  control={control}
+                  name={`variacoes.${index}.preco`}
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id={`variacao-${index}-preco`}
+                      aria-invalid={!!errors.variacoes?.[index]?.preco}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
                 {errors.variacoes?.[index]?.preco && (
                   <p className="text-xs text-destructive">{errors.variacoes[index]?.preco?.message}</p>
@@ -109,12 +118,18 @@ export function ProdutoVariacoesSection({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor={`variacao-${index}-promo`}>Preço promocional</Label>
-                <Input
-                  id={`variacao-${index}-promo`}
-                  type="number"
-                  step="0.01"
-                  aria-invalid={!!errors.variacoes?.[index]?.preco_promocional}
-                  {...register(`variacoes.${index}.preco_promocional`)}
+                <Controller
+                  control={control}
+                  name={`variacoes.${index}.preco_promocional`}
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id={`variacao-${index}-promo`}
+                      aria-invalid={!!errors.variacoes?.[index]?.preco_promocional}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
                 {errors.variacoes?.[index]?.preco_promocional && (
                   <p className="text-xs text-destructive">

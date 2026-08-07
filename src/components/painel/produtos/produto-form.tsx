@@ -29,7 +29,11 @@ const variacaoSchema = z
     id: z.string().uuid().optional(),
     nome: z.string().trim(),
     sku: z.string().trim(),
-    preco: z.coerce.number().min(0, 'O preço não pode ser negativo.'),
+    // Vazio enquanto digita (CurrencyInput comeca sem valor, nao com
+    // "0" pre-preenchido) - obrigatorio na hora de salvar, validado no
+    // refine abaixo (nao dá pra coagir '' pra numero>=0 aqui e ainda
+    // rejeitar vazio ao mesmo tempo).
+    preco: numeroOuVazio,
     preco_promocional: numeroOuVazio,
     modo_estoque: z.enum(['quantitativo', 'disponibilidade']),
     // Opcional (variacao NOVA) - variacao ja existente nem mostra o
@@ -39,7 +43,15 @@ const variacaoSchema = z
     saldo_estoque: z.number().optional(),
     quantidade_minima: z.coerce.number().min(1, 'A quantidade mínima deve ser pelo menos 1.'),
   })
-  .refine((v) => v.preco_promocional === '' || v.preco_promocional < v.preco, {
+  .refine((v) => v.preco !== '', {
+    message: 'Informe o preço.',
+    path: ['preco'],
+  })
+  .refine((v) => v.preco === '' || v.preco >= 0, {
+    message: 'O preço não pode ser negativo.',
+    path: ['preco'],
+  })
+  .refine((v) => v.preco_promocional === '' || v.preco === '' || v.preco_promocional < v.preco, {
     message: 'O preço promocional deve ser menor que o preço normal.',
     path: ['preco_promocional'],
   })
@@ -209,7 +221,7 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-6 pb-20">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon-sm" render={<Link href="/painel/produtos" />} nativeButton={false} aria-label="Voltar">
@@ -260,6 +272,27 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
             </CardContent>
           </Card>
         )}
+
+        {/* Barra fixa no rodape com o botao de salvar - em produtos
+        com muitas variacoes, o botao do topo ficava fora de alcance
+        sem rolar a pagina inteira de volta. Fixed (nao sticky) porque
+        o layout do painel nao tem um container com scroll proprio - a
+        pagina inteira rola no document; "lg:left-64" desvia da
+        largura fixa da sidebar (painel-sidebar.tsx) em telas grandes,
+        onde ela fica sempre visivel ao lado. */}
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-[#f6f8fb]/95 backdrop-blur lg:left-64">
+          <div className="mx-auto flex max-w-6xl justify-end px-4 py-3 sm:px-6 lg:px-8">
+            <Button type="submit" disabled={salvando || carregandoCaracteristicas}>
+              {salvando
+                ? 'Salvando...'
+                : carregandoCaracteristicas
+                  ? 'Carregando características...'
+                  : produto
+                    ? 'Salvar alterações'
+                    : 'Criar produto'}
+            </Button>
+          </div>
+        </div>
       </form>
     </FormProvider>
   )
