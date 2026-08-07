@@ -23,7 +23,8 @@ const VARIACAO_PADRAO = {
   preco_promocional: '' as const,
   modo_estoque: 'quantitativo' as const,
   estoque_inicial: '' as const,
-  quantidade_minima: 1,
+  quantidade_minima_estoque: 1,
+  quantidade_minima_venda: 1,
 }
 
 export function ProdutoVariacoesSection({
@@ -176,13 +177,40 @@ export function ProdutoVariacoesSection({
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor={`variacao-${index}-qtd-min`}>Quantidade mínima</Label>
+                <Label htmlFor={`variacao-${index}-qtd-min-estoque`}>Mínimo de estoque</Label>
                 <Input
-                  id={`variacao-${index}-qtd-min`}
+                  id={`variacao-${index}-qtd-min-estoque`}
                   type="number"
-                  {...register(`variacoes.${index}.quantidade_minima`)}
+                  aria-invalid={!!errors.variacoes?.[index]?.quantidade_minima_estoque}
+                  {...register(`variacoes.${index}.quantidade_minima_estoque`)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Nível de alerta de reposição no módulo de Estoque.
+                </p>
+                {errors.variacoes?.[index]?.quantidade_minima_estoque && (
+                  <p className="text-xs text-destructive">
+                    {errors.variacoes[index]?.quantidade_minima_estoque?.message}
+                  </p>
+                )}
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor={`variacao-${index}-qtd-min-venda`}>Mínimo de venda</Label>
+              <Input
+                id={`variacao-${index}-qtd-min-venda`}
+                type="number"
+                aria-invalid={!!errors.variacoes?.[index]?.quantidade_minima_venda}
+                {...register(`variacoes.${index}.quantidade_minima_venda`)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Quantidade mínima que o cliente precisa comprar — regra de checkout, ainda sem uso na loja.
+              </p>
+              {errors.variacoes?.[index]?.quantidade_minima_venda && (
+                <p className="text-xs text-destructive">
+                  {errors.variacoes[index]?.quantidade_minima_venda?.message}
+                </p>
+              )}
             </div>
 
             {/* Modo de estoque removido da UI (decisao de produto,

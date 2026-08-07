@@ -43,7 +43,15 @@ export type VariacaoFormValues = {
   // no formulario de edicao (nunca enviado no payload - dali pra
   // frente so muda pelo modulo de Estoque).
   saldo_estoque?: number
-  quantidade_minima: number
+  // Dois minimos distintos (migration 027, decisao de produto
+  // 07/08/2026): "quantidade_minima" era ambigua, servia tanto de
+  // alerta de reposicao (modulo de Estoque) quanto seria a futura
+  // regra de compra minima no checkout, sem nenhuma distincao.
+  // estoque = nivel de alerta de reposicao ("abaixo do minimo").
+  // venda = minimo de compra do cliente (checkout futuro, sem uso
+  // ainda).
+  quantidade_minima_estoque: number
+  quantidade_minima_venda: number
 }
 
 export type ProdutoFormValues = {

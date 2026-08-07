@@ -44,7 +44,7 @@ export function EstoqueTable({
           <TableHead>Variação</TableHead>
           <TableHead>SKU</TableHead>
           <TableHead className="text-right">Saldo atual</TableHead>
-          <TableHead className="text-right">Mínimo</TableHead>
+          <TableHead className="text-right">Mínimo de estoque</TableHead>
           <TableHead>Status</TableHead>
           <TableHead className="text-right">Ações</TableHead>
         </TableRow>
@@ -64,7 +64,7 @@ export function EstoqueTable({
             <TableCell>{item.variacao_nome}</TableCell>
             <TableCell className="text-muted-foreground">{item.sku ?? '—'}</TableCell>
             <TableCell className="text-right">{item.saldo_estoque}</TableCell>
-            <TableCell className="text-right text-muted-foreground">{item.quantidade_minima}</TableCell>
+            <TableCell className="text-right text-muted-foreground">{item.quantidade_minima_estoque}</TableCell>
             <TableCell>
               <EstoqueStatusBadge status={item.status} />
             </TableCell>

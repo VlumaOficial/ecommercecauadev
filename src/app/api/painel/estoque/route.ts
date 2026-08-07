@@ -52,14 +52,14 @@ export async function GET(request: NextRequest) {
     nome: string
     sku: string | null
     saldo_estoque: number
-    quantidade_minima: number
+    quantidade_minima_estoque: number
     product_id: string
   }[] = []
 
   if (productIds.length > 0) {
     const { data, error: errVariantes } = await supabase
       .from('product_variants')
-      .select('id, nome, sku, saldo_estoque, quantidade_minima, product_id')
+      .select('id, nome, sku, saldo_estoque, quantidade_minima_estoque, product_id')
       .eq('ativo', true)
       .eq('modo_estoque', 'quantitativo')
       .in('product_id', productIds)
@@ -78,8 +78,8 @@ export async function GET(request: NextRequest) {
     variacao_nome: v.nome,
     sku: v.sku,
     saldo_estoque: v.saldo_estoque,
-    quantidade_minima: v.quantidade_minima,
-    status: calcularStatus(v.saldo_estoque, v.quantidade_minima),
+    quantidade_minima_estoque: v.quantidade_minima_estoque,
+    status: calcularStatus(v.saldo_estoque, v.quantidade_minima_estoque),
   }))
 
   itens.sort(

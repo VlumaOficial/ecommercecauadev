@@ -14,7 +14,7 @@ export type ItemEstoque = {
   variacao_nome: string
   sku: string | null
   saldo_estoque: number
-  quantidade_minima: number
+  quantidade_minima_estoque: number
   status: StatusEstoque
 }
 

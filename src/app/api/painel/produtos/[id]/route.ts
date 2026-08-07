@@ -23,7 +23,10 @@ const variacaoEdicaoSchema = z.object({
     .union([z.literal(''), z.coerce.number()])
     .optional()
     .transform((v) => (v === '' || v === undefined ? null : v)),
-  quantidade_minima: z.coerce.number().optional().default(1),
+  // Dois minimos distintos (migration 027) - ver nota identica em
+  // POST /api/painel/produtos.
+  quantidade_minima_estoque: z.coerce.number().optional().default(1),
+  quantidade_minima_venda: z.coerce.number().optional().default(1),
 })
 
 // Etapa 2 (Caracteristicas): mesmo formato usado na criacao (route.ts,
@@ -177,7 +180,8 @@ export async function PATCH(
       preco_promocional: v.preco_promocional ?? undefined,
       modo_estoque: v.modo_estoque,
       estoque_inicial: v.estoque_inicial ?? undefined,
-      quantidade_minima: v.quantidade_minima,
+      quantidade_minima_estoque: v.quantidade_minima_estoque,
+      quantidade_minima_venda: v.quantidade_minima_venda,
     })),
     p_caracteristicas: caracteristicas,
   })

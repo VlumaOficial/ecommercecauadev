@@ -77,7 +77,13 @@ const variacaoInputSchema = z.object({
     .union([z.literal(''), z.coerce.number()])
     .optional()
     .transform((v) => (v === '' || v === undefined ? null : v)),
-  quantidade_minima: z.coerce.number().optional().default(1),
+  // Dois minimos distintos (migration 027, decisao de produto
+  // 07/08/2026 - "quantidade_minima" era ambigua): estoque = nivel de
+  // alerta de reposicao (modulo de Estoque, "abaixo do minimo"); venda
+  // = minimo de compra do cliente (regra de checkout futura, sem uso
+  // ainda).
+  quantidade_minima_estoque: z.coerce.number().optional().default(1),
+  quantidade_minima_venda: z.coerce.number().optional().default(1),
 })
 
 // Etapa 2 (Caracteristicas): um item por caracteristica preenchida no
@@ -188,7 +194,8 @@ export async function POST(request: NextRequest) {
       preco_promocional: v.preco_promocional ?? undefined,
       modo_estoque: v.modo_estoque,
       estoque_inicial: v.estoque_inicial ?? undefined,
-      quantidade_minima: v.quantidade_minima,
+      quantidade_minima_estoque: v.quantidade_minima_estoque,
+      quantidade_minima_venda: v.quantidade_minima_venda,
     })),
     p_caracteristicas: caracteristicas,
   })

@@ -531,7 +531,11 @@ export type Database = {
           preco: number
           preco_promocional: number | null
           product_id: string
-          quantidade_minima: number
+          // Renomeada de "quantidade_minima" + nova coluna
+          // "quantidade_minima_venda" na migration 027 (dois minimos
+          // distintos - decisao de produto 07/08/2026).
+          quantidade_minima_estoque: number
+          quantidade_minima_venda: number
           saldo_estoque: number
           sku: string | null
           tenant_id: string
@@ -547,7 +551,8 @@ export type Database = {
           preco?: number
           preco_promocional?: number | null
           product_id: string
-          quantidade_minima?: number
+          quantidade_minima_estoque?: number
+          quantidade_minima_venda?: number
           saldo_estoque?: number
           sku?: string | null
           // tenant_id ganha DEFAULT current_tenant_id() na migration 015;
@@ -566,7 +571,8 @@ export type Database = {
           preco?: number
           preco_promocional?: number | null
           product_id?: string
-          quantidade_minima?: number
+          quantidade_minima_estoque?: number
+          quantidade_minima_venda?: number
           saldo_estoque?: number
           sku?: string | null
           tenant_id?: string

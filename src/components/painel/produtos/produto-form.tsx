@@ -41,7 +41,8 @@ const variacaoSchema = z
     // Estoque, migration 022.
     estoque_inicial: numeroOuVazio,
     saldo_estoque: z.number().optional(),
-    quantidade_minima: z.coerce.number().min(1, 'A quantidade mínima deve ser pelo menos 1.'),
+    quantidade_minima_estoque: z.coerce.number().min(1, 'O mínimo de estoque deve ser pelo menos 1.'),
+    quantidade_minima_venda: z.coerce.number().min(1, 'O mínimo de venda deve ser pelo menos 1.'),
   })
   .refine((v) => v.preco !== '', {
     message: 'Informe o preço.',
@@ -113,11 +114,16 @@ const VALORES_PADRAO_NOVO: ProdutoFormValues = {
     {
       nome: 'Padrão',
       sku: '',
-      preco: 0,
+      // Vazio, nao 0 - mesmo motivo do VARIACAO_PADRAO em
+      // produto-variacoes-section.tsx (achado ao revisar: esta copia
+      // aqui, usada só pela 1a variação de um produto novo, tinha
+      // ficado pra tras com "0" ainda).
+      preco: '',
       preco_promocional: '',
       modo_estoque: 'quantitativo',
       estoque_inicial: '',
-      quantidade_minima: 1,
+      quantidade_minima_estoque: 1,
+      quantidade_minima_venda: 1,
     },
   ],
 }
@@ -152,7 +158,8 @@ function valoresIniciaisEdicao(produto: ProdutoDetalhe): ProdutoFormValues {
       // read-only.
       estoque_inicial: '',
       saldo_estoque: v.saldo_estoque,
-      quantidade_minima: v.quantidade_minima,
+      quantidade_minima_estoque: v.quantidade_minima_estoque,
+      quantidade_minima_venda: v.quantidade_minima_venda,
     })),
   }
 }
