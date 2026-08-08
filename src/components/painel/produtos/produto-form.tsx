@@ -318,9 +318,16 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
         o layout do painel nao tem um container com scroll proprio - a
         pagina inteira rola no document; "lg:left-64" desvia da
         largura fixa da sidebar (painel-sidebar.tsx) em telas grandes,
-        onde ela fica sempre visivel ao lado. */}
+        onde ela fica sempre visivel ao lado. Botao "Voltar" replicado
+        aqui pelo mesmo motivo do Salvar - sem ele, um formulario longo
+        prendia o lojista rolado la embaixo sem jeito de sair sem
+        rolar de volta pro topo. */}
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-[#f6f8fb]/95 backdrop-blur lg:left-64">
-          <div className="mx-auto flex max-w-6xl justify-end px-4 py-3 sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+            <Button type="button" variant="ghost" size="sm" onClick={handleVoltar}>
+              <ArrowLeftIcon />
+              Voltar para produtos
+            </Button>
             <Button type="submit" disabled={salvarDesabilitado}>
               {salvando
                 ? 'Salvando...'
