@@ -136,6 +136,8 @@ Cada categoria pode ter uma lista configurável de **características** (ficha t
 - **Mínimo de estoque** (`quantidade_minima_estoque`, renomeada da coluna antiga — preserva o valor de toda variação já existente): nível de alerta de reposição, é o que o módulo de Estoque usa pra marcar uma variação como "abaixo do mínimo".
 - **Mínimo de venda** (`quantidade_minima_venda`, nova, default 1): quantidade mínima de compra do cliente — regra de **checkout futuro**, ainda sem efeito nenhum na loja (não existe carrinho/checkout implementado ainda).
 
+**Cadastro fica na tela depois de salvar (📐 decidido e ✅ implementado em 08/08/2026).** Antes, salvar um produto novo fechava a tela e voltava pra listagem — o lojista precisava procurar o produto de novo e reabrir só pra adicionar as fotos (que só ficam disponíveis depois do produto existir). Agora: ao criar um produto, a tela **não fecha** — vira automaticamente a tela de edição do mesmo produto (a seção de imagens destrava ali mesmo, sem precisar sair). Saída da tela passa a ser sempre uma escolha explícita do lojista: botão "Voltar para produtos", que pergunta antes de sair só se houver alguma alteração ainda não salva. O botão de salvar fica desabilitado enquanto nada foi alterado no formulário (evita clique em vazio) e reativa assim que o lojista mexe em qualquer campo — vale tanto pra criação (depois do primeiro save) quanto pra edição de um produto já existente.
+
 ### 4.5 Status do produto — sempre calculado
 
 **📐 Modelado — sem interface ainda.** **✅ Em uso desde 01/08/2026** na listagem `/painel/produtos` (badges "Esgotado"/"Promoção" via `products_com_status`, confirmados com Chromium real).
