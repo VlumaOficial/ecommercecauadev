@@ -1,13 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { FormProvider, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { ArrowLeftIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/painel/crud/confirm-dialog'
 import {
   useCreateProduto,
   useUpdateProduto,
@@ -182,6 +183,15 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
   })
 
   const salvando = criar.isPending || atualizar.isPending
+  const [confirmSairAberto, setConfirmSairAberto] = useState(false)
+
+  function handleVoltar() {
+    if (methods.formState.isDirty) {
+      setConfirmSairAberto(true)
+    } else {
+      router.push('/painel/produtos')
+    }
+  }
 
   const categoryId = useWatch({ control: methods.control, name: 'category_id' }) ?? ''
   // Fonte unica: ProdutoCaracteristicasSection recebe "ativas" pronta
@@ -191,6 +201,15 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
   const { data: caracteristicasDaCategoria = [], isLoading: carregandoCaracteristicas } =
     useCaracteristicas(categoryId || null)
   const caracteristicasAtivas = caracteristicasDaCategoria.filter((c) => c.ativo)
+
+  // Gate do dirty state so vale a partir do momento em que o produto
+  // existe (modo editar) - inclui o "recem-criado", ja que criar bem
+  // sucedido troca a URL pra /painel/produtos/[id] e reconta esta
+  // instancia do form com o produto como prop (ver onSubmit abaixo).
+  // Em modo "novo" puro o botao fica sempre habilitado (precisa
+  // preencher e salvar, nao faz sentido bloquear por "nada mudou"
+  // ainda).
+  const salvarDesabilitado = salvando || carregandoCaracteristicas || (!!produto && !methods.formState.isDirty)
 
   function onSubmit(values: ProdutoFormValues) {
     // Obrigatoriedade das caracteristicas: nao da pra validar no
@@ -216,12 +235,24 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
     if (produto) {
       atualizar.mutate(
         { id: produto.id, values, caracteristicas: caracteristicasPayload },
-        { onSuccess: () => router.push('/painel/produtos') }
+        {
+          // Fica na tela (nao redireciona pra listagem) - so limpa o
+          // dirty state (reset pros proprios valores atuais, sem
+          // mudar nada visivel) pra o botao Salvar voltar a ficar
+          // desabilitado ate a proxima alteracao.
+          onSuccess: () => methods.reset(methods.getValues()),
+        }
       )
     } else {
       criar.mutate(
         { values, caracteristicas: caracteristicasPayload },
-        { onSuccess: () => router.push('/painel/produtos') }
+        {
+          // Troca a URL pra /painel/produtos/[id] em vez de voltar
+          // pra listagem - a pagina de edicao busca o produto recem
+          // criado e remonta este form em modo "editar", destravando
+          // a secao de imagens no mesmo lugar (ver [id]/page.tsx).
+          onSuccess: (body) => router.replace(`/painel/produtos/${body.data.id}`),
+        }
       )
     }
   }
@@ -231,8 +262,9 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
       <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-6 pb-20">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon-sm" render={<Link href="/painel/produtos" />} nativeButton={false} aria-label="Voltar">
+            <Button type="button" variant="ghost" size="sm" onClick={handleVoltar}>
               <ArrowLeftIcon />
+              Voltar para produtos
             </Button>
             <div>
               <h1 className="font-display text-2xl font-bold text-[var(--brand-navy)]">
@@ -241,7 +273,7 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
               <p className="text-muted-foreground mt-1">Preencha os dados, o código e as variações do produto.</p>
             </div>
           </div>
-          <Button type="submit" disabled={salvando || carregandoCaracteristicas}>
+          <Button type="submit" disabled={salvarDesabilitado}>
             {salvando
               ? 'Salvando...'
               : carregandoCaracteristicas
@@ -289,7 +321,7 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
         onde ela fica sempre visivel ao lado. */}
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-[#f6f8fb]/95 backdrop-blur lg:left-64">
           <div className="mx-auto flex max-w-6xl justify-end px-4 py-3 sm:px-6 lg:px-8">
-            <Button type="submit" disabled={salvando || carregandoCaracteristicas}>
+            <Button type="submit" disabled={salvarDesabilitado}>
               {salvando
                 ? 'Salvando...'
                 : carregandoCaracteristicas
@@ -301,6 +333,16 @@ export function ProdutoForm({ produto }: { produto?: ProdutoDetalhe }) {
           </div>
         </div>
       </form>
+      <ConfirmDialog
+        open={confirmSairAberto}
+        onOpenChange={setConfirmSairAberto}
+        title="Sair sem salvar?"
+        description="Há alterações não salvas. Sair mesmo assim?"
+        confirmLabel="Sair mesmo assim"
+        cancelLabel="Continuar editando"
+        destructive
+        onConfirm={() => router.push('/painel/produtos')}
+      />
     </FormProvider>
   )
 }

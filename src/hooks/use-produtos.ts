@@ -131,7 +131,10 @@ export function useCreateProduto() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['produtos'] })
-      toast.success('Produto criado com sucesso.')
+      // Fica na tela (produto-form.tsx troca pra modo edicao) - a
+      // mensagem já orienta o proximo passo (imagens so destravam
+      // depois do produto existir), nao so confirma o "criado".
+      toast.success('Produto salvo — agora você pode adicionar imagens.')
     },
     onError: (error: Error) => toast.error(error.message || 'Não foi possível criar o produto.'),
   })
