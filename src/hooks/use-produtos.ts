@@ -111,6 +111,20 @@ export function useProdutos(params: { status: StatusFiltro; busca: string; categ
   })
 }
 
+// category_id -> quantidade de produtos, respeitando o status atual da
+// listagem - alimenta o contador em cada nó da árvore de categoria do
+// filtro (categoria-tree-filter.tsx).
+export function useContagemProdutosPorCategoria(status: StatusFiltro) {
+  return useQuery({
+    queryKey: ['produtos-contagem-categoria', status],
+    queryFn: async (): Promise<Record<string, number>> => {
+      const response = await fetch(`/api/painel/produtos/contagem-por-categoria?status=${status}`)
+      const body = await parseJsonOrThrow(response)
+      return body.data ?? {}
+    },
+  })
+}
+
 export function useCreateProduto() {
   const queryClient = useQueryClient()
 

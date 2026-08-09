@@ -1,30 +1,24 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { PlusIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  Combobox,
-  ComboboxClear,
-  ComboboxContent,
-  ComboboxInput,
-  ComboboxInputGroup,
-  ComboboxItem,
-  ComboboxTrigger,
-} from '@/components/ui/combobox'
 import { useQueryParamState } from '@/hooks/use-query-param-state'
 import { StatusFilterTabs, type StatusFiltro } from '@/components/painel/crud/status-filter-tabs'
 import { SearchInput } from '@/components/painel/crud/search-input'
 import { ConfirmDialog } from '@/components/painel/crud/confirm-dialog'
 import { useCategorias } from '@/hooks/use-categorias'
-import { getPath } from '@/lib/category-tree'
+import { CategoriaTreeFilter } from './categoria-tree-filter'
 import { ProdutosTable } from './produtos-table'
 import { ProdutoViewDialog } from './produto-view-dialog'
-import { useProdutos, useSetProdutoAtivo, type Produto } from '@/hooks/use-produtos'
-
-type CategoriaOption = { value: string; label: string }
+import {
+  useProdutos,
+  useSetProdutoAtivo,
+  useContagemProdutosPorCategoria,
+  type Produto,
+} from '@/hooks/use-produtos'
 
 export function ProdutosView() {
   const router = useRouter()
@@ -38,19 +32,11 @@ export function ProdutosView() {
     categoryId,
   })
   const { data: categorias = [] } = useCategorias()
+  const { data: contagemPorCategoria = {} } = useContagemProdutosPorCategoria(status as StatusFiltro)
 
   const [produtoParaInativar, setProdutoParaInativar] = useState<Produto | null>(null)
   const [produtoVisualizando, setProdutoVisualizando] = useState<Produto | null>(null)
   const setAtivo = useSetProdutoAtivo()
-
-  const opcoesCategoria = useMemo<CategoriaOption[]>(() => {
-    return categorias
-      .filter((c) => c.ativo)
-      .map((c) => ({ value: c.id, label: getPath(c.id, categorias) }))
-      .sort((a, b) => a.label.localeCompare(b.label))
-  }, [categorias])
-
-  const categoriaSelecionada = opcoesCategoria.find((o) => o.value === categoryId) ?? null
 
   function confirmarInativar() {
     if (!produtoParaInativar) return
@@ -76,24 +62,12 @@ export function ProdutosView() {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <StatusFilterTabs value={status as StatusFiltro} onChange={setStatus} />
         <div className="flex flex-wrap items-center gap-2">
-          <Combobox
-            items={opcoesCategoria}
-            value={categoriaSelecionada}
-            onValueChange={(item: CategoriaOption | null) => setCategoryId(item ? item.value : '')}
-          >
-            <ComboboxInputGroup className="w-full sm:w-56">
-              <ComboboxInput placeholder="Filtrar por categoria" />
-              <ComboboxClear />
-              <ComboboxTrigger />
-            </ComboboxInputGroup>
-            <ComboboxContent>
-              {(item: CategoriaOption) => (
-                <ComboboxItem key={item.value} value={item}>
-                  {item.label}
-                </ComboboxItem>
-              )}
-            </ComboboxContent>
-          </Combobox>
+          <CategoriaTreeFilter
+            categorias={categorias}
+            contagem={contagemPorCategoria}
+            value={categoryId}
+            onChange={setCategoryId}
+          />
           <SearchInput
             defaultValue={busca}
             onChange={setBusca}
