@@ -107,6 +107,7 @@ export function ProdutosView() {
         <ProdutosTable
           produtos={produtos}
           isLoading={isLoading}
+          busca={busca}
           onRowClick={setProdutoVisualizando}
           onInativar={setProdutoParaInativar}
           onReativar={(produto) => setAtivo.mutate({ id: produto.id!, ativo: true })}

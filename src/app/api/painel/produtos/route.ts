@@ -33,6 +33,14 @@ export async function GET(request: NextRequest) {
   else if (status === 'inativos') query = query.eq('ativo', false)
   if (categoryId) query = query.eq('category_id', categoryId)
 
+  // product_id -> variacoes que bateram na busca (so preenchido quando
+  // ha busca) - permite a listagem mostrar QUAL variacao casou, nao so
+  // que o produto casou. Populado abaixo, antes do .or() principal.
+  const variacoesPorProduto = new Map<
+    string,
+    { id: string; nome: string; sku: string | null; bateu_sku: boolean; bateu_nome: boolean }[]
+  >()
+
   if (busca) {
     // Busca tambem por SKU/rotulo de variacao: acha os product_id que
     // batem numa query separada (product_variants nao e' exposto pela
@@ -42,9 +50,19 @@ export async function GET(request: NextRequest) {
     // procurando o produto por um SKU ja inativado.
     const { data: variantMatches } = await supabase
       .from('product_variants')
-      .select('product_id')
+      .select('id, product_id, nome, sku')
       .or(`sku.ilike.%${busca}%,nome.ilike.%${busca}%`)
-    const idsPorVariacao = [...new Set((variantMatches ?? []).map((v) => v.product_id))]
+
+    const buscaLower = busca.toLowerCase()
+    for (const v of variantMatches ?? []) {
+      const bateuSku = !!v.sku && v.sku.toLowerCase().includes(buscaLower)
+      const bateuNome = !!v.nome && v.nome.toLowerCase().includes(buscaLower)
+      if (!bateuSku && !bateuNome) continue
+      const lista = variacoesPorProduto.get(v.product_id) ?? []
+      lista.push({ id: v.id, nome: v.nome, sku: v.sku, bateu_sku: bateuSku, bateu_nome: bateuNome })
+      variacoesPorProduto.set(v.product_id, lista)
+    }
+    const idsPorVariacao = [...variacoesPorProduto.keys()]
 
     const condicoes = [`nome.ilike.%${busca}%`, `codigo.ilike.%${busca}%`]
     if (idsPorVariacao.length > 0) {
@@ -58,7 +76,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Não foi possível carregar os produtos. Tente novamente.' }, { status: 400 })
   }
 
-  return NextResponse.json({ data })
+  const resultado = busca
+    ? (data ?? []).map((p) => ({ ...p, variacoes_encontradas: variacoesPorProduto.get(p.id!) ?? [] }))
+    : data
+
+  return NextResponse.json({ data: resultado })
 }
 
 const variacaoInputSchema = z.object({

@@ -5,7 +5,21 @@ import { toast } from 'sonner'
 import type { Tables } from '@/types/database'
 import type { StatusFiltro } from '@/components/painel/crud/status-filter-tabs'
 
-export type Produto = Tables<'products_com_status'>
+// Preenchido só quando a listagem tem busca ativa (GET
+// /api/painel/produtos) - qual(is) variação(ões) do produto casaram
+// com o texto digitado, e em qual campo (SKU e/ou rótulo), pra UI
+// mostrar a variação sem o lojista precisar abrir o produto.
+export type VariacaoEncontrada = {
+  id: string
+  nome: string
+  sku: string | null
+  bateu_sku: boolean
+  bateu_nome: boolean
+}
+
+export type Produto = Tables<'products_com_status'> & {
+  variacoes_encontradas?: VariacaoEncontrada[]
+}
 export type Variacao = Tables<'product_variants'>
 export type ImagemProduto = Tables<'product_images'>
 export type ValorCaracteristica = Tables<'product_attribute_values'>
