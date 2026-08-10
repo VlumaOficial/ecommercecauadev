@@ -10,7 +10,7 @@ import { StatusFilterTabs, type StatusFiltro } from '@/components/painel/crud/st
 import { SearchInput } from '@/components/painel/crud/search-input'
 import { ConfirmDialog } from '@/components/painel/crud/confirm-dialog'
 import { useCategorias } from '@/hooks/use-categorias'
-import { CategoriaTreeFilter } from './categoria-tree-filter'
+import { CategoriaFilterPopover } from './categoria-filter-popover'
 import { ProdutosTable } from './produtos-table'
 import { ProdutoViewDialog } from './produto-view-dialog'
 import {
@@ -62,7 +62,7 @@ export function ProdutosView() {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <StatusFilterTabs value={status as StatusFiltro} onChange={setStatus} />
         <div className="flex flex-wrap items-center gap-2">
-          <CategoriaTreeFilter
+          <CategoriaFilterPopover
             categorias={categorias}
             contagem={contagemPorCategoria}
             value={categoryId}

@@ -76,6 +76,24 @@ export function getPath(id: string, flat: Pick<CategoriaNode, 'id' | 'nome' | 'p
   return partes.join(' > ')
 }
 
+// Mesmo caminho de getPath, mas como lista de segmentos {id, nome} em
+// vez de string ja concatenada - usado pelo filtro de categoria em
+// /painel/produtos (categoria-filter-popover.tsx) pro breadcrumb
+// clicavel (cada segmento precisa do proprio id pra navegar de volta).
+export function getPathSegments(
+  id: string,
+  flat: Pick<CategoriaNode, 'id' | 'nome' | 'parent_id'>[]
+): { id: string; nome: string }[] {
+  const porId = new Map(flat.map((c) => [c.id, c]))
+  const segmentos: { id: string; nome: string }[] = []
+  let atual = porId.get(id)
+  while (atual) {
+    segmentos.unshift({ id: atual.id, nome: atual.nome })
+    atual = atual.parent_id ? porId.get(atual.parent_id) : undefined
+  }
+  return segmentos
+}
+
 // Nó visivel se ele mesmo bate no filtro OU e ancestral de algum nó
 // que bate (mantem o caminho ate a raiz pra dar contexto na arvore).
 export function computeVisibleIds(
