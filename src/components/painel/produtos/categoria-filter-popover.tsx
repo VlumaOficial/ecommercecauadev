@@ -188,18 +188,23 @@ export function CategoriaFilterPopover({
 
   const categoriaSelecionada = value ? porId.get(value) : undefined
 
-  function handleSelect(id: string) {
-    onChange(id)
-    salvarRecente(id)
-    setOpen(false)
-  }
-
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
       setBusca('')
       setCurrentParentId(null)
     }
+  }
+
+  function handleSelect(id: string) {
+    onChange(id)
+    salvarRecente(id)
+    // Fecha via handleOpenChange (nao setOpen direto) - precisa do
+    // mesmo reset de busca/currentParentId de qualquer outro
+    // fechamento, senao reabrir o popover depois de selecionar uma
+    // categoria dentro de um nivel de navegacao volta pro MESMO nivel
+    // em vez de raiz+recentes.
+    handleOpenChange(false)
   }
 
   return (
