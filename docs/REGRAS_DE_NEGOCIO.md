@@ -28,7 +28,7 @@ Cada regra abaixo indica seu status: **✅ Em vigor** (implementada e funcionand
 
 ## 2. Fechamento da loja — dois níveis independentes
 
-**📐 Decidida e modelada, migration `007` aplicada no banco** — **UI de configuração ainda não existe.**
+**📐 Decidida e modelada, migration `007` aplicada no banco.** **✅ Em vigor no lado da leitura desde 12/08/2026** — a Vitrine pública (`(loja)/**`, Fase 1 Etapa 2) já respeita os dois níveis: `loja_aberta=false` mostra só a mensagem, sem header/nav/catálogo nenhum; `pedidos_abertos=false` (com loja aberta) mostra uma faixa com `mensagem_pedidos_fechados` acima do catálogo, que continua navegável — não há botão de finalizar pedido ainda pra bloquear de verdade (Carrinho/Checkout é fase futura), então esse nível só afeta o aviso por enquanto. **UI de configuração pro lojista editar os dois campos ainda não existe** — prevista na Etapa 4 do plano da Vitrine Fase 1 (`ESCOPO_PROJETO.md` §0 item 23), junto com banner/selos/identidade.
 
 A loja tem dois interruptores independentes, não um só:
 
