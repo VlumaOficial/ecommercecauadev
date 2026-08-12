@@ -29,17 +29,18 @@
 --      criadas. Ficaram assim de propósito "até a Vitrine existir"
 --      (nota já registrada na 014 e em ESCOPO_PROJETO.md §2). A
 --      Vitrine está começando agora: a partir desta migration, leitura
---      anônima só entra pelas RPCs acima — go embutido no runtime.
+--      anônima só entra pelas RPCs acima.
 --
 -- O que esta migration NÃO faz (fora do escopo da Fase 0):
 --   - Não mexe em proxy.ts, tenant.ts nem em nenhuma tela da Vitrine
 --     ((loja)/**) — isso é implementação de código, não migration, e
 --     só acontece depois desta ser revisada e aplicada.
---   - Não popula tenant_domains com os hosts reais de teste
---     (ecommercecauahml.vluma.com.br / testeecommerce.vluma.com.br) —
---     ver bloco de SEED comentado no final, pra rodar manualmente só
---     depois de confirmar que testeecommerce.vluma.com.br está
---     apontado pro projeto Vercel (fora do escopo de uma migration).
+--   - Não cria dado nenhum de teste/seed (tenant de teste, domínio,
+--     produto de exemplo) — migration de produção não deve carregar
+--     dado de teste, nem comentado. Isso fica em
+--     `supabase/tests/vitrine_isolamento_test.sql`, mesmo padrão já
+--     usado pelo canário de RLS (`isolamento_test.sql`) — script à
+--     parte, rodado manualmente, nunca aplicado como parte da migration.
 --   - Não adiciona paginação/cache na resolução de host->tenant — Fase
 --     0 aceita 1 query a mais por request; otimizar (cache em memória/
 --     Edge Config) fica pra quando o tráfego justificar.
@@ -364,26 +365,9 @@ drop policy if exists "images_select_anon" on public.product_images;
 -- nenhuma tela publica consulta isso ainda.
 
 
--- ---------- SEED de teste (NAO roda automatico - comentado de proposito) ----------
--- Rodar manualmente so' depois de confirmar no Vercel que
--- testeecommerce.vluma.com.br esta' apontado pro mesmo projeto/deploy
--- (fora do escopo desta migration - configuracao de dominio, nao
--- schema). ecommercecauahml.vluma.com.br fica associado ao tenant
--- 'capua' de qualquer forma (precisa existir pra Fase 0 nao quebrar
--- nada). O canario '_teste_isolamento' precisa de ativo=true
--- TEMPORARIO pra esse teste especifico (ele nasce ativo=false de
--- proposito, "nao e' loja real" - ver supabase/tests/isolamento_test.sql)
--- - reverter pra false depois do teste de isolamento da Vitrine, mesmo
--- padrao ja usado no teste do JWT expiry (ajusta, testa, reverte).
---
--- insert into public.tenant_domains (tenant_id, dominio)
--- select id, 'ecommercecauahml.vluma.com.br' from public.tenants where slug = 'capua'
--- on conflict (dominio) do nothing;
---
--- insert into public.tenant_domains (tenant_id, dominio)
--- select id, 'testeecommerce.vluma.com.br' from public.tenants where slug = '_teste_isolamento'
--- on conflict (dominio) do nothing;
---
--- update public.tenants set ativo = true where slug = '_teste_isolamento';
--- -- ... rodar o teste de isolamento da Vitrine aqui ...
--- update public.tenants set ativo = false where slug = '_teste_isolamento';
+-- Fim da migration. Dado de teste (tenant dedicado da vitrine,
+-- dominios, produto de exemplo) e' responsabilidade de
+-- supabase/tests/vitrine_isolamento_test.sql - script separado,
+-- fora da migration de producao, mesmo padrao ja usado pelo canario
+-- de RLS (isolamento_test.sql). Rodar so' depois desta migration
+-- aplicada.
