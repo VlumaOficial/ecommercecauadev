@@ -104,6 +104,38 @@
   --sidebar-ring: #7FB2DC;
 }
 
+/* ---- Vitrine publica ((loja)/**) - tema teal agua, escopado ----
+   Mesmos tokens semanticos do painel (primary/secondary/muted/accent/
+   border/ring/card/destructive), so' com valores diferentes dentro
+   desta classe. Como @theme inline mapeia --color-primary: var(--primary)
+   (nao um valor fixo), qualquer .bg-primary/.text-primary etc. dentro
+   de .loja-theme resolve pro teal abaixo automaticamente, via cascata
+   normal de CSS custom properties - o painel (fora desta classe)
+   nunca ve essa mudanca, continua no navy/vermelho da marca Capua. */
+.loja-theme {
+  --background: #ffffff;
+  --foreground: #0f2229;
+  --card: #ffffff;
+  --card-foreground: #0f2229;
+  --popover: #ffffff;
+  --popover-foreground: #0f2229;
+
+  --primary: #0891b2;
+  --primary-foreground: #ffffff;
+  --secondary: #e6f7fa;
+  --secondary-foreground: #0e7490;
+  --muted: #f1f6f7;
+  --muted-foreground: #57727a;
+  --accent: #cffafe;
+  --accent-foreground: #0e7490;
+
+  --destructive: #dc2626;
+
+  --border: #dde7ea;
+  --input: #dde7ea;
+  --ring: #0891b2;
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

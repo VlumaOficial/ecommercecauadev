@@ -1018,6 +1018,54 @@ export type Database = {
         Args: { p_image_id: string }
         Returns: undefined
       }
+      // Adicionadas na migration 028 (Vitrine Fase 0 - tenant publico
+      // por host). SECURITY DEFINER, grant pra anon/authenticated -
+      // usadas pela Vitrine ((loja)/**), nunca pelo painel.
+      resolve_tenant_by_host: {
+        Args: { p_host: string }
+        Returns: { tenant_id: string; slug: string }[]
+      }
+      get_public_store_settings: {
+        Args: { p_tenant_slug: string }
+        Returns: {
+          nome: string
+          loja_aberta: boolean
+          pedidos_abertos: boolean
+          mensagem_loja_fechada: string | null
+          mensagem_pedidos_fechados: string | null
+          valor_minimo_pedido: number
+        }[]
+      }
+      get_public_categories: {
+        Args: { p_tenant_slug: string }
+        Returns: { id: string; nome: string; slug: string; parent_id: string | null; ordem: number }[]
+      }
+      get_public_products: {
+        Args: { p_tenant_slug: string; p_category_id?: string | null }
+        Returns: {
+          id: string
+          nome: string
+          slug: string
+          descricao: string | null
+          category_id: string
+          destaque: boolean
+          novidade: boolean
+          em_promocao: boolean
+          esgotado: boolean
+          preco_a_partir_de: number | null
+          codigo: string | null
+          imagem_principal: string | null
+          unidade_venda: string
+        }[]
+      }
+      // Retorna jsonb (nao um Row tipado) - a RPC monta o objeto
+      // inteiro (imagens/caracteristicas/variacoes aninhadas) via
+      // jsonb_build_object no banco. Ver ProdutoDetalhe em
+      // src/lib/loja/types.ts pro shape usado no app.
+      get_public_product_detail: {
+        Args: { p_tenant_slug: string; p_slug: string }
+        Returns: Json
+      }
     }
     Enums: {
       field_type: "texto" | "numero" | "selecao" | "booleano" | "data"
