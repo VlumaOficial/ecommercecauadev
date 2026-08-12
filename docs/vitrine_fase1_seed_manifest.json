@@ -1,0 +1,1026 @@
+{
+  "criado_em": "2026-08-12T17:39:22.417Z",
+  "descricao": "Vitrine Fase 1, Etapa 1 - dados de teste (peixes ornamentais) no tenant capua, ambiente HML",
+  "tenant_slug": "capua",
+  "categorias": [
+    {
+      "id": "fb65b30b-7c0a-4c75-867a-31b8edb5a694",
+      "nome": "Acarás",
+      "parent": "Ciclídeo"
+    },
+    {
+      "id": "86cd8daa-7a2b-4f88-9839-ca28dc85ed99",
+      "nome": "Oscars",
+      "parent": "Ciclídeo"
+    },
+    {
+      "id": "ab4278ef-c086-4e55-aa33-1c1a2abe7bf2",
+      "nome": "Ciclídeos Anões",
+      "parent": "Ciclídeo"
+    },
+    {
+      "id": "5df9abe7-92d2-4ce3-a43e-05ce3d66fe1c",
+      "nome": "Beta Halfmoon",
+      "parent": "Betas"
+    },
+    {
+      "id": "3a854162-769f-4296-ba1d-68357c13d2a2",
+      "nome": "Beta Plakat",
+      "parent": "Betas"
+    },
+    {
+      "id": "e3b1f524-d130-488b-9336-4705567c9a35",
+      "nome": "Plantas de Fundo",
+      "parent": "Plantas"
+    },
+    {
+      "id": "fb76e154-9659-4e2b-a805-339e8cb6dfdd",
+      "nome": "Plantas Flutuantes",
+      "parent": "Plantas"
+    }
+  ],
+  "category_attributes": [
+    {
+      "id": "8969f9af-0f31-4750-944b-6b4ad08c1eb5",
+      "categoria": "Acarás",
+      "rotulo": "Temperamento"
+    },
+    {
+      "id": "fbded4b7-5abb-44a6-bffa-712747628b27",
+      "categoria": "Acarás",
+      "rotulo": "Tamanho adulto"
+    },
+    {
+      "id": "29f063e6-39fb-4489-8faf-1a3c0ee3a677",
+      "categoria": "Acarás",
+      "rotulo": "pH ideal"
+    },
+    {
+      "id": "b521ee7a-af1f-4627-950a-d47b7de10f24",
+      "categoria": "Acarás",
+      "rotulo": "Temperatura ideal"
+    },
+    {
+      "id": "6026c1ed-5d48-4e3e-8d01-e73856b04501",
+      "categoria": "Oscars",
+      "rotulo": "Temperamento"
+    },
+    {
+      "id": "c3f8ff9f-60e0-42ba-bff5-2eba3c5a4e8b",
+      "categoria": "Oscars",
+      "rotulo": "Tamanho adulto"
+    },
+    {
+      "id": "9542af1f-1b2f-48d1-9588-a8af8d18287f",
+      "categoria": "Oscars",
+      "rotulo": "pH ideal"
+    },
+    {
+      "id": "d6e45fcd-fcb8-49ee-aaa8-cc24d9dd7f21",
+      "categoria": "Oscars",
+      "rotulo": "Temperatura ideal"
+    },
+    {
+      "id": "d3b4be9b-302b-4ad1-b9bd-05f79423d69f",
+      "categoria": "Ciclídeos Anões",
+      "rotulo": "Temperamento"
+    },
+    {
+      "id": "661d980e-0a79-4fd6-b7b7-dd161f988e9a",
+      "categoria": "Ciclídeos Anões",
+      "rotulo": "Tamanho adulto"
+    },
+    {
+      "id": "a5874bd3-b58d-4e8d-a9a4-4ced99d51bd2",
+      "categoria": "Ciclídeos Anões",
+      "rotulo": "pH ideal"
+    },
+    {
+      "id": "7a47045c-2eb3-447d-8287-da272fba1441",
+      "categoria": "Ciclídeos Anões",
+      "rotulo": "Temperatura ideal"
+    },
+    {
+      "id": "2b1862d7-3f7b-42fa-ac2a-8e1cfaf2a853",
+      "categoria": "Beta Halfmoon",
+      "rotulo": "Temperamento"
+    },
+    {
+      "id": "cabc5061-cee3-4527-870f-aa5546db3e5d",
+      "categoria": "Beta Halfmoon",
+      "rotulo": "Tamanho adulto"
+    },
+    {
+      "id": "a2f14a7e-6124-4bff-9ab9-dfaf5778a2de",
+      "categoria": "Beta Halfmoon",
+      "rotulo": "pH ideal"
+    },
+    {
+      "id": "8eebb3c1-573d-4735-b1ef-6f75f986c25e",
+      "categoria": "Beta Halfmoon",
+      "rotulo": "Temperatura ideal"
+    },
+    {
+      "id": "10dbdaa6-1ed7-4856-9ed9-68548effbd08",
+      "categoria": "Beta Plakat",
+      "rotulo": "Temperamento"
+    },
+    {
+      "id": "0f0ed886-5624-4f79-bc46-b771c2448a16",
+      "categoria": "Beta Plakat",
+      "rotulo": "Tamanho adulto"
+    },
+    {
+      "id": "98490038-36ec-4e44-bbe4-47fe7c0b3332",
+      "categoria": "Beta Plakat",
+      "rotulo": "pH ideal"
+    },
+    {
+      "id": "12220bf8-d277-4af5-a6cd-fb9606799974",
+      "categoria": "Beta Plakat",
+      "rotulo": "Temperatura ideal"
+    },
+    {
+      "id": "760b405f-30ef-4191-b150-403b40734f73",
+      "categoria": "Plantas de Fundo",
+      "rotulo": "Nível de luz"
+    },
+    {
+      "id": "d3f510ac-d05c-420c-8788-6c10d5f21844",
+      "categoria": "Plantas de Fundo",
+      "rotulo": "CO2 necessário"
+    },
+    {
+      "id": "799e0177-0a65-44fe-a91a-27ec9782b864",
+      "categoria": "Plantas de Fundo",
+      "rotulo": "Dificuldade"
+    },
+    {
+      "id": "0a2792b7-6354-465c-84c4-e809429a14ac",
+      "categoria": "Plantas Flutuantes",
+      "rotulo": "Nível de luz"
+    },
+    {
+      "id": "f6ba3d50-27fc-434b-9b1f-1af327f6e826",
+      "categoria": "Plantas Flutuantes",
+      "rotulo": "CO2 necessário"
+    },
+    {
+      "id": "9990417f-3bdc-40ab-825b-b4d29e609988",
+      "categoria": "Plantas Flutuantes",
+      "rotulo": "Dificuldade"
+    },
+    {
+      "id": "bf1520fb-d579-4685-a8cd-65f618ba4189",
+      "categoria": "Ração",
+      "rotulo": "Tipo"
+    },
+    {
+      "id": "9dbfb225-0185-4658-aa89-6ec21e095b53",
+      "categoria": "Ração",
+      "rotulo": "Peso da embalagem"
+    }
+  ],
+  "products": [
+    {
+      "id": "43674beb-c343-42bb-981c-4b035b24a17a",
+      "nome": "Acará Disco Azul",
+      "codigo": "ACDA-0001",
+      "categoria": "Acarás"
+    },
+    {
+      "id": "7bb3f0d5-dba1-48f0-aeaa-37f8c9ce53a7",
+      "nome": "Acará Bandeira Prata",
+      "codigo": "ACBP-0001",
+      "categoria": "Acarás"
+    },
+    {
+      "id": "44179257-a81d-468f-9ff9-fb0e71ebe41c",
+      "nome": "Acará Bandeira Marmorizado",
+      "codigo": "ACBM-0001",
+      "categoria": "Acarás"
+    },
+    {
+      "id": "3a3138ba-6089-4754-83d3-7a37d5d40418",
+      "nome": "Oscar Tigre",
+      "codigo": "OSTI-0001",
+      "categoria": "Oscars"
+    },
+    {
+      "id": "b50c0750-90dd-4228-8ece-71b368d99551",
+      "nome": "Oscar Albino",
+      "codigo": "OSAL-0001",
+      "categoria": "Oscars"
+    },
+    {
+      "id": "50437d31-5de9-4d4d-96dd-beab781a8eee",
+      "nome": "Apistogramma Cacatuoides",
+      "codigo": "APCA-0001",
+      "categoria": "Ciclídeos Anões"
+    },
+    {
+      "id": "5610112b-47f4-4b17-bc25-af192d00ab2d",
+      "nome": "Ram Balão",
+      "codigo": "RABA-0001",
+      "categoria": "Ciclídeos Anões"
+    },
+    {
+      "id": "0258b248-3ddf-49a0-b02d-65785cdaed71",
+      "nome": "Betta Halfmoon Vermelho",
+      "codigo": "BEHV-0001",
+      "categoria": "Beta Halfmoon"
+    },
+    {
+      "id": "fe0d0263-2e30-4aba-8116-8c567610f49c",
+      "nome": "Betta Halfmoon Azul Royal",
+      "codigo": "BEHA-0001",
+      "categoria": "Beta Halfmoon"
+    },
+    {
+      "id": "99c2aef9-0051-493b-af43-388217bc3aba",
+      "nome": "Betta Plakat Amarelo",
+      "codigo": "BEPA-0001",
+      "categoria": "Beta Plakat"
+    },
+    {
+      "id": "771d45b8-a52c-47b3-bcf2-0ba727d29e22",
+      "nome": "Betta Plakat Cambodia",
+      "codigo": "BEPC-0001",
+      "categoria": "Beta Plakat"
+    },
+    {
+      "id": "61b15dd7-a9db-4446-bab1-9af544488e19",
+      "nome": "Anúbia Nana",
+      "codigo": "ANNA-0001",
+      "categoria": "Plantas de Fundo"
+    },
+    {
+      "id": "8b77fba0-d22e-4275-b448-d67fbb223f80",
+      "nome": "Cryptocoryne Wendtii",
+      "codigo": "CRWE-0001",
+      "categoria": "Plantas de Fundo"
+    },
+    {
+      "id": "198f62ae-ae6b-4ff6-9b4b-327954564d3f",
+      "nome": "Java Fern",
+      "codigo": "JAFE-0001",
+      "categoria": "Plantas de Fundo"
+    },
+    {
+      "id": "bc3f1af4-4799-4499-ace2-e2cec77761f1",
+      "nome": "Salvínia Natans",
+      "codigo": "SANA-0001",
+      "categoria": "Plantas Flutuantes"
+    },
+    {
+      "id": "880bc6dc-ee50-4356-abe0-7a1118658998",
+      "nome": "Alface D'água",
+      "codigo": "ALDA-0001",
+      "categoria": "Plantas Flutuantes"
+    },
+    {
+      "id": "f022d00b-2e84-41e2-a42b-0a5c85fee5cc",
+      "nome": "Ração em Flocos Coloridos",
+      "codigo": "RAFC-0001",
+      "categoria": "Ração"
+    },
+    {
+      "id": "d599f5ee-5a8a-466c-b0c5-ef4c6435056a",
+      "nome": "Ração em Flocos Tropical",
+      "codigo": "RAFT-0001",
+      "categoria": "Ração"
+    },
+    {
+      "id": "54cadd41-0910-486e-8c24-1067912be26b",
+      "nome": "Ração em Pellets",
+      "codigo": "RAPE-0001",
+      "categoria": "Ração"
+    },
+    {
+      "id": "d3be513c-482e-4b77-9798-d4a153ac68bc",
+      "nome": "Ração Granulada para Filhotes",
+      "codigo": "RAGP-0001",
+      "categoria": "Ração"
+    }
+  ],
+  "product_variants": [
+    {
+      "id": "510ba977-4820-47ad-9205-ac6b165310d8",
+      "produto": "Acará Disco Azul",
+      "rotulo": "Pequeno",
+      "sku": "ACDA-0001-PEQ"
+    },
+    {
+      "id": "815557e7-b16f-4708-a4cb-cae9993a15ea",
+      "produto": "Acará Disco Azul",
+      "rotulo": "Médio",
+      "sku": "ACDA-0001-MED"
+    },
+    {
+      "id": "e7daa4e0-23de-4d2f-a608-4daf685a0a27",
+      "produto": "Acará Bandeira Prata",
+      "rotulo": "Padrão",
+      "sku": "ACBP-0001-PAD"
+    },
+    {
+      "id": "811bb6ee-0486-49c4-bbdf-b83bbe1fc031",
+      "produto": "Acará Bandeira Marmorizado",
+      "rotulo": "Padrão",
+      "sku": "ACBM-0001-PAD"
+    },
+    {
+      "id": "c8ef63cf-b63a-42d2-8589-eec0fa2bfce4",
+      "produto": "Oscar Tigre",
+      "rotulo": "Padrão",
+      "sku": "OSTI-0001-PAD"
+    },
+    {
+      "id": "a6ad2c6c-c7a5-45e0-bade-8bbf2f8db02a",
+      "produto": "Oscar Albino",
+      "rotulo": "Padrão",
+      "sku": "OSAL-0001-PAD"
+    },
+    {
+      "id": "4b41c437-4e66-457b-ab3f-c90fdf0df715",
+      "produto": "Apistogramma Cacatuoides",
+      "rotulo": "Casal",
+      "sku": "APCA-0001-CAS"
+    },
+    {
+      "id": "886b6217-8ad5-43b4-820e-bfde78ccd6b4",
+      "produto": "Ram Balão",
+      "rotulo": "Padrão",
+      "sku": "RABA-0001-PAD"
+    },
+    {
+      "id": "c59c6371-b059-4bf3-b769-3a2098a94e1f",
+      "produto": "Betta Halfmoon Vermelho",
+      "rotulo": "Padrão",
+      "sku": "BEHV-0001-PAD"
+    },
+    {
+      "id": "33958b82-73b9-4459-b5a9-fb9b0749f021",
+      "produto": "Betta Halfmoon Azul Royal",
+      "rotulo": "Padrão",
+      "sku": "BEHA-0001-PAD"
+    },
+    {
+      "id": "9ff0fc10-d4b7-4cb6-8773-6ac57d20a436",
+      "produto": "Betta Plakat Amarelo",
+      "rotulo": "Padrão",
+      "sku": "BEPA-0001-PAD"
+    },
+    {
+      "id": "2fe7ba89-f3fb-470f-b371-91f03da640ff",
+      "produto": "Betta Plakat Cambodia",
+      "rotulo": "Padrão",
+      "sku": "BEPC-0001-PAD"
+    },
+    {
+      "id": "4eb97748-65a7-4c67-9eca-0b5d8e4da8c5",
+      "produto": "Anúbia Nana",
+      "rotulo": "Vaso Pequeno",
+      "sku": "ANNA-0001-VAPE"
+    },
+    {
+      "id": "96bafa0e-46e4-41cf-84eb-7f96aac7759a",
+      "produto": "Anúbia Nana",
+      "rotulo": "Vaso Grande",
+      "sku": "ANNA-0001-VAGR"
+    },
+    {
+      "id": "2df0c35a-4fbc-44ad-ac42-70338f682aa4",
+      "produto": "Cryptocoryne Wendtii",
+      "rotulo": "Padrão",
+      "sku": "CRWE-0001-PAD"
+    },
+    {
+      "id": "2ddc7780-bb1b-47e8-b181-ece87fef97d6",
+      "produto": "Java Fern",
+      "rotulo": "Padrão",
+      "sku": "JAFE-0001-PAD"
+    },
+    {
+      "id": "5f1b8711-4149-4133-9607-46cdfd3eb75c",
+      "produto": "Salvínia Natans",
+      "rotulo": "Punhado",
+      "sku": "SANA-0001-PUN"
+    },
+    {
+      "id": "2a54c97b-7e56-49e3-aead-a1459916f56c",
+      "produto": "Alface D'água",
+      "rotulo": "Unidade",
+      "sku": "ALDA-0001-UNI"
+    },
+    {
+      "id": "dac9d93a-dd2d-4f5d-9a11-a5d9c90e7d60",
+      "produto": "Ração em Flocos Coloridos",
+      "rotulo": "20g",
+      "sku": "RAFC-0001-20G"
+    },
+    {
+      "id": "464761f0-de78-4661-85b6-4c84fbcc8c69",
+      "produto": "Ração em Flocos Coloridos",
+      "rotulo": "100g",
+      "sku": "RAFC-0001-100"
+    },
+    {
+      "id": "fb3ce6c9-2245-414f-a7af-e0559ea33772",
+      "produto": "Ração em Flocos Tropical",
+      "rotulo": "20g",
+      "sku": "RAFT-0001-20G"
+    },
+    {
+      "id": "fa160803-c002-4d4f-b4bb-b13d5c587f29",
+      "produto": "Ração em Flocos Tropical",
+      "rotulo": "100g",
+      "sku": "RAFT-0001-100"
+    },
+    {
+      "id": "bdeeaa5a-478c-40d9-8438-0cee0f2242b5",
+      "produto": "Ração em Pellets",
+      "rotulo": "Padrão 100g",
+      "sku": "RAPE-0001-PA10"
+    },
+    {
+      "id": "dca72040-6702-4321-93b8-5cda0ba33035",
+      "produto": "Ração Granulada para Filhotes",
+      "rotulo": "Padrão 50g",
+      "sku": "RAGP-0001-PA50"
+    }
+  ],
+  "product_attribute_values": [
+    {
+      "id": "37cd6895-9d30-413c-a394-83b6c7a627cc",
+      "produto": "Acará Disco Azul",
+      "rotulo": "Temperamento",
+      "valor": "Semi-agressivo"
+    },
+    {
+      "id": "a3f33e02-9dc1-457b-acae-71eb42e1da6e",
+      "produto": "Acará Disco Azul",
+      "rotulo": "Tamanho adulto",
+      "valor": "15-20cm"
+    },
+    {
+      "id": "1f5e7a9c-dfe2-4f10-a281-64fb495e2c07",
+      "produto": "Acará Disco Azul",
+      "rotulo": "pH ideal",
+      "valor": "6.0-7.0"
+    },
+    {
+      "id": "38146569-1981-47a5-867f-dbd20839c630",
+      "produto": "Acará Disco Azul",
+      "rotulo": "Temperatura ideal",
+      "valor": "28-30°C"
+    },
+    {
+      "id": "65dde9f2-ed0e-4af6-9d3b-e817418500b8",
+      "produto": "Acará Bandeira Prata",
+      "rotulo": "Temperamento",
+      "valor": "Pacífico"
+    },
+    {
+      "id": "03985761-3256-43ff-af3e-11ff9a7e4ba6",
+      "produto": "Acará Bandeira Prata",
+      "rotulo": "Tamanho adulto",
+      "valor": "12-15cm"
+    },
+    {
+      "id": "bcfc559f-4bac-4b90-9d2b-7199f30cfb15",
+      "produto": "Acará Bandeira Prata",
+      "rotulo": "pH ideal",
+      "valor": "6.5-7.5"
+    },
+    {
+      "id": "8275da2b-97e9-4d66-a867-02e7b85cabec",
+      "produto": "Acará Bandeira Prata",
+      "rotulo": "Temperatura ideal",
+      "valor": "26-28°C"
+    },
+    {
+      "id": "4f2b77f3-d8c3-4a8c-b6cf-1187693b2fd7",
+      "produto": "Acará Bandeira Marmorizado",
+      "rotulo": "Temperamento",
+      "valor": "Pacífico"
+    },
+    {
+      "id": "428506a3-860d-433e-ac35-a866baef6b60",
+      "produto": "Acará Bandeira Marmorizado",
+      "rotulo": "Tamanho adulto",
+      "valor": "12-15cm"
+    },
+    {
+      "id": "f2398e6d-f1ca-47aa-b373-9bb1060afd7f",
+      "produto": "Acará Bandeira Marmorizado",
+      "rotulo": "pH ideal",
+      "valor": "6.5-7.5"
+    },
+    {
+      "id": "e0d60d8f-0a9c-45db-8481-1dff151da56b",
+      "produto": "Oscar Tigre",
+      "rotulo": "Temperamento",
+      "valor": "Agressivo"
+    },
+    {
+      "id": "c67339ef-ebb5-4a3f-a499-a2555fa13c15",
+      "produto": "Oscar Tigre",
+      "rotulo": "Tamanho adulto",
+      "valor": "25-30cm"
+    },
+    {
+      "id": "371c4b2c-98a3-4343-a33e-23664ffa8e10",
+      "produto": "Oscar Tigre",
+      "rotulo": "pH ideal",
+      "valor": "6.0-8.0"
+    },
+    {
+      "id": "6091b228-61ed-495b-9229-3d980d5f1cf3",
+      "produto": "Oscar Tigre",
+      "rotulo": "Temperatura ideal",
+      "valor": "23-27°C"
+    },
+    {
+      "id": "1a041303-52d3-406a-8b54-e639b5947211",
+      "produto": "Oscar Albino",
+      "rotulo": "Temperamento",
+      "valor": "Agressivo"
+    },
+    {
+      "id": "4fda7f9d-7d73-4d2c-b976-bdc82a1ccb1b",
+      "produto": "Oscar Albino",
+      "rotulo": "Tamanho adulto",
+      "valor": "25-30cm"
+    },
+    {
+      "id": "2c64b80f-5c23-4e3c-8bfd-1102b02e334f",
+      "produto": "Oscar Albino",
+      "rotulo": "pH ideal",
+      "valor": "6.0-8.0"
+    },
+    {
+      "id": "2e4cdaf3-eb3d-4abd-9680-4b86afc7e456",
+      "produto": "Apistogramma Cacatuoides",
+      "rotulo": "Temperamento",
+      "valor": "Semi-agressivo"
+    },
+    {
+      "id": "8d4b0d11-9ae8-4121-a28b-f42669212791",
+      "produto": "Apistogramma Cacatuoides",
+      "rotulo": "Tamanho adulto",
+      "valor": "6-8cm"
+    },
+    {
+      "id": "0e2032f8-ccef-4a08-8fa9-fef4746653ae",
+      "produto": "Apistogramma Cacatuoides",
+      "rotulo": "pH ideal",
+      "valor": "5.5-6.5"
+    },
+    {
+      "id": "5f5f3949-512a-4d70-9840-718739dad26a",
+      "produto": "Apistogramma Cacatuoides",
+      "rotulo": "Temperatura ideal",
+      "valor": "25-28°C"
+    },
+    {
+      "id": "74baac28-98a2-4434-93a5-b3aa081ae918",
+      "produto": "Ram Balão",
+      "rotulo": "Temperamento",
+      "valor": "Pacífico"
+    },
+    {
+      "id": "a38b33f6-cafe-4f26-bb86-cd53a67f51ef",
+      "produto": "Ram Balão",
+      "rotulo": "Tamanho adulto",
+      "valor": "5cm"
+    },
+    {
+      "id": "b6de0ff0-59b5-462b-8af0-6f5c62003bc5",
+      "produto": "Ram Balão",
+      "rotulo": "pH ideal",
+      "valor": "6.0-7.0"
+    },
+    {
+      "id": "0f94d7a9-6492-4ab4-ab12-3f5a088e299f",
+      "produto": "Betta Halfmoon Vermelho",
+      "rotulo": "Temperamento",
+      "valor": "Agressivo"
+    },
+    {
+      "id": "4e6727f5-a968-46b9-8a5c-08b4cd96a7e4",
+      "produto": "Betta Halfmoon Vermelho",
+      "rotulo": "Tamanho adulto",
+      "valor": "6-7cm"
+    },
+    {
+      "id": "9e8b27b8-f14a-45a6-8111-7fd2df4f1aab",
+      "produto": "Betta Halfmoon Vermelho",
+      "rotulo": "pH ideal",
+      "valor": "6.5-7.5"
+    },
+    {
+      "id": "c7855f60-60b0-4a0b-86d6-7aab653c63df",
+      "produto": "Betta Halfmoon Vermelho",
+      "rotulo": "Temperatura ideal",
+      "valor": "25-28°C"
+    },
+    {
+      "id": "e774ce57-28ba-4f8b-80d5-f8b3e1a5f2e2",
+      "produto": "Betta Halfmoon Azul Royal",
+      "rotulo": "Temperamento",
+      "valor": "Agressivo"
+    },
+    {
+      "id": "0ed225eb-02ce-4f56-937c-b87389cc8a63",
+      "produto": "Betta Halfmoon Azul Royal",
+      "rotulo": "Tamanho adulto",
+      "valor": "6-7cm"
+    },
+    {
+      "id": "fc387387-b12f-4da7-9fdc-7ad599c0d0dc",
+      "produto": "Betta Halfmoon Azul Royal",
+      "rotulo": "pH ideal",
+      "valor": "6.5-7.5"
+    },
+    {
+      "id": "9a4d3682-ee3c-4c3b-b385-5ab63b38cfaf",
+      "produto": "Betta Plakat Amarelo",
+      "rotulo": "Temperamento",
+      "valor": "Agressivo"
+    },
+    {
+      "id": "c77a0458-bd89-4793-92dc-e7722e20a2f6",
+      "produto": "Betta Plakat Amarelo",
+      "rotulo": "Tamanho adulto",
+      "valor": "5-6cm"
+    },
+    {
+      "id": "ade96e20-7758-4d0c-8596-1ebeea3c255c",
+      "produto": "Betta Plakat Amarelo",
+      "rotulo": "pH ideal",
+      "valor": "6.5-7.5"
+    },
+    {
+      "id": "90e401c6-0e71-4438-bfb9-43147a0f7aad",
+      "produto": "Betta Plakat Cambodia",
+      "rotulo": "Temperamento",
+      "valor": "Agressivo"
+    },
+    {
+      "id": "745e404b-8d1e-400a-8954-29602af47011",
+      "produto": "Betta Plakat Cambodia",
+      "rotulo": "Tamanho adulto",
+      "valor": "5-6cm"
+    },
+    {
+      "id": "0d36c535-344e-45b6-ba96-163613f60564",
+      "produto": "Anúbia Nana",
+      "rotulo": "Nível de luz",
+      "valor": "Baixo"
+    },
+    {
+      "id": "e28ede60-585c-44e1-9739-e035edddf527",
+      "produto": "Anúbia Nana",
+      "rotulo": "CO2 necessário",
+      "valor": "false"
+    },
+    {
+      "id": "c8256700-a717-44f8-b396-211d268579c2",
+      "produto": "Anúbia Nana",
+      "rotulo": "Dificuldade",
+      "valor": "Fácil"
+    },
+    {
+      "id": "b38406cc-2a0e-434f-a6c6-dbc60a05dff2",
+      "produto": "Cryptocoryne Wendtii",
+      "rotulo": "Nível de luz",
+      "valor": "Médio"
+    },
+    {
+      "id": "162435da-b741-490f-80d1-5e0be3b97b4f",
+      "produto": "Cryptocoryne Wendtii",
+      "rotulo": "Dificuldade",
+      "valor": "Fácil"
+    },
+    {
+      "id": "9870efea-85d3-4a7b-847b-85c2595fed3b",
+      "produto": "Java Fern",
+      "rotulo": "Nível de luz",
+      "valor": "Baixo"
+    },
+    {
+      "id": "8a6414b8-d914-4190-87c6-7726626aa75a",
+      "produto": "Java Fern",
+      "rotulo": "CO2 necessário",
+      "valor": "false"
+    },
+    {
+      "id": "9847fd79-928c-4923-ba36-bb41913b2ff6",
+      "produto": "Java Fern",
+      "rotulo": "Dificuldade",
+      "valor": "Fácil"
+    },
+    {
+      "id": "ed9b1bc0-acf5-4706-a436-fab0992fc2e9",
+      "produto": "Salvínia Natans",
+      "rotulo": "Nível de luz",
+      "valor": "Alto"
+    },
+    {
+      "id": "e11c18ee-5f5d-44f0-b74d-c81a87411547",
+      "produto": "Salvínia Natans",
+      "rotulo": "CO2 necessário",
+      "valor": "false"
+    },
+    {
+      "id": "646628c8-7449-4868-b291-a3cad082d906",
+      "produto": "Salvínia Natans",
+      "rotulo": "Dificuldade",
+      "valor": "Fácil"
+    },
+    {
+      "id": "32d1884c-d1ef-4d34-866d-74bd9442d77b",
+      "produto": "Alface D'água",
+      "rotulo": "Nível de luz",
+      "valor": "Alto"
+    },
+    {
+      "id": "1ae58fee-b860-42ef-aeca-dfc2127d9ff0",
+      "produto": "Alface D'água",
+      "rotulo": "Dificuldade",
+      "valor": "Fácil"
+    },
+    {
+      "id": "c640156b-1636-4692-b798-818194e29858",
+      "produto": "Ração em Flocos Coloridos",
+      "rotulo": "Tipo",
+      "valor": "Flocos"
+    },
+    {
+      "id": "6392eb47-d69f-411b-9eb1-21cb4664ae27",
+      "produto": "Ração em Flocos Coloridos",
+      "rotulo": "Peso da embalagem",
+      "valor": "Disponível em 20g e 100g"
+    },
+    {
+      "id": "f5caf881-caea-4d41-85b8-4981c3d7eb7d",
+      "produto": "Ração em Flocos Tropical",
+      "rotulo": "Tipo",
+      "valor": "Flocos"
+    },
+    {
+      "id": "16d8584f-5c7c-4db2-9505-13b652a0fa57",
+      "produto": "Ração em Flocos Tropical",
+      "rotulo": "Peso da embalagem",
+      "valor": "Disponível em 20g e 100g"
+    },
+    {
+      "id": "02836542-1098-4839-bcfd-35dca0293932",
+      "produto": "Ração em Pellets",
+      "rotulo": "Tipo",
+      "valor": "Pellets"
+    },
+    {
+      "id": "7fc889be-38c4-4d7d-a325-ec889e930986",
+      "produto": "Ração em Pellets",
+      "rotulo": "Peso da embalagem",
+      "valor": "100g"
+    },
+    {
+      "id": "20293951-9335-492b-92fd-2f21e4299375",
+      "produto": "Ração Granulada para Filhotes",
+      "rotulo": "Tipo",
+      "valor": "Granulado"
+    },
+    {
+      "id": "7f960ac5-0430-4c88-988f-de65285f913f",
+      "produto": "Ração Granulada para Filhotes",
+      "rotulo": "Peso da embalagem",
+      "valor": "50g"
+    }
+  ],
+  "product_images": [
+    {
+      "id": "87eaa6c0-bdb0-4c8a-a3f6-4004dd11b3b9",
+      "produto": "Acará Disco Azul",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/43674beb-c343-42bb-981c-4b035b24a17a/87eaa6c0-bdb0-4c8a-a3f6-4004dd11b3b9.webp"
+    },
+    {
+      "id": "8ba518e6-5950-4805-bbbc-81036f00e0f9",
+      "produto": "Acará Bandeira Prata",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/7bb3f0d5-dba1-48f0-aeaa-37f8c9ce53a7/8ba518e6-5950-4805-bbbc-81036f00e0f9.webp"
+    },
+    {
+      "id": "a2c42324-a6ff-46b5-863e-d1c27216f818",
+      "produto": "Acará Bandeira Marmorizado",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/44179257-a81d-468f-9ff9-fb0e71ebe41c/a2c42324-a6ff-46b5-863e-d1c27216f818.webp"
+    },
+    {
+      "id": "18d606cd-4255-4dbc-8aab-bef5160eb86d",
+      "produto": "Oscar Tigre",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/3a3138ba-6089-4754-83d3-7a37d5d40418/18d606cd-4255-4dbc-8aab-bef5160eb86d.webp"
+    },
+    {
+      "id": "2d387dd8-d1aa-48f0-ac73-6e537348dd38",
+      "produto": "Oscar Albino",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/b50c0750-90dd-4228-8ece-71b368d99551/2d387dd8-d1aa-48f0-ac73-6e537348dd38.webp"
+    },
+    {
+      "id": "d57bf998-6893-4820-ae16-f7d5d28c31a9",
+      "produto": "Apistogramma Cacatuoides",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/50437d31-5de9-4d4d-96dd-beab781a8eee/d57bf998-6893-4820-ae16-f7d5d28c31a9.webp"
+    },
+    {
+      "id": "77ba9894-4b0c-4a11-ab55-a9672b74b232",
+      "produto": "Ram Balão",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/5610112b-47f4-4b17-bc25-af192d00ab2d/77ba9894-4b0c-4a11-ab55-a9672b74b232.webp"
+    },
+    {
+      "id": "0f3e5794-8a1d-49e2-8650-15c0f9de38d5",
+      "produto": "Betta Halfmoon Vermelho",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/0258b248-3ddf-49a0-b02d-65785cdaed71/0f3e5794-8a1d-49e2-8650-15c0f9de38d5.webp"
+    },
+    {
+      "id": "49556496-362c-4feb-9a24-6be2e594e1a9",
+      "produto": "Betta Halfmoon Azul Royal",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/fe0d0263-2e30-4aba-8116-8c567610f49c/49556496-362c-4feb-9a24-6be2e594e1a9.webp"
+    },
+    {
+      "id": "b2a31041-7471-4147-b917-a232590a8ad0",
+      "produto": "Betta Plakat Amarelo",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/99c2aef9-0051-493b-af43-388217bc3aba/b2a31041-7471-4147-b917-a232590a8ad0.webp"
+    },
+    {
+      "id": "c53e58fe-99f4-4e8d-91d6-a0b179829b16",
+      "produto": "Betta Plakat Cambodia",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/771d45b8-a52c-47b3-bcf2-0ba727d29e22/c53e58fe-99f4-4e8d-91d6-a0b179829b16.webp"
+    },
+    {
+      "id": "c0d0ef9b-436c-4e89-a4a4-421b95f14f07",
+      "produto": "Anúbia Nana",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/61b15dd7-a9db-4446-bab1-9af544488e19/c0d0ef9b-436c-4e89-a4a4-421b95f14f07.webp"
+    },
+    {
+      "id": "a4856604-047a-408c-804e-81c35b2bbed3",
+      "produto": "Cryptocoryne Wendtii",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/8b77fba0-d22e-4275-b448-d67fbb223f80/a4856604-047a-408c-804e-81c35b2bbed3.webp"
+    },
+    {
+      "id": "7d3e8d04-07a9-470f-97aa-3a0aeb5bc45d",
+      "produto": "Java Fern",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/198f62ae-ae6b-4ff6-9b4b-327954564d3f/7d3e8d04-07a9-470f-97aa-3a0aeb5bc45d.webp"
+    },
+    {
+      "id": "f73a6386-b84f-43f4-ac21-4f2ed8801db7",
+      "produto": "Salvínia Natans",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/bc3f1af4-4799-4499-ace2-e2cec77761f1/f73a6386-b84f-43f4-ac21-4f2ed8801db7.webp"
+    },
+    {
+      "id": "668dbf02-3162-4a7c-956a-b20b631e9707",
+      "produto": "Alface D'água",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/880bc6dc-ee50-4356-abe0-7a1118658998/668dbf02-3162-4a7c-956a-b20b631e9707.webp"
+    },
+    {
+      "id": "94963bec-d36f-4fa9-8813-5bd9ff6db1e2",
+      "produto": "Ração em Flocos Coloridos",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/f022d00b-2e84-41e2-a42b-0a5c85fee5cc/94963bec-d36f-4fa9-8813-5bd9ff6db1e2.webp"
+    },
+    {
+      "id": "c1767510-cc1f-4eb3-af99-07440b5bbe51",
+      "produto": "Ração em Flocos Tropical",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/d599f5ee-5a8a-466c-b0c5-ef4c6435056a/c1767510-cc1f-4eb3-af99-07440b5bbe51.webp"
+    },
+    {
+      "id": "55026eee-00ac-4628-91d8-d8ea5aff8d1f",
+      "produto": "Ração em Pellets",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/54cadd41-0910-486e-8c24-1067912be26b/55026eee-00ac-4628-91d8-d8ea5aff8d1f.webp"
+    },
+    {
+      "id": "673e6e0f-5782-4798-9188-499e63dcfb4f",
+      "produto": "Ração Granulada para Filhotes",
+      "storage_path": "9cb25966-acfe-4a69-bd94-282c7ba0a0e4/d3be513c-482e-4b77-9798-d4a153ac68bc/673e6e0f-5782-4798-9188-499e63dcfb4f.webp"
+    }
+  ],
+  "stock_movements": [
+    {
+      "variant_id": "510ba977-4820-47ad-9205-ac6b165310d8",
+      "produto": "Acará Disco Azul",
+      "rotulo": "Pequeno",
+      "quantidade": 12
+    },
+    {
+      "variant_id": "815557e7-b16f-4708-a4cb-cae9993a15ea",
+      "produto": "Acará Disco Azul",
+      "rotulo": "Médio",
+      "quantidade": 6
+    },
+    {
+      "variant_id": "e7daa4e0-23de-4d2f-a608-4daf685a0a27",
+      "produto": "Acará Bandeira Prata",
+      "rotulo": "Padrão",
+      "quantidade": 20
+    },
+    {
+      "variant_id": "c8ef63cf-b63a-42d2-8589-eec0fa2bfce4",
+      "produto": "Oscar Tigre",
+      "rotulo": "Padrão",
+      "quantidade": 8
+    },
+    {
+      "variant_id": "4b41c437-4e66-457b-ab3f-c90fdf0df715",
+      "produto": "Apistogramma Cacatuoides",
+      "rotulo": "Casal",
+      "quantidade": 10
+    },
+    {
+      "variant_id": "886b6217-8ad5-43b4-820e-bfde78ccd6b4",
+      "produto": "Ram Balão",
+      "rotulo": "Padrão",
+      "quantidade": 15
+    },
+    {
+      "variant_id": "c59c6371-b059-4bf3-b769-3a2098a94e1f",
+      "produto": "Betta Halfmoon Vermelho",
+      "rotulo": "Padrão",
+      "quantidade": 7
+    },
+    {
+      "variant_id": "33958b82-73b9-4459-b5a9-fb9b0749f021",
+      "produto": "Betta Halfmoon Azul Royal",
+      "rotulo": "Padrão",
+      "quantidade": 5
+    },
+    {
+      "variant_id": "9ff0fc10-d4b7-4cb6-8773-6ac57d20a436",
+      "produto": "Betta Plakat Amarelo",
+      "rotulo": "Padrão",
+      "quantidade": 9
+    },
+    {
+      "variant_id": "4eb97748-65a7-4c67-9eca-0b5d8e4da8c5",
+      "produto": "Anúbia Nana",
+      "rotulo": "Vaso Pequeno",
+      "quantidade": 25
+    },
+    {
+      "variant_id": "96bafa0e-46e4-41cf-84eb-7f96aac7759a",
+      "produto": "Anúbia Nana",
+      "rotulo": "Vaso Grande",
+      "quantidade": 10
+    },
+    {
+      "variant_id": "2df0c35a-4fbc-44ad-ac42-70338f682aa4",
+      "produto": "Cryptocoryne Wendtii",
+      "rotulo": "Padrão",
+      "quantidade": 30
+    },
+    {
+      "variant_id": "2ddc7780-bb1b-47e8-b181-ece87fef97d6",
+      "produto": "Java Fern",
+      "rotulo": "Padrão",
+      "quantidade": 18
+    },
+    {
+      "variant_id": "5f1b8711-4149-4133-9607-46cdfd3eb75c",
+      "produto": "Salvínia Natans",
+      "rotulo": "Punhado",
+      "quantidade": 40
+    },
+    {
+      "variant_id": "2a54c97b-7e56-49e3-aead-a1459916f56c",
+      "produto": "Alface D'água",
+      "rotulo": "Unidade",
+      "quantidade": 50
+    },
+    {
+      "variant_id": "dac9d93a-dd2d-4f5d-9a11-a5d9c90e7d60",
+      "produto": "Ração em Flocos Coloridos",
+      "rotulo": "20g",
+      "quantidade": 30
+    },
+    {
+      "variant_id": "464761f0-de78-4661-85b6-4c84fbcc8c69",
+      "produto": "Ração em Flocos Coloridos",
+      "rotulo": "100g",
+      "quantidade": 12
+    },
+    {
+      "variant_id": "fb3ce6c9-2245-414f-a7af-e0559ea33772",
+      "produto": "Ração em Flocos Tropical",
+      "rotulo": "20g",
+      "quantidade": 25
+    },
+    {
+      "variant_id": "bdeeaa5a-478c-40d9-8438-0cee0f2242b5",
+      "produto": "Ração em Pellets",
+      "rotulo": "Padrão 100g",
+      "quantidade": 20
+    },
+    {
+      "variant_id": "dca72040-6702-4321-93b8-5cda0ba33035",
+      "produto": "Ração Granulada para Filhotes",
+      "rotulo": "Padrão 50g",
+      "quantidade": 14
+    }
+  ]
+}
