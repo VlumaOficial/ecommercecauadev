@@ -13,10 +13,14 @@ export function Header({ nomeLoja, valorMinimoPedido }: { nomeLoja: string; valo
         <span className="inline-flex flex-wrap items-center justify-center gap-x-1.5">
           <TruckIcon className="hidden size-3.5 shrink-0 sm:inline" />
           Retirada combinada por cidade
-          <span aria-hidden className="opacity-60">
-            ·
-          </span>
-          <b className="font-bold">Pedido mínimo {formatarMoeda(valorMinimoPedido)}</b>
+          {valorMinimoPedido > 0 && (
+            <>
+              <span aria-hidden className="opacity-60">
+                ·
+              </span>
+              <b className="font-bold">Pedido mínimo {formatarMoeda(valorMinimoPedido)}</b>
+            </>
+          )}
           <span aria-hidden className="opacity-60">
             ·
           </span>
