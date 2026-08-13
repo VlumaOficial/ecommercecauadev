@@ -26,8 +26,8 @@ export function Footer({ nomeLoja }: { nomeLoja: string }) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="grid grid-cols-1 gap-8 pb-8 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
           <div>
-            <p className="mb-2.5 flex items-center gap-2 font-display text-lg font-extrabold text-primary">
-              <Image src="/brand/logocp-icone-branco.png" alt="" width={26} height={21} className="h-5 w-auto" />
+            <p className="mb-2.5 flex items-center gap-2.5 font-display text-lg font-extrabold text-primary">
+              <Image src="/brand/logocp-icone.png" alt="" width={50} height={40} className="h-10 w-auto" />
               {nomeLoja}
             </p>
             <p className="max-w-xs text-[13px] leading-relaxed text-slate-400">

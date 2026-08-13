@@ -31,7 +31,7 @@ export function Header({ nomeLoja, valorMinimoPedido }: { nomeLoja: string; valo
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:gap-6 sm:px-6">
           <Link href="/" className="flex shrink-0 items-center gap-2">
-            <Image src="/brand/logocp-icone.png" alt="" width={34} height={27} className="h-7 w-auto sm:h-8" priority />
+            <Image src="/brand/logocp-icone.png" alt="" width={45} height={36} className="h-9 w-auto sm:h-10" priority />
             <span className="font-display text-lg font-extrabold tracking-tight text-primary sm:text-xl">
               {nomeLoja}
             </span>
