@@ -12,18 +12,21 @@ export function GridCategorias({ categorias }: { categorias: CategoriaPublica[] 
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <h2 className="mb-4 font-display text-xl font-bold text-foreground">Categorias</h2>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-display text-xl font-bold text-foreground">Categorias</h2>
+        <Link href="/produtos" className="text-sm font-semibold text-primary hover:underline">
+          Ver todas →
+        </Link>
+      </div>
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
         {raizes.map((c) => (
           <Link
             key={c.id}
             href={`/categoria/${c.slug}`}
-            className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 text-center transition-colors hover:border-primary hover:bg-secondary"
+            className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card px-3 py-5 text-center transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
           >
-            <div className="flex size-11 items-center justify-center rounded-full bg-secondary text-primary group-hover:bg-primary group-hover:text-primary-foreground">
-              <CategoriaIcon nome={c.nome} className="size-5" />
-            </div>
-            <span className="text-sm font-medium text-foreground">{c.nome}</span>
+            <CategoriaIcon nome={c.nome} className="size-9 text-primary" />
+            <span className="text-[13.5px] font-semibold text-foreground">{c.nome}</span>
           </Link>
         ))}
       </div>

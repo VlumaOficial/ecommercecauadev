@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Criatório Capuã — Vitrine navegável (mockup)</title>
+<style>
+  :root {
+    --brand: #0891b2; --brand-dark: #0e7490; --brand-soft: #ecfeff;
+    --accent: #f59e0b; --ink: #0f172a; --muted: #64748b; --subtle: #94a3b8;
+    --line: #e2e8f0; --bg: #f8fafc; --white: #ffffff; --green: #16a34a; --danger: #dc2626;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); font-size: 15px; }
+  a { text-decoration: none; color: inherit; cursor: pointer; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+  .note-banner { background: #1e293b; color: #e2e8f0; padding: 10px 16px; font-size: 12.5px; border-radius: 8px; margin: 12px auto; max-width: 1200px; }
+
+  .topbar { background: var(--brand-dark); color: #fff; font-size: 13px; text-align: center; padding: 8px 20px; }
+  .topbar b { font-weight: 700; }
+
+  header { background: var(--white); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 40; }
+  .header-main { display: flex; align-items: center; gap: 24px; padding: 16px 0; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 22px; color: var(--brand); letter-spacing: -0.02em; white-space: nowrap; }
+  .logo .fish { font-size: 26px; }
+  .search { flex: 1; position: relative; }
+  .search input { width: 100%; padding: 12px 16px 12px 44px; border: 2px solid var(--line); border-radius: 10px; font-size: 15px; outline: none; }
+  .search input:focus { border-color: var(--brand); }
+  .search .ico { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--subtle); font-size: 18px; }
+  .header-actions { display: flex; align-items: center; gap: 20px; white-space: nowrap; }
+  .haction { display: flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--muted); }
+  .haction:hover { color: var(--brand); }
+  .haction .big { font-size: 20px; }
+  .cart-badge { background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; border-radius: 10px; padding: 1px 6px; margin-left: -4px; }
+
+  nav.cats { background: var(--brand); }
+  .cats-inner { display: flex; gap: 4px; align-items: center; overflow-x: auto; }
+  .cats-inner a { color: #fff; font-size: 14px; font-weight: 500; padding: 12px 16px; white-space: nowrap; display: flex; align-items: center; gap: 7px; }
+  .cats-inner a:hover, .cats-inner a.active { background: rgba(255,255,255,0.15); }
+  .cats-inner a.all { font-weight: 700; }
+
+  .hero { margin: 20px 0; border-radius: 16px; overflow: hidden; background: linear-gradient(120deg, #0891b2, #06b6d4 55%, #22d3ee); color: #fff; position: relative; min-height: 260px; display: flex; align-items: center; }
+  .hero-content { padding: 40px 48px; max-width: 560px; z-index: 2; }
+  .hero h1 { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 12px; }
+  .hero p { font-size: 16px; opacity: 0.95; margin-bottom: 22px; }
+  .hero .btn { background: #fff; color: var(--brand-dark); font-weight: 700; padding: 12px 26px; border-radius: 10px; display: inline-block; font-size: 15px; }
+  .hero-fish { position: absolute; right: 30px; bottom: -10px; font-size: 180px; opacity: 0.25; }
+
+  .trust { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 24px 0; }
+  .trust-item { background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; }
+  .trust-item .ico { font-size: 26px; }
+  .trust-item .t { font-weight: 700; font-size: 14px; }
+  .trust-item .s { font-size: 12.5px; color: var(--muted); }
+
+  section { margin: 36px 0; }
+  .sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .sec-head h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+  .sec-head a { color: var(--brand); font-size: 14px; font-weight: 600; }
+
+  .cat-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+  .cat-card { background: var(--white); border: 1px solid var(--line); border-radius: 14px; padding: 20px 12px; text-align: center; transition: all .15s; }
+  .cat-card:hover { border-color: var(--brand); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(8,145,178,0.1); }
+  .cat-card .emoji { font-size: 40px; margin-bottom: 8px; }
+  .cat-card .name { font-size: 13.5px; font-weight: 600; }
+
+  .prod-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .prod-card { background: var(--white); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; transition: all .15s; display: flex; flex-direction: column; }
+  .prod-card:hover { box-shadow: 0 10px 28px rgba(0,0,0,0.09); transform: translateY(-2px); }
+  .prod-img { height: 180px; background: linear-gradient(135deg, #e0f2fe, #cffafe); display: flex; align-items: center; justify-content: center; font-size: 64px; position: relative; }
+  .prod-tag { position: absolute; top: 10px; left: 10px; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
+  .prod-tag.promo { background: var(--accent); color: #fff; }
+  .prod-tag.novo { background: var(--green); color: #fff; }
+  .prod-tag.esg { background: var(--danger); color: #fff; }
+  .prod-fav { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--subtle); }
+  .prod-body { padding: 14px; display: flex; flex-direction: column; flex: 1; }
+  .prod-cat { font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600; }
+  .prod-name { font-size: 14.5px; font-weight: 600; margin: 4px 0 10px; line-height: 1.3; flex: 1; }
+  .prod-price-old { font-size: 12.5px; color: var(--subtle); text-decoration: line-through; }
+  .prod-price { font-size: 20px; font-weight: 800; }
+  .prod-price .apartir { font-size: 11px; font-weight: 500; color: var(--muted); display: block; }
+  .prod-unit { font-size: 12px; color: var(--muted); }
+  .prod-btn { margin-top: 12px; background: var(--brand); color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 13.5px; cursor: pointer; width: 100%; }
+  .prod-btn:hover { background: var(--brand-dark); }
+  .prod-btn.esg { background: var(--line); color: var(--muted); cursor: not-allowed; }
+
+  /* ---- Listagem ---- */
+  .crumb { font-size: 13px; color: var(--muted); margin: 18px 0; }
+  .crumb a:hover { color: var(--brand); }
+  .listing { display: grid; grid-template-columns: 240px 1fr; gap: 24px; margin: 20px 0 40px; }
+  .filters { background: var(--white); border: 1px solid var(--line); border-radius: 14px; padding: 18px; height: fit-content; }
+  .filters h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--subtle); margin-bottom: 12px; }
+  .filter-tree a { display: flex; justify-content: space-between; padding: 7px 8px; border-radius: 7px; font-size: 14px; color: var(--ink); }
+  .filter-tree a:hover { background: var(--bg); }
+  .filter-tree a.active { background: var(--brand-soft); color: var(--brand-dark); font-weight: 600; }
+  .filter-tree a .c { font-size: 11px; color: var(--subtle); }
+  .filter-tree .child { padding-left: 14px; }
+  .filter-block { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 14px; }
+  .filter-block label { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 5px 0; color: var(--muted); }
+  .list-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .list-head .count { font-size: 13.5px; color: var(--muted); }
+  .list-head select { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 13.5px; }
+  .listing .prod-grid { grid-template-columns: repeat(3, 1fr); }
+
+  /* ---- Ficha ---- */
+  .detail { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin: 24px 0 40px; }
+  .gallery .main-img { height: 380px; background: linear-gradient(135deg, #e0f2fe, #cffafe); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 140px; }
+  .thumbs { display: flex; gap: 10px; margin-top: 12px; }
+  .thumb { width: 72px; height: 72px; background: linear-gradient(135deg, #e0f2fe, #cffafe); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 32px; cursor: pointer; border: 2px solid transparent; }
+  .thumb.active { border-color: var(--brand); }
+  .detail-info h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 6px; }
+  .detail-cat { font-size: 12.5px; color: var(--subtle); text-transform: uppercase; font-weight: 600; letter-spacing: 0.03em; }
+  .detail-code { font-size: 12px; color: var(--subtle); font-family: ui-monospace, monospace; margin-top: 4px; }
+  .detail-price { margin: 20px 0; }
+  .detail-price .old { font-size: 15px; color: var(--subtle); text-decoration: line-through; }
+  .detail-price .now { font-size: 32px; font-weight: 800; color: var(--ink); }
+  .detail-price .now .apartir { font-size: 13px; font-weight: 500; color: var(--muted); }
+  .var-label { font-size: 13px; font-weight: 700; margin: 18px 0 8px; }
+  .var-opts { display: flex; gap: 10px; flex-wrap: wrap; }
+  .var-opt { border: 2px solid var(--line); border-radius: 10px; padding: 10px 16px; cursor: pointer; font-size: 14px; }
+  .var-opt.active { border-color: var(--brand); background: var(--brand-soft); color: var(--brand-dark); font-weight: 600; }
+  .var-opt .p { font-size: 12px; color: var(--muted); display: block; margin-top: 2px; }
+  .var-opt.esg { opacity: 0.5; cursor: not-allowed; }
+  .qty-row { display: flex; align-items: center; gap: 14px; margin: 22px 0; }
+  .qty { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .qty button { width: 40px; height: 44px; border: none; background: var(--bg); font-size: 18px; cursor: pointer; }
+  .qty input { width: 50px; height: 44px; border: none; text-align: center; font-size: 16px; font-weight: 600; }
+  .add-btn { flex: 1; background: var(--brand); color: #fff; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .add-btn:hover { background: var(--brand-dark); }
+  .stock-ok { color: var(--green); font-size: 13.5px; font-weight: 600; margin-bottom: 8px; }
+  .disp-note { font-size: 12.5px; color: var(--muted); }
+  .specs { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 20px; }
+  .specs h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+  .spec-row { display: flex; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .spec-row .k { width: 180px; color: var(--muted); }
+  .spec-row .v { font-weight: 500; }
+  .detail-desc { margin: 40px 0; }
+  .detail-desc h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+  .detail-desc p { color: var(--muted); line-height: 1.7; }
+
+  footer { background: #0f172a; color: #cbd5e1; margin-top: 48px; padding: 40px 0 24px; }
+  .foot-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 32px; margin-bottom: 32px; }
+  .foot-col h4 { color: #fff; font-size: 14px; margin-bottom: 14px; }
+  .foot-col a { display: block; font-size: 13px; color: #94a3b8; padding: 4px 0; }
+  .foot-col a:hover { color: #fff; }
+  .foot-brand { font-size: 20px; font-weight: 800; color: var(--brand); margin-bottom: 10px; }
+  .foot-bottom { border-top: 1px solid #1e293b; padding-top: 20px; font-size: 12px; color: #64748b; text-align: center; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+</style>
+</head>
+<body>
+
+  <div class="note-banner wrap"><strong>MOCKUP navegável</strong> — clique nas <b>categorias</b>, nos <b>produtos</b> e no logo para navegar entre Home → Listagem → Ficha. Dados fictícios, só demonstração de layout.</div>
+
+  <div class="topbar">🐟 Entrega em pontos de encontro por cidade &nbsp;·&nbsp; <b>Pedido mínimo R$ 50</b> &nbsp;·&nbsp; Peixes com garantia de chegada viva</div>
+
+  <header>
+    <div class="wrap header-main">
+      <a class="logo" onclick="go('home')"><span class="fish">🐠</span> Criatório Capuã</a>
+      <div class="search"><span class="ico">🔍</span><input placeholder="Buscar peixes, rações, equipamentos…"></div>
+      <div class="header-actions">
+        <div class="haction"><span class="big">👤</span> Entrar</div>
+        <div class="haction"><span class="big">🛒</span> Carrinho <span class="cart-badge">2</span></div>
+      </div>
+    </div>
+    <nav class="cats">
+      <div class="wrap cats-inner">
+        <a class="all" onclick="go('list')">☰ Todas as categorias</a>
+        <a onclick="go('list')">Ciclídeos</a>
+        <a onclick="go('list')">Bettas</a>
+        <a onclick="go('list')">Tetras</a>
+        <a onclick="go('list')">Acarás</a>
+        <a onclick="go('list')">Rações</a>
+        <a onclick="go('list')">Equipamentos</a>
+        <a onclick="go('list')">Plantas</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ============ HOME ============ -->
+  <div class="page active" id="home">
+    <div class="wrap">
+      <div class="hero">
+        <div class="hero-content">
+          <h1>Peixes ornamentais direto do criatório</h1>
+          <p>Qualidade, saúde e variedade. Monte seu pedido e retire no ponto de encontro da sua cidade.</p>
+          <a class="btn" onclick="go('list')">Ver catálogo →</a>
+        </div>
+        <div class="hero-fish">🐟</div>
+      </div>
+
+      <div class="trust">
+        <div class="trust-item"><span class="ico">🚚</span><div><div class="t">Entrega por cidade</div><div class="s">Ponto de encontro combinado</div></div></div>
+        <div class="trust-item"><span class="ico">💚</span><div><div class="t">Chegada viva</div><div class="s">Garantia no transporte</div></div></div>
+        <div class="trust-item"><span class="ico">💬</span><div><div class="t">Atendimento próximo</div><div class="s">Fale direto pelo WhatsApp</div></div></div>
+        <div class="trust-item"><span class="ico">🐠</span><div><div class="t">Criação própria</div><div class="s">Direto do criatório</div></div></div>
+      </div>
+
+      <section>
+        <div class="sec-head"><h2>Categorias</h2><a onclick="go('list')">Ver todas →</a></div>
+        <div class="cat-grid">
+          <div class="cat-card" onclick="go('list')"><div class="emoji">🐠</div><div class="name">Ciclídeos</div></div>
+          <div class="cat-card" onclick="go('list')"><div class="emoji">🐟</div><div class="name">Bettas</div></div>
+          <div class="cat-card" onclick="go('list')"><div class="emoji">🐡</div><div class="name">Tetras</div></div>
+          <div class="cat-card" onclick="go('list')"><div class="emoji">🎏</div><div class="name">Acarás</div></div>
+          <div class="cat-card" onclick="go('list')"><div class="emoji">🍤</div><div class="name">Rações</div></div>
+          <div class="cat-card" onclick="go('list')"><div class="emoji">🌿</div><div class="name">Plantas</div></div>
+        </div>
+      </section>
+
+      <section>
+        <div class="sec-head"><h2>Destaques do criatório</h2><a onclick="go('list')">Ver mais →</a></div>
+        <div class="prod-grid">
+          <div class="prod-card" onclick="go('detail')">
+            <div class="prod-img">🐠<span class="prod-tag promo">Promoção</span><span class="prod-fav">♡</span></div>
+            <div class="prod-body"><span class="prod-cat">Ciclídeos</span><span class="prod-name">Oscar Albino</span><span class="prod-price-old">R$ 60,00</span><span class="prod-price"><span class="apartir">a partir de</span>R$ 45,00</span><span class="prod-unit">por unidade</span><button class="prod-btn">Ver produto</button></div>
+          </div>
+          <div class="prod-card" onclick="go('detail')">
+            <div class="prod-img">🐟<span class="prod-tag novo">Novidade</span><span class="prod-fav">♡</span></div>
+            <div class="prod-body"><span class="prod-cat">Bettas</span><span class="prod-name">Betta Halfmoon Azul</span><span class="prod-price">R$ 32,00</span><span class="prod-unit">por unidade</span><button class="prod-btn">Ver produto</button></div>
+          </div>
+          <div class="prod-card" onclick="go('detail')">
+            <div class="prod-img">🐡<span class="prod-fav">♡</span></div>
+            <div class="prod-body"><span class="prod-cat">Tetras</span><span class="prod-name">Tetra Neon (cardume 10un)</span><span class="prod-price"><span class="apartir">a partir de</span>R$ 28,00</span><span class="prod-unit">por cardume</span><button class="prod-btn">Ver produto</button></div>
+          </div>
+          <div class="prod-card">
+            <div class="prod-img">🍤<span class="prod-tag esg">Esgotado</span><span class="prod-fav">♡</span></div>
+            <div class="prod-body"><span class="prod-cat">Rações</span><span class="prod-name">Ração Premium Tropical 500g</span><span class="prod-price">R$ 28,90</span><span class="prod-unit">por pote</span><button class="prod-btn esg">Indisponível</button></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ============ LISTAGEM ============ -->
+  <div class="page" id="list">
+    <div class="wrap">
+      <div class="crumb"><a onclick="go('home')">Início</a> › <a>Peixes</a> › <b>Ciclídeos</b></div>
+      <div class="listing">
+        <aside class="filters">
+          <h3>Categorias</h3>
+          <div class="filter-tree">
+            <a class="active">Ciclídeos <span class="c">31</span></a>
+            <a class="child" onclick="go('list')">Oscar <span class="c">12</span></a>
+            <a class="child" onclick="go('list')">Acarás <span class="c">13</span></a>
+            <a class="child" onclick="go('list')">Kinguios <span class="c">6</span></a>
+            <a onclick="go('list')">Bettas <span class="c">18</span></a>
+            <a onclick="go('list')">Tetras <span class="c">15</span></a>
+            <a onclick="go('list')">Rações <span class="c">42</span></a>
+          </div>
+          <div class="filter-block">
+            <h3>Disponibilidade</h3>
+            <label><input type="checkbox" checked> Disponível</label>
+            <label><input type="checkbox"> Em promoção</label>
+            <label><input type="checkbox"> Novidades</label>
+          </div>
+        </aside>
+
+        <div>
+          <div class="list-head">
+            <span class="count">Mostrando <b>31</b> produtos em Ciclídeos</span>
+            <select><option>Mais relevantes</option><option>Menor preço</option><option>Maior preço</option><option>Novidades</option></select>
+          </div>
+          <div class="prod-grid">
+            <div class="prod-card" onclick="go('detail')"><div class="prod-img">🐠<span class="prod-tag promo">Promoção</span><span class="prod-fav">♡</span></div><div class="prod-body"><span class="prod-cat">Oscar</span><span class="prod-name">Oscar Albino</span><span class="prod-price-old">R$ 60,00</span><span class="prod-price"><span class="apartir">a partir de</span>R$ 45,00</span><span class="prod-unit">por unidade</span><button class="prod-btn">Ver produto</button></div></div>
+            <div class="prod-card" onclick="go('detail')"><div class="prod-img">🐠<span class="prod-fav">♡</span></div><div class="prod-body"><span class="prod-cat">Oscar</span><span class="prod-name">Oscar Tigre</span><span class="prod-price"><span class="apartir">a partir de</span>R$ 52,00</span><span class="prod-unit">por unidade</span><button class="prod-btn">Ver produto</button></div></div>
+            <div class="prod-card" onclick="go('detail')"><div class="prod-img">🎏<span class="prod-fav">♡</span></div><div class="prod-body"><span class="prod-cat">Acarás</span><span class="prod-name">Acará Bandeira</span><span class="prod-price">R$ 38,00</span><span class="prod-unit">por unidade</span><button class="prod-btn">Ver produto</button></div></div>
+            <div class="prod-card" onclick="go('detail')"><div class="prod-img">🐡<span class="prod-tag novo">Novidade</span><span class="prod-fav">♡</span></div><div class="prod-body"><span class="prod-cat">Kinguios</span><span class="prod-name">Kinguio Cometa</span><span class="prod-price">R$ 18,00</span><span class="prod-unit">por unidade</span><button class="prod-btn">Ver produto</button></div></div>
+            <div class="prod-card" onclick="go('detail')"><div class="prod-img">🐠<span class="prod-fav">♡</span></div><div class="prod-body"><span class="prod-cat">Ciclídeos</span><span class="prod-name">Kinguio Oranda Red</span><span class="prod-price">R$ 25,00</span><span class="prod-unit">por unidade</span><button class="prod-btn">Ver produto</button></div></div>
+            <div class="prod-card"><div class="prod-img">🐠<span class="prod-tag esg">Esgotado</span><span class="prod-fav">♡</span></div><div class="prod-body"><span class="prod-cat">Oscar</span><span class="prod-name">Oscar Red Tiger</span><span class="prod-price">R$ 68,00</span><span class="prod-unit">por unidade</span><button class="prod-btn esg">Indisponível</button></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FICHA ============ -->
+  <div class="page" id="detail">
+    <div class="wrap">
+      <div class="crumb"><a onclick="go('home')">Início</a> › <a onclick="go('list')">Ciclídeos</a> › <a onclick="go('list')">Oscar</a> › <b>Oscar Albino</b></div>
+      <div class="detail">
+        <div class="gallery">
+          <div class="main-img">🐠</div>
+          <div class="thumbs">
+            <div class="thumb active">🐠</div><div class="thumb">🐟</div><div class="thumb">🐡</div>
+          </div>
+        </div>
+        <div class="detail-info">
+          <div class="detail-cat">Ciclídeos › Oscar</div>
+          <h1>Oscar Albino</h1>
+          <div class="detail-code">Cód. OSC-0001</div>
+          <div class="detail-price">
+            <span class="old">R$ 60,00</span><br>
+            <span class="now"><span class="apartir">a partir de </span>R$ 45,00</span>
+          </div>
+
+          <div class="var-label">Tamanho</div>
+          <div class="var-opts">
+            <div class="var-opt active">Pequeno<span class="p">R$ 45,00</span></div>
+            <div class="var-opt">Grande<span class="p">R$ 68,00</span></div>
+            <div class="var-opt esg">Gigante<span class="p">Esgotado</span></div>
+          </div>
+
+          <div class="qty-row">
+            <div class="qty"><button>−</button><input value="1"><button>+</button></div>
+            <button class="add-btn">🛒 Adicionar ao carrinho</button>
+          </div>
+          <div class="stock-ok">✓ Disponível</div>
+          <div class="disp-note">Compra mínima: 1 unidade · Entrega no ponto de encontro da sua cidade</div>
+
+          <div class="specs">
+            <h3>Ficha técnica</h3>
+            <div class="spec-row"><span class="k">Nome científico</span><span class="v">Astronotus ocellatus</span></div>
+            <div class="spec-row"><span class="k">Tamanho adulto</span><span class="v">até 30 cm</span></div>
+            <div class="spec-row"><span class="k">Temperatura ideal</span><span class="v">24–28 °C</span></div>
+            <div class="spec-row"><span class="k">pH</span><span class="v">6.0 – 7.5</span></div>
+            <div class="spec-row"><span class="k">Comportamento</span><span class="v">Territorial</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-desc">
+        <h3>Sobre o Oscar Albino</h3>
+        <p>O Oscar Albino é um dos ciclídeos mais populares para aquários de grande porte. Inteligente e de forte personalidade, reconhece o dono e interage no momento da alimentação. Criação própria do Criatório Capuã, com peixes saudáveis e bem adaptados. Recomendado para aquaristas com alguma experiência, dado o porte e o comportamento territorial da espécie.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <div class="foot-grid">
+        <div class="foot-col">
+          <div class="foot-brand">🐠 Criatório Capuã</div>
+          <p style="font-size:13px; color:#94a3b8; line-height:1.6;">Peixes ornamentais de criação própria. Qualidade e saúde direto do criatório para o seu aquário.</p>
+        </div>
+        <div class="foot-col"><h4>Loja</h4><a>Todas as categorias</a><a>Destaques</a><a>Promoções</a><a>Novidades</a></div>
+        <div class="foot-col"><h4>Ajuda</h4><a>Como comprar</a><a>Entrega por cidade</a><a>Fale conosco</a><a>WhatsApp</a></div>
+        <div class="foot-col"><h4>Sobre</h4><a>O criatório</a><a>Política de privacidade</a><a>Termos de uso</a></div>
+      </div>
+      <div class="foot-bottom">© 2026 Criatório Capuã · Peixes ornamentais · Uma loja VLUMA</div>
+    </div>
+  </footer>
+
+<script>
+  function go(id){
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>

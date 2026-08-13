@@ -51,8 +51,17 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
 
         <div className="flex flex-col gap-5">
           <div>
-            <h1 className="font-display text-2xl font-bold text-foreground">{produto.nome}</h1>
-            {produto.codigo && <p className="mt-1 text-xs text-muted-foreground">Código: {produto.codigo}</p>}
+            {caminho.length > 0 && (
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
+                {caminho.map((c) => c.nome).join(' › ')}
+              </p>
+            )}
+            <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-[28px]">
+              {produto.nome}
+            </h1>
+            {produto.codigo && (
+              <p className="mt-1 font-mono text-xs text-muted-foreground/80">Cód. {produto.codigo}</p>
+            )}
           </div>
 
           <VariacoesSelector variacoes={produto.variacoes} />

@@ -1,5 +1,6 @@
 import { Breadcrumb } from '@/components/loja/breadcrumb'
 import { FiltroCategoriasTree } from '@/components/loja/listagem/filtro-categorias-tree'
+import { FiltroDisponibilidade } from '@/components/loja/listagem/filtro-disponibilidade'
 import { FiltrosToolbar } from '@/components/loja/listagem/filtros-toolbar'
 import { ProductGrid } from '@/components/loja/product-grid'
 import { contarPorCategoria, filtrarEOrdenarProdutos, type Ordenacao } from '@/lib/loja/filtros'
@@ -59,19 +60,23 @@ export async function ListagemPage({
         {categoriaAtual?.nome ?? (termoBusca ? `Resultados para "${termoBusca}"` : 'Todos os produtos')}
       </h1>
 
-      <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
-        <aside className="lg:border-r lg:border-border lg:pr-5">
+      <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
+        <aside className="h-fit rounded-2xl border border-border bg-card p-[18px]">
           <FiltroCategoriasTree
             categorias={categorias}
             contagem={contagem}
             categoriaAtualId={categoriaAtual?.id ?? null}
             totalGeral={semFiltroCategoria.length}
           />
+          <FiltroDisponibilidade />
         </aside>
         <div>
-          <FiltrosToolbar totalResultados={filtrados.length} />
+          <FiltrosToolbar
+            totalResultados={filtrados.length}
+            contexto={categoriaAtual ? `em ${categoriaAtual.nome}` : termoBusca ? `para "${termoBusca}"` : ''}
+          />
           <div className="mt-4">
-            <ProductGrid produtos={filtrados} />
+            <ProductGrid produtos={filtrados} categorias={categorias} variante="listagem" />
           </div>
         </div>
       </div>

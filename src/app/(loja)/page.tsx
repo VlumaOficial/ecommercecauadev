@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { getPublicCategories, getPublicProducts } from '@/lib/loja/rpc'
@@ -25,8 +26,13 @@ export default async function HomePage() {
       <GridCategorias categorias={categorias} />
       {destaques.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6">
-          <h2 className="mb-4 font-display text-xl font-bold text-foreground">Destaques</h2>
-          <ProductGrid produtos={destaques} />
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-display text-xl font-bold text-foreground">Destaques do criatório</h2>
+            <Link href="/produtos" className="text-sm font-semibold text-primary hover:underline">
+              Ver mais →
+            </Link>
+          </div>
+          <ProductGrid produtos={destaques} categorias={categorias} />
         </section>
       )}
     </>

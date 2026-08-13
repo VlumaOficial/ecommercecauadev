@@ -21,14 +21,10 @@ export function ProductBadges({
         </span>
       )}
       {novidade && !esgotado && (
-        <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
-          Novidade
-        </span>
+        <span className="rounded-full bg-green-600 px-2 py-0.5 text-[11px] font-semibold text-white">Novidade</span>
       )}
       {esgotado && (
-        <span className="rounded-full bg-neutral-800/80 px-2 py-0.5 text-[11px] font-semibold text-white">
-          Esgotado
-        </span>
+        <span className="rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-semibold text-white">Esgotado</span>
       )}
     </div>
   )

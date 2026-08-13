@@ -32,7 +32,7 @@ export default async function LojaLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="loja-theme flex min-h-svh flex-col bg-background text-foreground">
-      <Header nomeLoja={settings.nome} />
+      <Header nomeLoja={settings.nome} valorMinimoPedido={settings.valor_minimo_pedido} />
       <NavCategorias categorias={categorias} />
       {!settings.pedidos_abertos && (
         <div className="bg-amber-500/15 px-4 py-2 text-center text-sm text-amber-900 sm:px-6">

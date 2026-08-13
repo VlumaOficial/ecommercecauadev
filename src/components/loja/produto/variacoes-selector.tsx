@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { MinusIcon, PlusIcon, ShoppingCartIcon } from 'lucide-react'
+import { CheckCircle2Icon, MinusIcon, PlusIcon, ShoppingCartIcon } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { cn } from '@/lib/utils'
@@ -67,17 +67,13 @@ export function VariacoesSelector({ variacoes }: { variacoes: ProdutoDetalheVari
       )}
 
       {selecionada && (
-        <div className="flex items-baseline gap-2">
-          {selecionada.preco_promocional ? (
-            <>
-              <span className="font-display text-2xl font-extrabold text-primary">
-                {formatarMoeda(selecionada.preco_promocional)}
-              </span>
-              <span className="text-sm text-muted-foreground line-through">{formatarMoeda(selecionada.preco)}</span>
-            </>
-          ) : (
-            <span className="font-display text-2xl font-extrabold text-primary">{formatarMoeda(selecionada.preco)}</span>
+        <div>
+          {selecionada.preco_promocional && (
+            <p className="text-sm text-muted-foreground line-through">{formatarMoeda(selecionada.preco)}</p>
           )}
+          <p className="font-display text-3xl font-extrabold text-foreground sm:text-[32px]">
+            {formatarMoeda(selecionada.preco_promocional ?? selecionada.preco)}
+          </p>
         </div>
       )}
 
@@ -114,9 +110,17 @@ export function VariacoesSelector({ variacoes }: { variacoes: ProdutoDetalheVari
           {podeAdicionar ? 'Adicionar ao carrinho' : 'Esgotado'}
         </Button>
       </div>
-      {minimo > 1 && podeAdicionar && (
-        <p className="-mt-2 text-xs text-muted-foreground">Quantidade mínima de compra: {minimo}</p>
-      )}
+      <div className="-mt-2 flex flex-col gap-1">
+        {podeAdicionar && (
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-green-600">
+            <CheckCircle2Icon className="size-4" />
+            Disponível
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          {minimo > 1 ? `Compra mínima: ${minimo} unidades · ` : ''}Retirada combinada por cidade
+        </p>
+      </div>
     </div>
   )
 }
