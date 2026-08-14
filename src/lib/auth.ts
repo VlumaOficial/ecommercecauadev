@@ -8,6 +8,7 @@ export type StaffProfile = {
   email: string
   role: 'admin' | 'operador'
   pode_aceitar_pedido: boolean
+  tenant_id: string
 }
 
 // Consulta o perfil de equipe (admin/operador) de um usuario ja autenticado
@@ -19,7 +20,7 @@ export async function getStaffProfileForUser(
 ): Promise<StaffProfile | null> {
   const { data } = await supabase
     .from('profiles')
-    .select('id, nome, email, role, pode_aceitar_pedido')
+    .select('id, nome, email, role, pode_aceitar_pedido, tenant_id')
     .eq('id', userId)
     .eq('ativo', true)
     .maybeSingle()

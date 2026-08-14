@@ -1,6 +1,7 @@
 import { createPublicClient } from '@/lib/supabase/public'
 import type {
   CategoriaPublica,
+  ConfiguracaoVitrineCampos,
   ProdutoDetalhe,
   ProdutoPublico,
   StoreSettingsPublico,
@@ -35,6 +36,10 @@ const DEFAULTS_ETAPA3_IDENTIDADE = {
   whatsapp_numero: null,
   whatsapp_mensagem: 'Olá! Vim da loja e gostaria de saber mais sobre os peixes.',
   cor_principal: '#0891b2',
+  // Etapa 4 (migration 031) - null = usa o arquivo estatico
+  // public/brand/logocp-icone.png, mesmo comportamento de antes desta
+  // etapa (ver urlLogoLoja() em header.tsx/footer.tsx).
+  logo_path: null,
 }
 
 export async function getPublicStoreSettings(tenantSlug: string): Promise<StoreSettingsPublico | null> {
@@ -61,6 +66,34 @@ export async function getPublicProducts(tenantSlug: string): Promise<ProdutoPubl
   return data
 }
 
+// Etapa 4 (migration 031) - so' devolve algo se o token existir, nao
+// tiver expirado e pertencer ao MESMO tenant do slug (validado dentro
+// da RPC, SECURITY DEFINER). Qualquer falha vira null aqui - quem
+// chama (so' src/app/preview/page.tsx) trata como 404, sem distinguir
+// o motivo. Chamada com o client PUBLICO (anon) de proposito: a
+// pagina /preview roda no host da loja, sem sessao de staff (cookie
+// de auth nao atravessa dominio - ver proxy.ts e o comentario da
+// migration 031).
+export async function getPreviewVitrine(tenantSlug: string, token: string): Promise<ConfiguracaoVitrineCampos | null> {
+  const supabase = createPublicClient()
+  const { data, error } = await supabase.rpc('get_preview_vitrine', { p_tenant_slug: tenantSlug, p_token: token })
+  if (error || !data) return null
+  return data as unknown as ConfiguracaoVitrineCampos
+}
+
+// Sobrepoe os campos editaveis do rascunho (Etapa 4) por cima do
+// settings publicado - usado so' pela pagina /preview, pra montar um
+// StoreSettingsPublico "de mentira" com o rascunho, reaproveitando os
+// MESMOS componentes (Header/BannerHero/SelosConfianca/Footer/...) da
+// vitrine de verdade. Campos operacionais (nome/loja_aberta/etc,
+// fora do escopo de rascunho/publicar) sempre vem do publicado.
+export function mesclarRascunhoNoPublicado(
+  publicado: StoreSettingsPublico,
+  rascunho: ConfiguracaoVitrineCampos
+): StoreSettingsPublico {
+  return { ...publicado, ...rascunho }
+}
+
 export async function getPublicProductDetail(tenantSlug: string, produtoSlug: string): Promise<ProdutoDetalhe | null> {
   const supabase = createPublicClient()
   const { data, error } = await supabase.rpc('get_public_product_detail', {
@@ -83,4 +116,13 @@ export function urlImagemProduto(storagePath: string): string {
 // um arquivo por tenant.
 export function urlArquivoLoja(storagePath: string): string {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${storagePath}`
+}
+
+// logo_path null (padrao antes da Etapa 4, ou lojista nunca subiu uma
+// logo propria) cai pro arquivo estatico ja usado desde a fidelidade
+// ao mockup - nunca fica sem logo nenhuma.
+const LOGO_PADRAO = '/brand/logocp-icone.png'
+
+export function urlLogoLoja(logoPath: string | null): string {
+  return logoPath ? urlArquivoLoja(logoPath) : LOGO_PADRAO
 }

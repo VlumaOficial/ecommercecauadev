@@ -847,6 +847,22 @@ export type Database = {
           tenant_id: string
           updated_at: string
           valor_minimo_pedido: number
+          // Vitrine Fase 1 Etapa 3 (migration 030) - ver src/lib/loja/rpc.ts
+          // pros defaults usados enquanto a migration nao estiver aplicada.
+          banner_titulo: string
+          banner_subtitulo: string
+          banner_botao_texto: string
+          banner_botao_href: string
+          banner_tipo_fundo: string
+          banner_cor_fundo: string
+          banner_imagem_path: string | null
+          selos: Json
+          whatsapp_numero: string | null
+          whatsapp_mensagem: string
+          cor_principal: string
+          // Vitrine Fase 1 Etapa 4 (migration 031)
+          logo_path: string | null
+          rascunho: Json | null
         }
         Insert: {
           baixa_estoque_na_reserva?: boolean
@@ -860,6 +876,19 @@ export type Database = {
           tenant_id: string
           updated_at?: string
           valor_minimo_pedido?: number
+          banner_titulo?: string
+          banner_subtitulo?: string
+          banner_botao_texto?: string
+          banner_botao_href?: string
+          banner_tipo_fundo?: string
+          banner_cor_fundo?: string
+          banner_imagem_path?: string | null
+          selos?: Json
+          whatsapp_numero?: string | null
+          whatsapp_mensagem?: string
+          cor_principal?: string
+          logo_path?: string | null
+          rascunho?: Json | null
         }
         Update: {
           baixa_estoque_na_reserva?: boolean
@@ -873,6 +902,19 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
           valor_minimo_pedido?: number
+          banner_titulo?: string
+          banner_subtitulo?: string
+          banner_botao_texto?: string
+          banner_botao_href?: string
+          banner_tipo_fundo?: string
+          banner_cor_fundo?: string
+          banner_imagem_path?: string | null
+          selos?: Json
+          whatsapp_numero?: string | null
+          whatsapp_mensagem?: string
+          cor_principal?: string
+          logo_path?: string | null
+          rascunho?: Json | null
         }
         Relationships: [
           {
@@ -910,6 +952,45 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      vitrine_preview_tokens: {
+        Row: {
+          token: string
+          tenant_id: string
+          criado_por: string
+          criado_em: string
+          expira_em: string
+        }
+        Insert: {
+          token?: string
+          tenant_id: string
+          criado_por: string
+          criado_em?: string
+          expira_em?: string
+        }
+        Update: {
+          token?: string
+          tenant_id?: string
+          criado_por?: string
+          criado_em?: string
+          expira_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vitrine_preview_tokens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vitrine_preview_tokens_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -1081,6 +1162,42 @@ export type Database = {
       // src/lib/loja/types.ts pro shape usado no app.
       get_public_product_detail: {
         Args: { p_tenant_slug: string; p_slug: string }
+        Returns: Json
+      }
+      // Vitrine Fase 1 Etapa 4 (migration 031)
+      get_configuracao_vitrine: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          nome: string
+          logo_path: string | null
+          banner_titulo: string
+          banner_subtitulo: string
+          banner_botao_texto: string
+          banner_botao_href: string
+          banner_tipo_fundo: string
+          banner_cor_fundo: string
+          banner_imagem_path: string | null
+          selos: Json
+          whatsapp_numero: string | null
+          whatsapp_mensagem: string
+          cor_principal: string
+          rascunho: Json | null
+        }[]
+      }
+      salvar_rascunho_vitrine: {
+        Args: { p_rascunho: Json }
+        Returns: undefined
+      }
+      publicar_vitrine: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      gerar_token_preview_vitrine: {
+        Args: Record<PropertyKey, never>
+        Returns: { token: string; dominio: string | null }[]
+      }
+      get_preview_vitrine: {
+        Args: { p_tenant_slug: string; p_token: string }
         Returns: Json
       }
     }

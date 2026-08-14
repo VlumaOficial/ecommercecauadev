@@ -31,6 +31,29 @@ export type StoreSettingsPublico = {
   whatsapp_numero: string | null
   whatsapp_mensagem: string
   cor_principal: string
+  // Vitrine Fase 1 Etapa 4 (migration 031) - null = usa o arquivo
+  // estatico public/brand/logocp-icone.png (ver urlLogoLoja()).
+  logo_path: string | null
+}
+
+// Campos editaveis da identidade da vitrine - mesmo formato usado no
+// rascunho (store_settings.rascunho, migration 031) e no retorno das
+// RPCs de staff/preview. Subconjunto de StoreSettingsPublico (sem
+// nome/loja_aberta/etc., que sao operacionais e nao passam por
+// rascunho/publicar).
+export type ConfiguracaoVitrineCampos = {
+  logo_path: string | null
+  banner_titulo: string
+  banner_subtitulo: string
+  banner_botao_texto: string
+  banner_botao_href: string
+  banner_tipo_fundo: 'cor' | 'imagem'
+  banner_cor_fundo: string
+  banner_imagem_path: string | null
+  selos: SeloConfianca[]
+  whatsapp_numero: string | null
+  whatsapp_mensagem: string
+  cor_principal: string
 }
 
 export type CategoriaPublica = {

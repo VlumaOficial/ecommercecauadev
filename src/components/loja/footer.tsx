@@ -1,6 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
+import { urlLogoLoja } from '@/lib/loja/rpc'
+
 const COLUNAS: { titulo: string; itens: { label: string; href?: string }[] }[] = [
   {
     titulo: 'Loja',
@@ -20,14 +22,14 @@ const COLUNAS: { titulo: string; itens: { label: string; href?: string }[] }[] =
   },
 ]
 
-export function Footer({ nomeLoja }: { nomeLoja: string }) {
+export function Footer({ nomeLoja, logoPath }: { nomeLoja: string; logoPath: string | null }) {
   return (
     <footer className="mt-12 bg-[#0f172a] pt-10 pb-6 text-slate-300">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="grid grid-cols-1 gap-8 pb-8 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
           <div>
             <p className="mb-2.5 flex items-center gap-2.5 font-display text-lg font-extrabold text-primary">
-              <Image src="/brand/logocp-icone.png" alt="" width={50} height={40} className="h-10 w-auto" />
+              <Image src={urlLogoLoja(logoPath)} alt="" width={50} height={40} className="h-10 w-auto" />
               {nomeLoja}
             </p>
             <p className="max-w-xs text-[13px] leading-relaxed text-slate-400">

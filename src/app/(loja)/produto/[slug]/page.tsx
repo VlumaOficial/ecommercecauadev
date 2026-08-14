@@ -2,22 +2,48 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { getTenantFromHeaders } from '@/lib/tenant'
-import { getPublicCategories, getPublicProductDetail, urlImagemProduto } from '@/lib/loja/rpc'
+import {
+  getPublicCategories,
+  getPublicProductDetail,
+  getPublicStoreSettings,
+  urlImagemProduto,
+  urlLogoLoja,
+} from '@/lib/loja/rpc'
 import { getPath } from '@/lib/loja/category-tree'
 import { Breadcrumb } from '@/components/loja/breadcrumb'
 import { Galeria } from '@/components/loja/produto/galeria'
 import { VariacoesSelector } from '@/components/loja/produto/variacoes-selector'
 import { FichaTecnica } from '@/components/loja/produto/ficha-tecnica'
 
+// Open Graph do produto (Etapa 4, Parte 4) - substitui por completo o
+// fallback de (loja)/layout.tsx (titulo/descricao/imagem do produto,
+// nao da loja). metadataBase herdado do layout - so' importa pro caso
+// de fallback pra logo estatica relativa (produto sem foto nenhuma);
+// a imagem de produto ja e' uma URL absoluta (bucket do Storage).
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const tenant = await getTenantFromHeaders()
   if (!tenant) return {}
   const { slug } = await params
   const produto = await getPublicProductDetail(tenant.slug, slug)
   if (!produto) return {}
+
+  const imagemProduto = produto.imagens.find((img) => img.principal && img.variant_id === null)
+  let imagem = imagemProduto ? urlImagemProduto(imagemProduto.storage_path) : null
+  if (!imagem) {
+    const settings = await getPublicStoreSettings(tenant.slug)
+    imagem = urlLogoLoja(settings?.logo_path ?? null)
+  }
+
   return {
     title: produto.nome,
     description: produto.descricao ?? undefined,
+    openGraph: {
+      title: produto.nome,
+      description: produto.descricao ?? undefined,
+      images: [{ url: imagem }],
+      locale: 'pt_BR',
+      type: 'website',
+    },
   }
 }
 
