@@ -112,6 +112,8 @@
 
     **Testado contra a HML em 13/08/2026 (pré-aplicação da migration, comportamento esperado nesse estado)**: `/produtos` — zero ocorrências de "a partir de" em qualquer card (correto, `preco_varia` ainda não existe na API real), preços continuam aparecendo normalmente. Ficha de `acara-disco-azul` — troca de variação atualizando preço corretamente (Parte 3, acima). `npm run build` limpo antes do push. **Pendência real**: falta o usuário aplicar a migration `029` pra Parte 1/2 saírem do estado dormente — depois de aplicada, re-testar um produto com faixa de preço (ex.: `Acará Disco Azul`, `R$ 45`–`R$ 75`) mostrando "a partir de R$ 45,00" no card, e um produto de preço único (ex.: a maioria do catálogo de teste) continuando sem o prefixo.
 
+    **Migration `029` aplicada pelo usuário em 13/08/2026, re-teste contra a HML confirmado no mesmo dia**: RPC `get_public_products` devolvendo `preco_varia` de verdade (confirmado direto via REST antes do teste de UI). Listagem (`/produtos`, 23 produtos) — exatamente os 5 produtos com faixa de preço real mostrando "a partir de" (`Acará Disco Azul` R$45–75, `Anúbia Nana` R$15–28, `Oscar` R$30–50, `Ração em Flocos Tropical` R$9,90–34,90, `Ração em Flocos Coloridos` R$8,90–32,90) e os outros 18 (preço único) sem o prefixo — nenhum falso positivo nem falso negativo. Ficha de `acara-disco-azul` — variação "Pequeno" (padrão) mostra R$ 45,00, clicar em "Médio" atualiza pra R$ 65,00 (com R$ 75,00 riscado) — Parte 3 reconfirmada. Feature "a partir de" da Vitrine está 100% ativa em produção/HML, nada mais pendente deste item.
+
 ---
 
 ## 0. Regra de processo (definition of done)
