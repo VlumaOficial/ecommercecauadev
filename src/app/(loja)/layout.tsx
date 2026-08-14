@@ -41,7 +41,13 @@ export async function generateMetadata(): Promise<Metadata> {
       : urlLogoLoja(settings.logo_path)
 
   return {
-    title: settings.nome,
+    // title.absolute ignora o template "%s | Criatório Capuã" do
+    // layout raiz (pensado pra landing antiga, generico pro app
+    // inteiro) - sem isso, o nome da loja duplicava
+    // ("Criatório Capuã | Criatório Capuã") e, pra um tenant futuro
+    // (Fase SaaS) com nome diferente, ficaria errado do mesmo jeito
+    // (sufixo fixo de outra marca).
+    title: { absolute: settings.nome },
     description: settings.banner_subtitulo,
     metadataBase,
     openGraph: {

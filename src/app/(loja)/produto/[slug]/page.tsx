@@ -17,28 +17,30 @@ import { FichaTecnica } from '@/components/loja/produto/ficha-tecnica'
 
 // Open Graph do produto (Etapa 4, Parte 4) - substitui por completo o
 // fallback de (loja)/layout.tsx (titulo/descricao/imagem do produto,
-// nao da loja). metadataBase herdado do layout - so' importa pro caso
-// de fallback pra logo estatica relativa (produto sem foto nenhuma);
-// a imagem de produto ja e' uma URL absoluta (bucket do Storage).
+// nao da loja). metadataBase herdado do layout. title.absolute pelo
+// mesmo motivo do layout: o template "%s | Criatório Capuã" do
+// layout raiz é uma marca fixa que não faz sentido pra um tenant
+// futuro (Fase SaaS) com nome diferente - o sufixo certo é sempre o
+// nome REAL da loja (settings.nome), nunca hardcoded.
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const tenant = await getTenantFromHeaders()
   if (!tenant) return {}
   const { slug } = await params
-  const produto = await getPublicProductDetail(tenant.slug, slug)
+  const [produto, settings] = await Promise.all([
+    getPublicProductDetail(tenant.slug, slug),
+    getPublicStoreSettings(tenant.slug),
+  ])
   if (!produto) return {}
 
   const imagemProduto = produto.imagens.find((img) => img.principal && img.variant_id === null)
-  let imagem = imagemProduto ? urlImagemProduto(imagemProduto.storage_path) : null
-  if (!imagem) {
-    const settings = await getPublicStoreSettings(tenant.slug)
-    imagem = urlLogoLoja(settings?.logo_path ?? null)
-  }
+  const imagem = imagemProduto ? urlImagemProduto(imagemProduto.storage_path) : urlLogoLoja(settings?.logo_path ?? null)
+  const titulo = settings ? `${produto.nome} — ${settings.nome}` : produto.nome
 
   return {
-    title: produto.nome,
+    title: { absolute: titulo },
     description: produto.descricao ?? undefined,
     openGraph: {
-      title: produto.nome,
+      title: titulo,
       description: produto.descricao ?? undefined,
       images: [{ url: imagem }],
       locale: 'pt_BR',
