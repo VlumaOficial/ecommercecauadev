@@ -953,45 +953,6 @@ export type Database = {
         }
         Relationships: []
       }
-      vitrine_preview_tokens: {
-        Row: {
-          token: string
-          tenant_id: string
-          criado_por: string
-          criado_em: string
-          expira_em: string
-        }
-        Insert: {
-          token?: string
-          tenant_id: string
-          criado_por: string
-          criado_em?: string
-          expira_em?: string
-        }
-        Update: {
-          token?: string
-          tenant_id?: string
-          criado_por?: string
-          criado_em?: string
-          expira_em?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vitrine_preview_tokens_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "vitrine_preview_tokens_criado_por_fkey"
-            columns: ["criado_por"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       products_com_status: {
@@ -1191,14 +1152,6 @@ export type Database = {
       publicar_vitrine: {
         Args: Record<PropertyKey, never>
         Returns: undefined
-      }
-      gerar_token_preview_vitrine: {
-        Args: Record<PropertyKey, never>
-        Returns: { token: string; dominio: string | null }[]
-      }
-      get_preview_vitrine: {
-        Args: { p_tenant_slug: string; p_token: string }
-        Returns: Json
       }
     }
     Enums: {

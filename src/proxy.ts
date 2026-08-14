@@ -2,7 +2,12 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const ROTAS_AUTH = ['/entrar', '/cadastro', '/recuperar-senha']
-const ROTAS_PROTEGIDAS = ['/painel', '/minha-conta']
+// /vitrine-preview fica fora de /painel (nao herda o layout com
+// sidebar - precisa renderizar a vitrine de verdade, full-bleed) mas
+// e' protegida do mesmo jeito - a pagina em si ja faz o proprio check
+// de staff (getStaffProfile()), isto aqui e' so' defesa em
+// profundidade (redireciona na borda, antes de renderizar).
+const ROTAS_PROTEGIDAS = ['/painel', '/minha-conta', '/vitrine-preview']
 
 export default async function proxy(request: NextRequest) {
   // supabaseResponse comeca como NextResponse.next({ request }) e so' e'

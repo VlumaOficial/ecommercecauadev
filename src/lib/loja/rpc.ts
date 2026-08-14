@@ -66,27 +66,15 @@ export async function getPublicProducts(tenantSlug: string): Promise<ProdutoPubl
   return data
 }
 
-// Etapa 4 (migration 031) - so' devolve algo se o token existir, nao
-// tiver expirado e pertencer ao MESMO tenant do slug (validado dentro
-// da RPC, SECURITY DEFINER). Qualquer falha vira null aqui - quem
-// chama (so' src/app/preview/page.tsx) trata como 404, sem distinguir
-// o motivo. Chamada com o client PUBLICO (anon) de proposito: a
-// pagina /preview roda no host da loja, sem sessao de staff (cookie
-// de auth nao atravessa dominio - ver proxy.ts e o comentario da
-// migration 031).
-export async function getPreviewVitrine(tenantSlug: string, token: string): Promise<ConfiguracaoVitrineCampos | null> {
-  const supabase = createPublicClient()
-  const { data, error } = await supabase.rpc('get_preview_vitrine', { p_tenant_slug: tenantSlug, p_token: token })
-  if (error || !data) return null
-  return data as unknown as ConfiguracaoVitrineCampos
-}
-
 // Sobrepoe os campos editaveis do rascunho (Etapa 4) por cima do
-// settings publicado - usado so' pela pagina /preview, pra montar um
-// StoreSettingsPublico "de mentira" com o rascunho, reaproveitando os
-// MESMOS componentes (Header/BannerHero/SelosConfianca/Footer/...) da
-// vitrine de verdade. Campos operacionais (nome/loja_aberta/etc,
-// fora do escopo de rascunho/publicar) sempre vem do publicado.
+// settings publicado - usado so' por src/app/vitrine-preview/page.tsx
+// (protegida por sessao de staff, chama get_configuracao_vitrine com
+// o client autenticado do painel - nao entra neste arquivo, que e' so
+// a camada PUBLICA/anon), pra montar um StoreSettingsPublico "de
+// mentira" com o rascunho, reaproveitando os MESMOS componentes
+// (Header/BannerHero/SelosConfianca/Footer/...) da vitrine de
+// verdade. Campos operacionais (nome/loja_aberta/etc, fora do escopo
+// de rascunho/publicar) sempre vem do publicado.
 export function mesclarRascunhoNoPublicado(
   publicado: StoreSettingsPublico,
   rascunho: ConfiguracaoVitrineCampos

@@ -68,17 +68,6 @@ export function usePublicarVitrine() {
   })
 }
 
-export function useGerarLinkPreview() {
-  return useMutation({
-    mutationFn: async (): Promise<string> => {
-      const response = await fetch('/api/painel/vitrine/preview-link', { method: 'POST' })
-      const body = await parseJsonOrThrow(response)
-      return body.data.url
-    },
-    onError: (error: Error) => toast.error(error.message || 'Não foi possível gerar o link de prévia.'),
-  })
-}
-
 export function useUploadImagemVitrine() {
   return useMutation({
     mutationFn: async ({ file, tipo }: { file: File; tipo: 'banner' | 'logo' }): Promise<string> => {

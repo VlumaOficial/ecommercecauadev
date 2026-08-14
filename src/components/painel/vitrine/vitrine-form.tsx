@@ -9,11 +9,7 @@ import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/painel/crud/confirm-dialog'
-import {
-  useSalvarRascunhoVitrine,
-  usePublicarVitrine,
-  useGerarLinkPreview,
-} from '@/hooks/use-configuracao-vitrine'
+import { useSalvarRascunhoVitrine, usePublicarVitrine } from '@/hooks/use-configuracao-vitrine'
 import type { ConfiguracaoVitrineCampos } from '@/lib/loja/types'
 import { VitrineBannerSection } from './vitrine-banner-section'
 import { VitrineSelosSection } from './vitrine-selos-section'
@@ -73,7 +69,6 @@ export function VitrineForm({ valoresIniciais }: { valoresIniciais: Configuracao
 
   const salvarRascunho = useSalvarRascunhoVitrine()
   const publicar = usePublicarVitrine()
-  const gerarLinkPreview = useGerarLinkPreview()
 
   const [confirmPublicarAberto, setConfirmPublicarAberto] = useState(false)
 
@@ -83,8 +78,11 @@ export function VitrineForm({ valoresIniciais }: { valoresIniciais: Configuracao
 
   async function onVisualizar(valores: VitrineFormValues) {
     await salvarRascunho.mutateAsync(paraPayload(valores))
-    const url = await gerarLinkPreview.mutateAsync()
-    window.open(url, '_blank', 'noopener,noreferrer')
+    // Rota protegida por sessao de staff (mesmo host/deploy do painel,
+    // fora de /painel so pra nao herdar o layout com sidebar - ver
+    // src/app/vitrine-preview/page.tsx). Nova aba: staff pode continuar
+    // editando na aba original enquanto confere a previa.
+    window.open('/vitrine-preview', '_blank', 'noopener,noreferrer')
   }
 
   async function onPedirPublicar(valores: VitrineFormValues) {
@@ -97,7 +95,7 @@ export function VitrineForm({ valoresIniciais }: { valoresIniciais: Configuracao
     setConfirmPublicarAberto(false)
   }
 
-  const carregando = salvarRascunho.isPending || publicar.isPending || gerarLinkPreview.isPending
+  const carregando = salvarRascunho.isPending || publicar.isPending
 
   return (
     <FormProvider {...methods}>
