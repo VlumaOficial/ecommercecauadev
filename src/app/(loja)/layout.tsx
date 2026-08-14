@@ -1,11 +1,14 @@
 import { notFound } from 'next/navigation'
+import type { CSSProperties } from 'react'
 
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { getPublicCategories, getPublicStoreSettings } from '@/lib/loja/rpc'
+import { corTextoContraste } from '@/lib/loja/cor'
 import { Header } from '@/components/loja/header'
 import { NavCategorias } from '@/components/loja/nav-categorias'
 import { Footer } from '@/components/loja/footer'
 import { LojaFechada } from '@/components/loja/loja-fechada'
+import { WhatsAppFloatButton } from '@/components/loja/whatsapp-float-button'
 
 // Host sem tenant resolvido (dominio nao cadastrado em tenant_domains,
 // ou erro na RPC) = 404 - decisao tomada AQUI, nunca no proxy (que so'
@@ -17,12 +20,23 @@ export default async function LojaLayout({ children }: { children: React.ReactNo
   const settings = await getPublicStoreSettings(tenant.slug)
   if (!settings) notFound()
 
+  // Etapa 3 (migration 030): cor_principal alimenta --primary/--ring
+  // do tema via style inline (maior especificidade que a classe
+  // .loja-theme em globals.css, então sobrescreve o teal fixo sem
+  // tocar nos outros tokens - secondary/accent continuam neutros).
+  // --primary-foreground calculado por contraste, não fica gravado.
+  const temaStyle: CSSProperties = {
+    ['--primary' as string]: settings.cor_principal,
+    ['--ring' as string]: settings.cor_principal,
+    ['--primary-foreground' as string]: corTextoContraste(settings.cor_principal),
+  }
+
   // Nivel 1 de fechamento (REGRAS_DE_NEGOCIO §2): loja_aberta=false =
   // cliente so' ve a mensagem, nem o catalogo aparece - sem header,
   // sem nav, sem footer.
   if (!settings.loja_aberta) {
     return (
-      <div className="loja-theme min-h-svh bg-background text-foreground">
+      <div className="loja-theme min-h-svh bg-background text-foreground" style={temaStyle}>
         <LojaFechada nomeLoja={settings.nome} mensagem={settings.mensagem_loja_fechada} />
       </div>
     )
@@ -31,7 +45,7 @@ export default async function LojaLayout({ children }: { children: React.ReactNo
   const categorias = await getPublicCategories(tenant.slug)
 
   return (
-    <div className="loja-theme flex min-h-svh flex-col bg-background text-foreground">
+    <div className="loja-theme flex min-h-svh flex-col bg-background text-foreground" style={temaStyle}>
       <Header nomeLoja={settings.nome} valorMinimoPedido={settings.valor_minimo_pedido} />
       <NavCategorias categorias={categorias} />
       {!settings.pedidos_abertos && (
@@ -41,6 +55,7 @@ export default async function LojaLayout({ children }: { children: React.ReactNo
       )}
       <main className="flex-1">{children}</main>
       <Footer nomeLoja={settings.nome} />
+      <WhatsAppFloatButton numero={settings.whatsapp_numero} mensagem={settings.whatsapp_mensagem} />
     </div>
   )
 }

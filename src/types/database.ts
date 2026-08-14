@@ -1034,6 +1034,19 @@ export type Database = {
           mensagem_loja_fechada: string | null
           mensagem_pedidos_fechados: string | null
           valor_minimo_pedido: number
+          // Vitrine Fase 1 Etapa 3 (migration 030) - ver src/lib/loja/rpc.ts
+          // pros defaults usados enquanto a migration nao estiver aplicada.
+          banner_titulo: string
+          banner_subtitulo: string
+          banner_botao_texto: string
+          banner_botao_href: string
+          banner_tipo_fundo: string
+          banner_cor_fundo: string
+          banner_imagem_path: string | null
+          selos: Json
+          whatsapp_numero: string | null
+          whatsapp_mensagem: string
+          cor_principal: string
         }[]
       }
       get_public_categories: {

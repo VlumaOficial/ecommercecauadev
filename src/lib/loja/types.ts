@@ -4,6 +4,13 @@
 // retorna jsonb livre (a RPC monta o objeto no banco) - nao ha Row
 // gerado pra validar contra.
 
+export type SeloConfianca = {
+  titulo: string
+  subtitulo: string
+  icone: string
+  ativo: boolean
+}
+
 export type StoreSettingsPublico = {
   nome: string
   loja_aberta: boolean
@@ -11,6 +18,19 @@ export type StoreSettingsPublico = {
   mensagem_loja_fechada: string | null
   mensagem_pedidos_fechados: string | null
   valor_minimo_pedido: number
+  // Vitrine Fase 1 Etapa 3 (migration 030) - banner/selos/whatsapp/
+  // identidade editaveis, com default = valor hoje hardcoded.
+  banner_titulo: string
+  banner_subtitulo: string
+  banner_botao_texto: string
+  banner_botao_href: string
+  banner_tipo_fundo: 'cor' | 'imagem'
+  banner_cor_fundo: string
+  banner_imagem_path: string | null
+  selos: SeloConfianca[]
+  whatsapp_numero: string | null
+  whatsapp_mensagem: string
+  cor_principal: string
 }
 
 export type CategoriaPublica = {
