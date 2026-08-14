@@ -1053,6 +1053,10 @@ export type Database = {
           em_promocao: boolean
           esgotado: boolean
           preco_a_partir_de: number | null
+          // preco_varia: migration 029 - true quando ha variacoes
+          // ativas com preco base diferente entre si (nao considera
+          // promocional). UI so mostra "a partir de" quando true.
+          preco_varia: boolean
           codigo: string | null
           imagem_principal: string | null
           unidade_venda: string

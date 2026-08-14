@@ -45,6 +45,9 @@ export function ProductCard({ produto, categoriaNome }: { produto: ProdutoPublic
         <div className="mt-auto pt-1.5">
           {produto.preco_a_partir_de !== null ? (
             <>
+              {produto.preco_varia && (
+                <p className="text-[11px] font-medium text-muted-foreground">a partir de</p>
+              )}
               <p className="font-display text-lg font-extrabold text-foreground">
                 {formatarMoeda(produto.preco_a_partir_de)}
               </p>

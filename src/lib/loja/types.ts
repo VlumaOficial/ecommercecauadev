@@ -32,6 +32,7 @@ export type ProdutoPublico = {
   em_promocao: boolean
   esgotado: boolean
   preco_a_partir_de: number | null
+  preco_varia: boolean
   codigo: string | null
   imagem_principal: string | null
   unidade_venda: string
