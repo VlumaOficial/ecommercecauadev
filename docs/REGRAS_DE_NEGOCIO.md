@@ -45,6 +45,8 @@ Regra de combinação:
 
 **Por quê dois níveis:** permite ao lojista deixar a vitrine aberta pra "esquentar" o próximo ciclo (cliente vê o catálogo, decide o que quer) sem ainda liberar o checkout — por exemplo, enquanto o estoque do ciclo ainda está sendo conferido.
 
+**📌 Decisão registrada com o PO em 15/08/2026 (`ESCOPO_PROJETO.md` §0 item 30, decisão #26)**: o bloqueio do Nível 2 acontece no momento em que o cliente tenta **adicionar um item ao carrinho**, não numa tela de checkout separada — é dentro do fluxo do Carrinho (Fase 2), não um módulo à parte. Antes disso, o cliente pode navegar, ver produtos, preços e disponibilidade normalmente; só a ação de adicionar ao carrinho é que dispara o aviso (`mensagem_pedidos_fechados`). Contexto de negócio que motivou o modelo: o Cauã vende/entrega num período determinado do mês (ciclo), não continuamente — os dois níveis cobrem esse padrão sem precisar de lógica de datas/calendário nenhuma no sistema (o lojista liga/desliga manualmente, não é uma janela calculada automaticamente).
+
 ---
 
 ## 3. Soft delete e visibilidade — regra universal do painel
