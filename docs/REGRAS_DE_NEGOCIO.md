@@ -210,6 +210,11 @@ A sequência numérica do modo 1 é **por prefixo derivado**, não por categoria
 - Cada cidade de entrega tem: ponto de encontro, horário, observações — cadastrados pelo painel (`/painel/cidades`).
 - Cliente escolhe sua cidade de entrega no cadastro.
 
+**📌 Decisões de produto da Fase 2 (Carrinho/Checkout), registradas com o PO em 15/08/2026, antes de qualquer implementação — ver `ESCOPO_PROJETO.md` §0 item 31.**
+
+- **Tipo de entrega modelado de forma extensível**: o campo pensado pro checkout comporta mais de um tipo de entrega no futuro, mas o **MVP implementa só o modo que já existe** — ponto de encontro por cidade (`delivery_cities`, regras acima) — consumido por uma RPC pública **ainda a criar** (`get_public_delivery_cities`, pendência já identificada na Fase 0 da Vitrine — ver §8) e um seletor de cidade no checkout. Frete calculado, retirada em endereço fixo do lojista e envio por Correios/transportadora ficam como **fases futuras**, fora do MVP.
+- **Taxa de entrega por cidade, com flag de habilitação**: cada cidade pode ter uma taxa de entrega, controlada por uma flag explícita "cobrar taxa" (sim/não) — só quando ligada é que o valor da taxa é considerado e somado ao total do pedido no checkout. Mesmo princípio de "flag separada do valor" da regra de valor mínimo do pedido (§11.4) — nunca "zero = sem taxa" como convenção implícita.
+
 ---
 
 ## 6. Auditoria (rastreabilidade interna VLUMA)
@@ -241,8 +246,8 @@ Obrigação legal (LGPD): a loja precisa comprovar que o cliente aceitou os term
 
 As seções abaixo serão preenchidas conforme cada módulo for desenhado — mantidas aqui como lembrete do que falta decidir:
 
-- **Carrinho e checkout**: regra de valor mínimo de pedido, quantidade mínima por variação, o que acontece se o estoque mudar entre adicionar ao carrinho e finalizar.
-- **Reserva de estoque**: `store_settings.baixa_estoque_na_reserva` já existe no modelo (baixa no aceite vs. reserva na finalização, com expiração em minutos) — regra de negócio completa (o que acontece quando a reserva expira, notificação ao cliente) ainda não escrita.
+- **Carrinho e checkout**: regra de valor mínimo de pedido e quantidade mínima por variação **📌 decididas em 15/08/2026 — ver §§11–14 abaixo**; o que acontece se o estoque mudar entre adicionar ao carrinho e finalizar **continua em aberto** (depende do modo "bloquear pelo estoque", ainda não implementado — ver §12).
+- **Reserva de estoque**: `store_settings.baixa_estoque_na_reserva` já existe no modelo (baixa no aceite vs. reserva na finalização, com expiração em minutos) — regra de negócio completa (o que acontece quando a reserva expira, notificação ao cliente) ainda não escrita. Relacionado ao modo "bloquear pelo estoque" (§12), que só entra junto da integração de pagamento — segue em aberto até lá.
 - **Pedidos**: fluxo de aceite pelo staff, o que pode ser alterado pelo staff antes de aceitar, geração de PDF, envio por WhatsApp.
 - **Pagamento**: fora do sistema no MVP — regra de como isso é registrado/conciliado ainda não definida.
 - **Promoções por ciclo**: como um ciclo de vendas começa/termina e como isso se relaciona com `pedidos_abertos`.
@@ -274,6 +279,61 @@ Cada loja que usa a plataforma VLUMA só acessa os próprios dados — categoria
 Essa garantia não é só uma intenção de design — foi **testada de verdade**: criou-se uma segunda loja fictícia só para teste, e confirmou-se que uma pessoa da equipe dessa loja fictícia não via nada da loja do Cauã (nem o inverso). Numa primeira rodada de teste, dois pontos falhos foram encontrados e corrigidos antes de a garantia ser considerada válida — detalhe técnico completo em `ESCOPO_PROJETO.md` §2 e §5 (decisão #21).
 
 **⚠️→✅ Atualização de 01/08/2026 — terceiro ponto falho encontrado e corrigido, desta vez na listagem de Produtos:** a garantia de isolamento acima valia para leitura direta de tabela, mas a tela de listagem do painel de Produtos consulta uma **view** (`products_com_status`), e essa view tinha o mesmo tipo de brecha por um motivo técnico diferente (não filtro de RLS ausente, e sim a view não herdar o RLS de quem consulta). Correção aplicada (migration `018`) e revalidada com o canário, desta vez consultando a view diretamente — ver `ESCOPO_PROJETO.md` §2 para o detalhe técnico completo. A garantia de isolamento desta seção agora cobre tabela **e** view.
+
+---
+
+## 11. Carrinho (Fase 2) — modelo e regras
+
+**📐 Decidido com o PO em 15/08/2026, antes de qualquer implementação** — ver `ESCOPO_PROJETO.md` §0 item 31.
+
+### 11.1 Modelo híbrido: carrinho começa no navegador, evolui pra persistido
+
+O carrinho nasce **client-side** (vive no navegador do cliente, não numa tabela do banco) — é a base mais simples pra começar, sem exigir que o cliente esteja logado só pra montar um pedido. A arquitetura já é pensada desde agora pra **evoluir pra um carrinho persistido** (associado à conta do cliente) assim que houver identificação — por exemplo, o cliente loga no meio da navegação e o carrinho migra pro servidor, sem perder o que já tinha montado. Todas as regras que o carrinho aplica (quantidade mínima, valor mínimo, disponibilidade) são sempre **lidas da configuração do tenant** (`store_settings`) — nunca um valor fixo no código do carrinho.
+
+### 11.2 Quantidade mínima por variação
+
+Ao adicionar um item ao carrinho, o sistema respeita `quantidade_minima_venda` da variação (já modelado desde a migration `027`) — não deixa adicionar menos que o mínimo definido pelo lojista pra aquela variação específica.
+
+### 11.3 Bloqueio de "pedidos fechados" acontece no carrinho, não numa tela separada
+
+Reforça a regra já registrada em §2: quando `pedidos_abertos = false`, o cliente continua navegando a vitrine inteira normalmente (produtos, preços, disponibilidade) — o bloqueio só acontece no momento em que ele tenta **adicionar um item ao carrinho**, mostrando `mensagem_pedidos_fechados`. Não existe uma tela de checkout separada pra esse aviso; é parte do próprio fluxo do carrinho.
+
+### 11.4 Valor mínimo de pedido: flag de habilitação + valor, nunca "zero = desativado"
+
+`store_settings.valor_minimo_pedido` (já existe) passa a ser controlado por uma **flag de habilitação explícita**, separada do valor numérico — decisão deliberada do PO pra nunca usar "R$0,00 = sem mínimo" como convenção implícita: um valor zero configurado por engano (ou de propósito, por algum motivo do lojista) não pode ser confundido com "a regra está desligada". A flag decide se a regra vale; o valor só é considerado quando a flag está ligada.
+
+---
+
+## 12. Controle de estoque na vitrine — dois modos configuráveis
+
+**📐 Decidido com o PO em 15/08/2026.**
+
+O lojista escolhe, por configuração (nunca fixo no código), como o estoque se comporta na vitrine pública:
+
+| Modo | Comportamento | Quando entra |
+|---|---|---|
+| **Bloquear pelo estoque** | A vitrine revela a disponibilidade real (esgotado/disponível calculado do saldo) e o sistema reserva/bloqueia em tempo real — pensado pro cenário em que o cliente **paga no ato** (precisa impedir vender o que não existe mais no estoque). | Implementado **junto da integração de pagamento** (fase futura) — não faz sentido bloquear estoque em tempo real sem cobrar na hora. |
+| **Não bloquear** | O estoque fica **oculto** (nenhum número, nenhuma reserva em tempo real) — o pedido entra como solicitação, sujeita à confirmação do lojista depois (fluxo de aceite, já modelado nos Pedidos). | Implementado **no MVP** — modo mais simples, compatível com o pagamento fora do sistema (padrão atual). |
+
+A **configuração** dos dois modos (qual está ativo) é modelada agora, na Fase 2 — mesmo que só o modo "não bloquear" tenha comportamento implementado no MVP.
+
+---
+
+## 13. Módulo de Configuração do Carrinho (painel)
+
+**📐 Decidido com o PO em 15/08/2026.**
+
+Agrupa as configurações do carrinho num só lugar do painel: a flag + valor do pedido mínimo (§11.4) e o modo de controle de estoque (§12). Os campos são modelados em `store_settings` já na Fase 2; a **tela** de edição no painel fica pra fase de polimento, dentro do agrupamento "Configurações" já decidido pra navegação do painel (`ESCOPO_PROJETO.md` §0 item 30/decisão #27) — mesmo padrão já usado nas Configurações da Vitrine (Etapa 4): campo modelado primeiro, tela de edição depois.
+
+---
+
+## 14. Contas de cliente
+
+**📐 Decidido com o PO em 15/08/2026.**
+
+- O sistema de contas de cliente nasce **já no MVP** (não é uma fase futura) — reaproveita a base de autenticação já existente (Supabase Auth + o trigger `handle_new_user`, que já distingue o destino do cadastro conforme a metadata do signup).
+- Staff (painel) e Cliente (vitrine) continuam sendo distinguidos **por papel**, nunca a mesma conta sendo as duas coisas (mesma regra já em vigor, §1) — reforçado aqui como **ponto de segurança crítico** desta fase: cliente nunca acessa o painel, staff nunca aparece como cliente na vitrine, com o **mesmo rigor** já aplicado ao isolamento entre lojas (§10).
+- **Base de clientes robusta desde já**: todo cliente que gera um pedido — **cadastrado** (com login) ou **convidado** (sem conta) — vira um registro vinculado ao contato (nome/telefone/e-mail), e cada pedido fica vinculado a esse registro de cliente. O fluxo **cadastrado é o principal** (login persiste histórico e dados entre visitas); o fluxo **convidado é um complemento secundário** (facilita a conversão de quem não quer criar conta na hora), não o caminho preferencial.
 
 ---
 
