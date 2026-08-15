@@ -170,6 +170,8 @@
 
     Zero erro de console em todos os testes. Sessão de teste (magic link) descartada ao final, nenhum arquivo com token/sessão deixado no disco. **Vitrine Fase 1 (as 4 etapas do plano) está 100% completa e testada em produção/HML.**
 
+    **Próximo passo do roadmap da Vitrine**: Fase 2 (Carrinho e Checkout — ver §4 "Carrinho e checkout"). Pré-requisito já identificado desde a Fase 0 (item 20 acima, 10/08/2026) e ainda não resolvido: a RPC pública `get_public_delivery_cities(p_tenant_slug)` não existe — leitura anônima de `delivery_cities` está completamente fechada desde a migration `028` (nem tabela nem RPC), decisão deliberada na época pra só desenhar isso junto do Carrinho (cálculo de frete/área de entrega). Sem essa RPC, o visitante anônimo não consegue ver as cidades de entrega disponíveis — bloqueia o início da Fase 2 até ser criada (mesmo padrão `SECURITY DEFINER` das outras RPCs públicas da Vitrine).
+
 ---
 
 ## 0. Regra de processo (definition of done)
