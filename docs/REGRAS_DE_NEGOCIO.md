@@ -252,6 +252,13 @@ As seções abaixo serão preenchidas conforme cada módulo for desenhado — ma
 - **Pagamento**: fora do sistema no MVP — regra de como isso é registrado/conciliado ainda não definida.
 - **Promoções por ciclo**: como um ciclo de vendas começa/termina e como isso se relaciona com `pedidos_abertos`.
 
+**📌 Pendências registradas com o PO em 15/08/2026 (continuação da Fase 2 — §§15–16), a decidir nas próximas conversas ANTES de implementar:**
+
+- **(a) Política de cancelamento configurável**: manual pelo vendedor + automático por tempo (prazo a definir) — o que o cliente é avisado quando isso acontece, e como/quando o estoque reservado (§16) é liberado de volta.
+- **(b) Fluxo A (§15.3) em detalhe**: o que exatamente significa o vendedor "validar" um pedido, e o que ele pode alterar no pedido antes de validar (ex.: substituir item indisponível, ajustar quantidade).
+- **(c) Notificações**: mecânica de disparo de e-mail + WhatsApp pro cliente (confirmação, validação, cancelamento) — o WhatsApp depende de uma integração ainda não escolhida/implementada (ex. Evolution API, já mencionada na visão original do produto).
+- **(d) Fluxo B (Asaas) completo**: integração de pagamento via Asaas, webhook de confirmação, atualização automática de status — ainda não esboçado em detalhe, entra junto da fase de pagamento.
+
 ---
 
 ## 9. Mensagens de erro — padrão geral do sistema
@@ -334,6 +341,48 @@ Agrupa as configurações do carrinho num só lugar do painel: a flag + valor do
 - O sistema de contas de cliente nasce **já no MVP** (não é uma fase futura) — reaproveita a base de autenticação já existente (Supabase Auth + o trigger `handle_new_user`, que já distingue o destino do cadastro conforme a metadata do signup).
 - Staff (painel) e Cliente (vitrine) continuam sendo distinguidos **por papel**, nunca a mesma conta sendo as duas coisas (mesma regra já em vigor, §1) — reforçado aqui como **ponto de segurança crítico** desta fase: cliente nunca acessa o painel, staff nunca aparece como cliente na vitrine, com o **mesmo rigor** já aplicado ao isolamento entre lojas (§10).
 - **Base de clientes robusta desde já**: todo cliente que gera um pedido — **cadastrado** (com login) ou **convidado** (sem conta) — vira um registro vinculado ao contato (nome/telefone/e-mail), e cada pedido fica vinculado a esse registro de cliente. O fluxo **cadastrado é o principal** (login persiste histórico e dados entre visitas); o fluxo **convidado é um complemento secundário** (facilita a conversão de quem não quer criar conta na hora), não o caminho preferencial.
+
+---
+
+## 15. Checkout — fluxo e identificação (Fase 2)
+
+**📐 Decidido com o PO em 15/08/2026, complementa §§11–14.**
+
+### 15.1 Checkout em passo a passo, não página única
+
+O checkout é um fluxo em **etapas sequenciais**, não uma página única com tudo junto: **Identificação → Entrega → Revisão/Confirmação**. Pagamento entra como uma etapa a mais quando o Fluxo B (Asaas, abaixo) for implementado. Decisão de UX: reduz a sobrecarga de uma tela só com tudo de uma vez, e facilita evoluir o fluxo (inserir/reordenar etapas) sem reescrever tudo do zero.
+
+### 15.2 Identificação do cliente — login por e-mail
+
+- Identificador de login: **e-mail** — reaproveita o Supabase Auth nativo (mesmo mecanismo já usado por staff, via `handle_new_user`), sem o custo/complexidade de verificação por SMS.
+- Cadastro do cliente coleta: nome, e-mail (login), **telefone/WhatsApp — obrigatório** (é o canal de contato e de coordenação de entrega, não só um dado de perfil), senha.
+- Login por telefone é uma evolução futura, fora do MVP.
+
+### 15.3 Dois fluxos de checkout, conforme o pagamento
+
+| | Fluxo A — não integrado (**MVP**) | Fluxo B — integrado via Asaas (**fase futura**) |
+|---|---|---|
+| Pagamento | Na entrega, fora do sistema | Pela plataforma, no ato da finalização |
+| Depois de finalizar | Pedido entra como "aguardando validação" na área de Pedidos | Sistema recebe confirmação via webhook do Asaas, status atualiza sozinho |
+| Validação | Vendedor confirma que atende (aceite manual) | Automática, pela confirmação de pagamento |
+| Notificação ao cliente | E-mail + WhatsApp | E-mail + WhatsApp |
+| Modo de estoque (§12) | "Não bloquear" | "Bloquear pelo estoque" |
+
+O Fluxo A é o que entra no MVP — casa com "pagamento fora do sistema" (§8) e com o modo de estoque "não bloquear" (§12). O Fluxo B entra junto da integração de pagamento (Asaas), fase futura, ainda não esboçado em detalhe — ver pendências em §8.
+
+---
+
+## 16. Reserva de estoque na finalização do pedido
+
+**📐 Decidido com o PO em 15/08/2026.**
+
+### 16.1 Reserva acontece na finalização, não fica "solta"
+
+Ao finalizar o pedido (Fluxo A ou B), o estoque correspondente é **reservado/consumido imediatamente** — não fica solto esperando validação do vendedor. O próximo cliente que olhar aquele produto já vê esgotado, se o saldo acabou com esse pedido. Evita frustrar um segundo cliente com um item que "acabou depois" — mesmo item que ele via disponível segundos antes. É o padrão de mercado: reserva **na submissão do pedido**, não na validação. Usa `store_settings.baixa_estoque_na_reserva` (já existe no modelo) e a baixa atômica via RPC com `FOR UPDATE` (já prevista pra fase de Pedidos — evita dois pedidos disputando o mesmo saldo ao mesmo tempo).
+
+### 16.2 Reserva modelada como registro com estado, não um decremento simples
+
+A reserva nasce como um **registro próprio** (pedido X reservou N unidades da variação Y), com estado e noção de expiração — não é só subtrair direto do saldo. No MVP só existe a reserva **"firme"** (feita na finalização do pedido, sem expiração). A estrutura já é desenhada, porém, pra comportar **sem reescrita** a reserva **"leve"** durante o próprio checkout (antes de finalizar, com expiração automática se o cliente abandonar) — peça que entra junto da fase de pagamento/Fluxo B. Mesmo princípio de "preparar a estrutura sem pagar o custo de implementar agora" já usado no carrinho client-side (§11.1).
 
 ---
 

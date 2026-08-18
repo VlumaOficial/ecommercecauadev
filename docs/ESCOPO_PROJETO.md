@@ -202,6 +202,20 @@
 
     **9. Contas de cliente nascem no MVP, reaproveitando a base de auth existente**: Supabase Auth + `handle_new_user` (já distingue destino por metadata do signup) — staff e cliente continuam distinguidos **por papel**, nunca a mesma conta. **Ponto de segurança crítico**: cliente nunca acessa o painel e vice-versa, com o mesmo rigor já aplicado ao isolamento multi-tenant (decisão #11/§10 de `REGRAS_DE_NEGOCIO.md`). Base de clientes robusta: todo cliente que gera pedido — cadastrado ou convidado — vira registro vinculado ao contato, pedidos vinculados a esse registro; fluxo cadastrado é o principal, convidado é um complemento secundário.
 
+32. **📌 15/08/2026 — Complemento às decisões de produto da Fase 2 (item 31), registrado com o PO ANTES de qualquer implementação.** Detalhe completo em `REGRAS_DE_NEGOCIO.md` §§15–16 (novas) e pendências acrescentadas em §8.
+
+    **10. Checkout em passo a passo, não página única**: fluxo em etapas sequenciais — Identificação → Entrega → Revisão/Confirmação. Pagamento entra como etapa a mais quando o Fluxo B (item 12 abaixo) existir. Decisão de UX pra reduzir sobrecarga numa tela só e facilitar evoluir o fluxo depois.
+
+    **11. Identificação do cliente por e-mail**: login = e-mail, reaproveitando o Supabase Auth nativo via `handle_new_user` (mesmo mecanismo do staff), sem custo de verificação por SMS. Cadastro coleta nome + e-mail (login) + telefone/WhatsApp (**obrigatório** — canal de contato/entrega) + senha. Login por telefone fica como evolução futura, fora do MVP.
+
+    **12. Dois fluxos de checkout conforme o pagamento**: **Fluxo A** (não integrado, pagamento na entrega) = **MVP** — finalizar cria pedido "aguardando validação", vendedor valida manualmente, notificação por e-mail+WhatsApp, pagamento na entrega; casa com o modo de estoque "não bloquear" (§12 de `REGRAS_DE_NEGOCIO.md`) e "pagamento fora do sistema" (já pendente em §8). **Fluxo B** (integrado via Asaas) = **fase futura** — pagamento na hora, confirmação por webhook, status atualiza sozinho; casa com o modo de estoque "bloquear pelo estoque". Entra junto da integração de pagamento, não no MVP.
+
+    **13. Reserva de estoque na finalização do pedido**: ao finalizar, o estoque é reservado/consumido na hora (não fica solto) — o próximo cliente já vê esgotado, evitando frustração com item que "acabou depois". Padrão de mercado (reserva na submissão, não na validação). Usa `store_settings.baixa_estoque_na_reserva` (já existe) + baixa atômica via RPC com `FOR UPDATE` (já prevista pra Pedidos).
+
+    **14. Reserva modelada como registro com estado e expiração, preparada pra evoluir**: nasce como um REGISTRO próprio (pedido X reservou N da variação Y), não um decremento simples de saldo. MVP só tem a reserva "firme" (na finalização, sem expiração); a estrutura já comporta, sem reescrita, a reserva "leve" durante o checkout (com expiração automática) da fase de pagamento/Fluxo B — mesmo princípio "preparar sem pagar o custo agora" do carrinho client-side (item 1).
+
+    **15. Pendências reais, a decidir nas próximas conversas com o PO antes de implementar**: (a) política de cancelamento configurável (manual + automático por tempo, aviso ao cliente, liberação do estoque reservado); (b) Fluxo A em detalhe (o que "validar" significa, o que o vendedor pode alterar antes); (c) notificações (mecânica de e-mail+WhatsApp, WhatsApp depende de integração ainda não escolhida, ex. Evolution API); (d) Fluxo B (Asaas) completo, ainda não esboçado. Ver `REGRAS_DE_NEGOCIO.md` §8 pro registro completo.
+
 ---
 
 ## 0. Regra de processo (definition of done)
