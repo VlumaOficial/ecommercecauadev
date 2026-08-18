@@ -216,6 +216,20 @@
 
     **15. Pendências reais, a decidir nas próximas conversas com o PO antes de implementar**: (a) política de cancelamento configurável (manual + automático por tempo, aviso ao cliente, liberação do estoque reservado); (b) Fluxo A em detalhe (o que "validar" significa, o que o vendedor pode alterar antes); (c) notificações (mecânica de e-mail+WhatsApp, WhatsApp depende de integração ainda não escolhida, ex. Evolution API); (d) Fluxo B (Asaas) completo, ainda não esboçado. Ver `REGRAS_DE_NEGOCIO.md` §8 pro registro completo.
 
+33. **📌 18/08/2026 — Complemento às decisões de produto da Fase 2 (itens 31/32): 3 das 4 pendências do item 32/15 fechadas com o PO. Documentação apenas, nada implementado nesta entrada.**
+
+    **1. Reserva de estoque só na finalização do pedido — carrinho nunca reserva.** Confirma e reforça a decisão já registrada em §16.1: o carrinho client-side (§11.1) não reserva estoque nenhum — a reserva só nasce quando o pedido é criado, na finalização. Consequência: um carrinho abandonado simplesmente some do navegador sem precisar liberar nada, porque nunca reservou nada. A reserva "leve" desde o próprio carrinho, com expiração automática (modelo mais sofisticado, estrutura já prevista em §16.2), fica para quando o Fluxo B/Asaas entrar — não é MVP. Ver `REGRAS_DE_NEGOCIO.md` §16.3 (novo).
+
+    **2. Vendedor pode editar o pedido ao validar — só pra reduzir (MVP).** Detalha o que "validar" significa no Fluxo A (§15.3): o vendedor pode reduzir quantidade ou remover item (ex.: item que acabou entre o pedido e a conferência), sem precisar cancelar o pedido inteiro. **Nunca pode aumentar quantidade nem adicionar item** — isso elevaria o compromisso do cliente sem uma nova confirmação dele, fica pra fase futura. O ajuste é sempre a favor do cliente (o total só pode diminuir nessa etapa) e o estoque das reduções/remoções volta ao saldo disponível. Ver `REGRAS_DE_NEGOCIO.md` §15.4 (novo).
+
+    **3. Política de cancelamento (MVP): manual + automático configurável.** (a) Manual — o vendedor recusa/cancela o pedido, estoque reservado é liberado. (b) Automático por tempo — pedido não validado dentro de um prazo é cancelado sozinho e libera o estoque (evita "pedido zumbi" segurando saldo); o prazo é **configurável pelo lojista** e o mecanismo automático é **desligável** (padrão de fábrica ligado, prazo conservador) — mesmo princípio de nunca esconder uma regra atrás de comportamento implícito já usado noutras flags do sistema. Ver `REGRAS_DE_NEGOCIO.md` §17 (novo).
+
+    **4. Notificação ao cliente + Área do Cliente nasce no MVP.** Toda mudança de estado do pedido por ação do vendedor/sistema (validar, ajustar, cancelar) notifica o cliente e direciona pra uma área própria dele (**"Meus Pedidos"**, cliente logado — §14) — essa área é a **fonte de verdade** do acompanhamento, sempre mostrando o estado final/atualizado (itens, ajustes, total, status), não uma cópia estática do momento da finalização. **PDF do pedido não é o mecanismo principal** — fica como opção secundária/futura (ficaria desatualizado assim que o vendedor ajustasse o pedido). Ver `REGRAS_DE_NEGOCIO.md` §18.1–18.2 (novo).
+
+    **5. WhatsApp em dois níveis, faseados.** Nível 1 — **notificações de saída** (sistema avisa o cliente: confirmação, validação, ajuste, cancelamento), via **Evolution API**, entra no **MVP** junto com e-mail. Nível 2 — **consultas de entrada** (cliente pergunta pelo WhatsApp, sistema responde — atendimento conversacional), via **N8N**, fica pra **fase seguinte**, não MVP. A arquitetura de notificação já nasce pensada pra múltiplos canais (e-mail + WhatsApp de saída juntos desde o início), com o conversacional como incremento posterior, não reescrita. Ver `REGRAS_DE_NEGOCIO.md` §18.3 (novo).
+
+    **Pendência real que permanece**: só o **Fluxo B (Asaas) completo** (item (d) da lista original) segue em aberto — integração de pagamento, webhook, atualização automática de status, ainda não esboçado em detalhe, entra junto da fase de pagamento. Ver `REGRAS_DE_NEGOCIO.md` §8 (atualizado).
+
 ---
 
 ## 0. Regra de processo (definition of done)

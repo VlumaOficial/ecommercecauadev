@@ -254,10 +254,10 @@ As seções abaixo serão preenchidas conforme cada módulo for desenhado — ma
 
 **📌 Pendências registradas com o PO em 15/08/2026 (continuação da Fase 2 — §§15–16), a decidir nas próximas conversas ANTES de implementar:**
 
-- **(a) Política de cancelamento configurável**: manual pelo vendedor + automático por tempo (prazo a definir) — o que o cliente é avisado quando isso acontece, e como/quando o estoque reservado (§16) é liberado de volta.
-- **(b) Fluxo A (§15.3) em detalhe**: o que exatamente significa o vendedor "validar" um pedido, e o que ele pode alterar no pedido antes de validar (ex.: substituir item indisponível, ajustar quantidade).
-- **(c) Notificações**: mecânica de disparo de e-mail + WhatsApp pro cliente (confirmação, validação, cancelamento) — o WhatsApp depende de uma integração ainda não escolhida/implementada (ex. Evolution API, já mencionada na visão original do produto).
-- **(d) Fluxo B (Asaas) completo**: integração de pagamento via Asaas, webhook de confirmação, atualização automática de status — ainda não esboçado em detalhe, entra junto da fase de pagamento.
+- **(a) Política de cancelamento configurável**: ~~manual pelo vendedor + automático por tempo (prazo a definir) — o que o cliente é avisado quando isso acontece, e como/quando o estoque reservado (§16) é liberado de volta.~~ **✅ Decidido com o PO em 18/08/2026** — ver §17 (cancelamento manual + automático configurável/desligável, libera estoque nos dois casos) e §18.1 (cliente notificado). Ainda não implementado, só decidido.
+- **(b) Fluxo A (§15.3) em detalhe**: ~~o que exatamente significa o vendedor "validar" um pedido, e o que ele pode alterar no pedido antes de validar (ex.: substituir item indisponível, ajustar quantidade).~~ **✅ Decidido com o PO em 18/08/2026** — ver §15.4 (vendedor só pode reduzir/remover item ao validar, nunca aumentar nem adicionar item novo). Ainda não implementado, só decidido.
+- **(c) Notificações**: ~~mecânica de disparo de e-mail + WhatsApp pro cliente (confirmação, validação, cancelamento) — o WhatsApp depende de uma integração ainda não escolhida/implementada (ex. Evolution API, já mencionada na visão original do produto).~~ **✅ Decidido com o PO em 18/08/2026** — ver §18 (e-mail + Área do Cliente "Meus Pedidos" no MVP; WhatsApp de saída via Evolution API no MVP; WhatsApp conversacional de entrada via N8N em fase seguinte, não MVP). Ainda não implementado, só decidido.
+- **(d) Fluxo B (Asaas) completo**: integração de pagamento via Asaas, webhook de confirmação, atualização automática de status — ainda não esboçado em detalhe, entra junto da fase de pagamento. **Única pendência real que permanece em aberto desta lista.**
 
 ---
 
@@ -370,6 +370,14 @@ O checkout é um fluxo em **etapas sequenciais**, não uma página única com tu
 
 O Fluxo A é o que entra no MVP — casa com "pagamento fora do sistema" (§8) e com o modo de estoque "não bloquear" (§12). O Fluxo B entra junto da integração de pagamento (Asaas), fase futura, ainda não esboçado em detalhe — ver pendências em §8.
 
+### 15.4 Edição do pedido pelo vendedor ao validar (Fluxo A) — só pode reduzir, nunca aumentar
+
+**📐 Decidido com o PO em 18/08/2026, detalha "Validação" do Fluxo A (§15.3 acima).**
+
+Ao validar um pedido do Fluxo A, o vendedor pode ajustar o pedido **sem precisar cancelar o pedido inteiro** — mas só numa direção: **reduzir quantidade ou remover itens** (ex.: item que acabou entre o pedido e a conferência de estoque). O vendedor **nunca pode aumentar quantidade nem adicionar item novo** ao validar — isso elevaria o compromisso do cliente sem uma nova confirmação dele, o que fica fora do MVP (fase futura, se vier a ser necessário).
+
+Consequência prática: o ajuste é sempre **a favor do cliente** — o total do pedido só pode diminuir nessa etapa, nunca aumentar. O estoque correspondente às reduções/remoções volta pro saldo disponível (mesma liberação de §16/§17). O cliente é notificado do ajuste — ver §18.
+
 ---
 
 ## 16. Reserva de estoque na finalização do pedido
@@ -383,6 +391,64 @@ Ao finalizar o pedido (Fluxo A ou B), o estoque correspondente é **reservado/co
 ### 16.2 Reserva modelada como registro com estado, não um decremento simples
 
 A reserva nasce como um **registro próprio** (pedido X reservou N unidades da variação Y), com estado e noção de expiração — não é só subtrair direto do saldo. No MVP só existe a reserva **"firme"** (feita na finalização do pedido, sem expiração). A estrutura já é desenhada, porém, pra comportar **sem reescrita** a reserva **"leve"** durante o próprio checkout (antes de finalizar, com expiração automática se o cliente abandonar) — peça que entra junto da fase de pagamento/Fluxo B. Mesmo princípio de "preparar a estrutura sem pagar o custo de implementar agora" já usado no carrinho client-side (§11.1).
+
+### 16.3 Carrinho não reserva estoque — só o pedido reserva
+
+**📐 Decidido com o PO em 18/08/2026, complementa §11.1 e §16.1.**
+
+O carrinho (client-side, §11.1) nunca reserva estoque — a reserva só existe a partir do pedido, no momento da finalização (§16.1). Consequência prática: um carrinho abandonado (cliente fecha a aba, esquece o navegador aberto, etc.) não precisa liberar nada — ele nunca reservou nada pra começar, então simplesmente some sem nenhum efeito colateral no estoque.
+
+A reserva "leve" desde o próprio carrinho (com expiração automática, pra segurar o estoque enquanto o cliente ainda está decidindo) é o modelo mais sofisticado já previsto na estrutura de dados (§16.2), mas **não implementado no MVP** — fica para quando o Fluxo B/Asaas (§15.3) entrar, junto do modo "bloquear pelo estoque" (§12), cenário onde essa garantia em tempo real realmente importa (pagamento no ato).
+
+---
+
+## 17. Cancelamento de pedido (Fase 2)
+
+**📐 Decidido com o PO em 18/08/2026.**
+
+O MVP tem dois caminhos de cancelamento, não excludentes entre si:
+
+### 17.1 Cancelamento manual pelo vendedor
+
+O vendedor pode recusar/cancelar um pedido (por exemplo, ao validar — §15.3/§15.4 — e perceber que não consegue atender). Ao cancelar, o estoque reservado por aquele pedido (§16) é liberado de volta pro saldo disponível.
+
+### 17.2 Cancelamento automático por tempo, configurável
+
+Pedido que fica **não validado** por mais que um prazo configurado é cancelado automaticamente, liberando o estoque reservado — evita "pedido zumbi" segurando estoque indefinidamente sem o vendedor nunca ter respondido. Dois pontos deliberados:
+
+- **Prazo configurável pelo lojista** (não um valor fixo no código) — cada loja decide quantos dias/horas fazem sentido pro próprio ritmo de validação.
+- **Desligável**: o lojista pode desativar o cancelamento automático por completo, se preferir controlar isso manualmente. Padrão de fábrica é **conservador** (ligado, com um prazo razoável) — mesmo princípio de "nunca esconder uma regra atrás de comportamento implícito" já usado noutras flags do sistema (§11.4, §5).
+
+Em ambos os casos (manual ou automático), o cliente é notificado do cancelamento — ver §18.
+
+---
+
+## 18. Notificações e Área do Cliente (Fase 2)
+
+**📐 Decidido com o PO em 18/08/2026.**
+
+### 18.1 Quando o cliente é notificado
+
+O cliente é notificado sempre que o pedido muda de estado por ação do vendedor ou do sistema: **validação** (aceito), **ajuste** (itens reduzidos/removidos — §15.4) e **cancelamento** (§17). A notificação avisa da novidade e direciona o cliente pra área do cliente (§18.2), que é onde ele vê o detalhe completo — a notificação em si é só o aviso, não o lugar de conferir os dados.
+
+### 18.2 Área do cliente ("Meus Pedidos") — nasce no MVP
+
+Cliente logado (§14) tem uma área própria pra ver os pedidos que fez, com o **estado final e atualizado** de cada um — itens, ajustes feitos pelo vendedor, total, status. É a **fonte de verdade** do acompanhamento do pedido: qualquer dúvida sobre "o que ficou combinado", a resposta está lá, sempre refletindo o estado mais recente (não uma cópia estática do momento da finalização).
+
+**PDF do pedido não é o mecanismo principal** — fica como opção secundária/futura (útil pra imprimir ou guardar localmente, mas a área do cliente é o canal oficial de acompanhamento, sempre atualizado; um PDF gerado na finalização ficaria desatualizado assim que o vendedor ajustasse o pedido).
+
+### 18.3 Canais de notificação: e-mail + WhatsApp, dois níveis de WhatsApp
+
+**E-mail** e a **área do cliente** (§18.2) entram no MVP como canais/registro padrão.
+
+**WhatsApp em dois níveis, faseados**:
+
+| Nível | O que é | Integração | Fase |
+|---|---|---|---|
+| **1 — Saída** | O sistema avisa o cliente (confirmação, validação, ajuste, cancelamento) — mensagem parte do sistema, cliente só recebe | **Evolution API** (já cogitada na visão original do produto) | **MVP** |
+| **2 — Entrada** | Cliente manda mensagem perguntando sobre o pedido e o sistema responde — atendimento conversacional | **N8N** | **Fase seguinte** (não MVP) |
+
+A arquitetura de notificação nasce pensada pra múltiplos canais desde o início (e-mail + WhatsApp de saída juntos no MVP), com o conversacional (N8N, Nível 2) como incremento posterior — não uma reescrita.
 
 ---
 
