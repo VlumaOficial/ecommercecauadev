@@ -34,6 +34,21 @@ export type StoreSettingsPublico = {
   // Vitrine Fase 1 Etapa 4 (migration 031) - null = usa o arquivo
   // estatico public/brand/logocp-icone.png (ver urlLogoLoja()).
   logo_path: string | null
+  // Fase 2, incremento 2 (migration 036) - controla se o /cadastro
+  // publico mostra o formulario de autocadastro de cliente.
+  permite_autocadastro: boolean
+}
+
+// Cidade de entrega ativa, espelhando get_public_delivery_cities
+// (migration 032, Fase 2 incremento 1).
+export type CidadeEntregaPublica = {
+  id: string
+  nome: string
+  uf: string | null
+  ponto_entrega: string | null
+  horario: string | null
+  observacoes: string | null
+  ordem: number
 }
 
 // Campos editaveis da identidade da vitrine - mesmo formato usado no

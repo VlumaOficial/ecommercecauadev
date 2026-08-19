@@ -1089,6 +1089,27 @@ export type Database = {
           whatsapp_numero: string | null
           whatsapp_mensagem: string
           cor_principal: string
+          // logo_path (migration 031) e permite_autocadastro (migration
+          // 036) faltavam aqui - drift do tipo gerado nunca atualizado
+          // a mao nas sessoes daquelas migrations. Corrigido agora,
+          // trazendo o bloco pro shape real da RPC no banco.
+          logo_path: string | null
+          permite_autocadastro: boolean
+        }[]
+      }
+      // Adicionada na migration 032 (Fase 2, incremento 1) - fecha a
+      // pendencia de leitura publica de delivery_cities (fechada sem
+      // RPC equivalente pela 028). So cidades ATIVAS do tenant.
+      get_public_delivery_cities: {
+        Args: { p_tenant_slug: string }
+        Returns: {
+          id: string
+          nome: string
+          uf: string | null
+          ponto_entrega: string | null
+          horario: string | null
+          observacoes: string | null
+          ordem: number
         }[]
       }
       get_public_categories: {

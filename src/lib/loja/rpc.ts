@@ -1,6 +1,7 @@
 import { createPublicClient } from '@/lib/supabase/public'
 import type {
   CategoriaPublica,
+  CidadeEntregaPublica,
   ConfiguracaoVitrineCampos,
   ProdutoDetalhe,
   ProdutoPublico,
@@ -40,6 +41,11 @@ const DEFAULTS_ETAPA3_IDENTIDADE = {
   // public/brand/logocp-icone.png, mesmo comportamento de antes desta
   // etapa (ver urlLogoLoja() em header.tsx/footer.tsx).
   logo_path: null,
+  // Fase 2, incremento 2 (migration 036) - default true (fail-open):
+  // enquanto a migration nao estiver aplicada em algum ambiente, o
+  // /cadastro continua mostrando o formulario normalmente, em vez de
+  // travar autocadastro por engano num campo que ainda nao existe.
+  permite_autocadastro: true,
 }
 
 export async function getPublicStoreSettings(tenantSlug: string): Promise<StoreSettingsPublico | null> {
@@ -50,6 +56,18 @@ export async function getPublicStoreSettings(tenantSlug: string): Promise<StoreS
   // banco (o valor real é restrito por CHECK - 'cor'|'imagem' - não
   // dá pra expressar isso no Returns da RPC sem duplicar o enum ali).
   return { ...DEFAULTS_ETAPA3_IDENTIDADE, ...data[0] } as StoreSettingsPublico
+}
+
+// Fase 2, incremento 1 (migration 032) - so cidades ATIVAS do tenant,
+// usada pelo seletor de cidade do checkout (fase futura) e pelo
+// dropdown de cidade do /cadastro (Fase 2 incremento 2) - substitui a
+// query direta client-side que useDeliveryCities fazia antes (quebrada
+// pra anonimo desde a migration 028, que fechou cities_select_anon).
+export async function getPublicDeliveryCities(tenantSlug: string): Promise<CidadeEntregaPublica[]> {
+  const supabase = createPublicClient()
+  const { data, error } = await supabase.rpc('get_public_delivery_cities', { p_tenant_slug: tenantSlug })
+  if (error || !data) return []
+  return data
 }
 
 export async function getPublicCategories(tenantSlug: string): Promise<CategoriaPublica[]> {
