@@ -291,6 +291,14 @@
 
     **Pendência real**: aguardando revisão e aplicação manual da migration `033`. Depois de aplicada e testada, seguem as demais decisões do incremento 2 (reaproveitar `/cadastro`/`/entrar`/`/recuperar-senha`/`/nova-senha` restilizando pro tema da vitrine; e-mail `not null` em `customers`; bloquear e-mail compartilhado entre staff e cliente; `permite_autocadastro` como sub-incremento de prioridade baixa).
 
+    **Migration `033` aprovada e aplicada pelo usuário em 18/08/2026, blindagem testada ao vivo no mesmo dia — não só por leitura de código, por um ataque de verdade simulado contra a URL pública.** Script Node descartável (removido do repositório depois), dois signups reais via `anon key` (não service role):
+
+    - **Teste A (ataque simulado)**: `supabase.auth.signUp()` com `options.data: { role: 'admin', nome: 'Teste Blindagem Role' }` — exatamente o payload que expunha o gap antes da `033`. Resultado conferido direto no banco: **nenhuma linha em `profiles`**, uma linha em `customers` com `nome='Teste Blindagem Role'`, `email` do teste, `whatsapp=''` (default). Prova viva de que `role:'admin'` no metadata público não vira mais staff — vira cliente comum, sem exceção.
+    - **Teste B (cliente normal)**: signup com `nome`, `whatsapp`, `delivery_city_id` (cidade real do tenant `capua`) — confirmado que o fluxo legítimo continua 100% funcional: `customers` preenchido corretamente (`nome`, `whatsapp`, `email`, `delivery_city_id` todos batendo com o enviado), sem linha em `profiles`.
+    - **Limpeza**: os 2 usuários de teste removidos via `auth.admin.deleteUser()` (cascade apaga `customers`/`profiles` junto, por FK `on delete cascade`) — reconfirmado `0` linhas restantes em `profiles`/`customers` pros e-mails de teste.
+
+    **Migrations `001`–`033` estão todas aplicadas e validadas no banco — nenhuma pendente.** Gap crítico fechado e comprovado. Segue o desenho do resto do incremento 2.
+
 ---
 
 ## 0. Regra de processo (definition of done)
