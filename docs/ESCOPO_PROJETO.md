@@ -258,6 +258,18 @@
 
     **Com este bloco, o planejamento de produto do MVP da Fase 2 (Carrinho/Checkout) está fechado.** Segue em aberto só o Fluxo B (Asaas, fase futura, já registrado no item 33) — o que resta agora é seguir o roteiro acima, incremento por incremento, testando cada um na URL pública antes do próximo (mesma regra de processo já em vigor, §0).
 
+35. **📌 18/08/2026 (continuação, mesmo dia) — Fase 2, incremento 1 do roteiro (item 34/ponto 8): RPC pública `get_public_delivery_cities` criada, aguardando revisão e aplicação manual. Nada aplicado, nada de frontend ainda.**
+
+    Migration `032_public_delivery_cities.sql` (criada e pushada, **não aplicada**) fecha a pendência identificada desde a Fase 0 da Vitrine (item 20, 10/08/2026): a `028` fechou a leitura anônima tenant-blind de `delivery_cities` sem criar RPC pública equivalente, deliberadamente adiada pro desenho do Carrinho/Checkout.
+
+    **Diagnóstico prévio** (regra de processo, §0 "diagnosticar antes de tocar em dados existentes" — aqui aplicada a schema, não dado): schema de `delivery_cities` conferido direto na migration `005` (nunca alterado desde então — só o `tenant_id` ganhando `DEFAULT` na `008`, sem nenhuma coluna nova) e cruzado com `src/types/database.ts` — colunas confirmadas: `id, tenant_id, nome, uf, ponto_entrega, horario, observacoes, ordem, ativo, created_at, updated_at`. Sem coluna de taxa de entrega ainda (decisão futura já registrada em `REGRAS_DE_NEGOCIO.md` §5 — "cobrar taxa" — mas ainda não modelada no banco; fora do escopo desta RPC). Ordenação do painel (`/api/painel/cidades/route.ts`) conferida como `.order('ordem').order('nome')` — reaproveitada igual na RPC.
+
+    **RPC segue exatamente o padrão das 4 RPCs públicas da `028`**: `SECURITY DEFINER`, `stable`, `search_path` fixo, filtro de tenant resolvido internamente a partir do `p_tenant_slug` (nunca aceita `tenant_id` vindo de fora), slug inválido/tenant inativo devolvem zero linhas (não erro) — mesmo mecanismo (`join` contra `tenants` com `ativo=true`). Filtra também `delivery_cities.ativo=true` (só cidades ativas). Expõe `id, nome, uf, ponto_entrega, horario, observacoes, ordem` — `id` necessário pro checkout referenciar a cidade escolhida (mesmo padrão já usado por `customers.delivery_city_id`, migration `005`). De propósito **não** expõe: `tenant_id` (interno, sem uso pro cliente final), `ativo` (a RPC já filtra só as ativas — devolver um campo sempre `true` não agrega nada), `created_at`/`updated_at` (metadado interno). Nenhum dado sensível — é a mesma informação (nome da cidade, ponto de encontro, horário, observações) já passada manualmente por WhatsApp hoje.
+
+    **Puramente aditiva** — cria função nova, não toca em tabela/policy/função existente nenhuma. Confirmado por leitura do SQL: nenhum `DROP`/`ALTER` em nada pré-existente. Nada quebra no que já está em produção/HML.
+
+    **Pendência real**: aguardando revisão e aplicação manual da migration `032` pelo usuário. Depois de aplicada, o próximo passo do roteiro (item 34/ponto 8) é o incremento 2 — Contas de cliente + autogestão de conta do staff. Consumo desta RPC pelo frontend (seletor de cidade no checkout) só entra no incremento 5 (Checkout) — este incremento foi só a RPC no banco, como pedido.
+
 ---
 
 ## 0. Regra de processo (definition of done)
