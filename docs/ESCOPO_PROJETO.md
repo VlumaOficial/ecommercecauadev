@@ -299,6 +299,18 @@
 
     **Migrations `001`–`033` estão todas aplicadas e validadas no banco — nenhuma pendente.** Gap crítico fechado e comprovado. Segue o desenho do resto do incremento 2.
 
+37. **📌 18/08/2026 (continuação) — Fase 2, incremento 2: pacote completo (1+2+3+4) aprovado. 3 migrations criadas (`034`/`035`/`036`), aguardando revisão e aplicação manual. Nada aplicado, nada de código/telas ainda — só a parte de banco deste pacote.**
+
+    **Migration `034` — `customers.email NOT NULL` + `DROP COLUMN cidade_entrega`.** Diagnóstico prévio (regra de processo), rodado na hora de escrever a migration: as 4 linhas reais de `customers` hoje têm `0` com `email` nulo — seguro aplicar `NOT NULL` sem backfill. `cidade_entrega` (coluna morta desde que `delivery_city_id` virou o campo de verdade na migration `005`, confirmado por grep em todo `src/` sem nenhum uso) removida.
+
+    **Migration `035` — 2 triggers `BEFORE INSERT` (uma em `profiles`, uma em `customers`) impedindo a mesma conta (`auth.users.id`) acumular linha nas duas tabelas ao mesmo tempo.** Reforça o isolamento de papéis (`REGRAS_DE_NEGOCIO.md` §1/§14). O caso "duas contas diferentes com o mesmo e-mail" já é impossível hoje (unicidade nativa de `auth.users.email` no Supabase — é por isso que `/cadastro` já trata "e-mail já cadastrado"); o que faltava fechar era a mesma conta virar as duas coisas ao mesmo tempo — só alcançável via INSERT manual privilegiado (o caminho de criar staff, ver migration `033`), não é risco externo, é defesa contra erro operacional. Escopo limitado a `INSERT` (não `UPDATE` de `id`/`auth_user_id`, vetor extremamente incomum, fora do que este pacote decidiu cobrir — registrado como limitação conhecida no cabeçalho da migration). Não interfere no fluxo normal de `handle_new_user` (nunca insere nas duas tabelas pro mesmo usuário).
+
+    **Achado do diagnóstico rodado antes de escrever `035`**: existe **hoje** uma sobreposição real, mas só no canário de teste — `teste-isolamento@vluma.local` (tenant sintético `_teste_isolamento`) está em `profiles` **e** `customers` ao mesmo tempo (mesmo `auth.users.id`, `8c0c4252-…`). Não afeta o Cauã (dado real do tenant `capua` não tem sobreposição nenhuma). Como a trigger é `BEFORE INSERT`, aplicar `035` **não falha nem mexe** nessa linha existente — só passa a impedir a mesma sobreposição em contas **novas** dali pra frente. Decisão em aberto, sem urgência: limpar essa sobreposição do canário (remover a linha de `customers` ou de `profiles` pra ele) fica a critério do usuário, não bloqueia a aplicação da migration.
+
+    **Migration `036` — expõe `permite_autocadastro` em `get_public_store_settings`.** Campo existe desde a `002_core.sql`, sempre foi deliberadamente excluído da RPC pública (nenhuma tela lia). Agora o `/cadastro` precisa ler essa flag pra decidir se mostra o formulário ou uma mensagem de "cadastro fechado". `drop`+`create` de novo (mesmo motivo de sempre — `RETURNS TABLE` não aceita `create or replace` com a mesma assinatura de entrada), reproduzindo as 18 colunas já existentes (lidas do estado atual da função, migration `031` — não presumidas) mais a nova. Isolamento de tenant e `security definer` inalterados.
+
+    **Pendência real**: aguardando revisão e aplicação manual das 3 migrations. Depois de aplicadas, entra a parte de código/telas do pacote (restyle das 4 telas pro tema da vitrine + correção do dropdown de cidade vazio usando a RPC `032` + gate de `permite_autocadastro` no `/cadastro`), testada na URL pública antes de fechar o incremento 2.
+
 ---
 
 ## 0. Regra de processo (definition of done)
