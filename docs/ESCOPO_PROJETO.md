@@ -270,6 +270,15 @@
 
     **Pendência real**: aguardando revisão e aplicação manual da migration `032` pelo usuário. Depois de aplicada, o próximo passo do roteiro (item 34/ponto 8) é o incremento 2 — Contas de cliente + autogestão de conta do staff. Consumo desta RPC pelo frontend (seletor de cidade no checkout) só entra no incremento 5 (Checkout) — este incremento foi só a RPC no banco, como pedido.
 
+    **Migration `032` aprovada e aplicada pelo usuário em 18/08/2026, testada no mesmo dia com a `anon key` (simulando a vitrine de verdade, não service role) via script Node descartável (`@supabase/supabase-js`, removido do repositório depois do teste).** Três checagens:
+
+    - **Slug válido (`capua`)**: retornou as 2 cidades ativas do tenant (`Salvador`/BA e `Feira de Santana`/BA, cada uma com `ponto_entrega`/`horario`/`observacoes`/`ordem`), com as chaves da resposta exatamente `id, nome, uf, ponto_entrega, horario, observacoes, ordem` — nenhuma chave a mais.
+    - **Filtro de `ativo=true` confirmado com dado real, não só pela leitura do SQL**: conferido direto no banco (service role, só para o diagnóstico) que o tenant `capua` tem uma 3ª cidade (`Vitória da Conquista`) com `ativo=false` — a RPC (`anon key`) devolveu só as 2 ativas, confirmando que o filtro exclui de verdade, não é coincidência de não haver cidade inativa cadastrada.
+    - **Slug inválido/inexistente**: `0` linhas retornadas, sem erro — comportamento esperado (mesmo padrão das outras 4 RPCs da `028`).
+    - **Nenhum campo interno vazado**: resposta conferida sem `tenant_id`, `ativo`, `created_at` nem `updated_at` em nenhuma das duas chamadas.
+
+    **Migrations `001`–`032` estão todas aplicadas e validadas no banco — nenhuma pendente.** Consumo pelo frontend segue não iniciado (fica pro incremento 5 do roteiro, Checkout) — este incremento fechou só a RPC.
+
 ---
 
 ## 0. Regra de processo (definition of done)
