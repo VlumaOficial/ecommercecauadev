@@ -230,6 +230,34 @@
 
     **Pendência real que permanece**: só o **Fluxo B (Asaas) completo** (item (d) da lista original) segue em aberto — integração de pagamento, webhook, atualização automática de status, ainda não esboçado em detalhe, entra junto da fase de pagamento. Ver `REGRAS_DE_NEGOCIO.md` §8 (atualizado).
 
+34. **📌 18/08/2026 (continuação, mesmo dia) — Bloco final de decisões de produto da Fase 2: detalha o Fluxo A e fecha o planejamento do MVP do Carrinho/Checkout. Documentação apenas, nada implementado nesta entrada.**
+
+    **1. Status do pedido — quatro genéricos, servem qualquer modalidade de entrega**: `Aguardando validação` → `Confirmado` → `Concluído`, mais `Cancelado` (terminal, a partir de qualquer um dos três). Modalidade de entrega e datas são **campos** do pedido, não viram status — evita multiplicar status por modalidade quando Correios/outras entrarem no futuro. Ver `REGRAS_DE_NEGOCIO.md` §19.1 (novo).
+
+    **2. Datas de entrega como campos, não lógica**: `data_prevista` (orienta cliente e vendedor antes da entrega) e `data_efetiva` ("entregue em", preenchida ao concluir, registro histórico). MVP trata como campos simples — sem lembretes automáticos nem janelas calculadas, isso fica pra refinamento futuro. Ver `REGRAS_DE_NEGOCIO.md` §19.2 (novo).
+
+    **3. Tela de validação do pedido (painel do vendedor)**: mostra dados do cliente (nome, telefone/WhatsApp, e-mail), entrega (modalidade + cidade/ponto de encontro escolhido), itens (produto, variação, quantidade, preço, estoque disponível ao lado de cada item) e total. Três ações: **Validar**, **Editar** (reduzir/remover — já decidido em §15.4) e **Cancelar** (com motivo). Editar mostra o novo total na hora e deixa explícito que o cliente será notificado da mudança. Ver `REGRAS_DE_NEGOCIO.md` §20 (novo).
+
+    **4. Dois campos de observação**: `observacao_cliente` (recado do cliente no checkout) e `observacao_interna` (anotação do vendedor — o cliente **nunca** vê). Ver `REGRAS_DE_NEGOCIO.md` §19.3 (novo).
+
+    **5. Histórico do cliente na tela de validação — adiado pro módulo de Clientes (Fase 3), não é Relatórios**: quantos pedidos o cliente já fez, etc., é **dado individual do cliente** (natureza do módulo de Clientes — já pendente e sequenciado, ver item 30/ponto 3 acima), não da camada agregada/analítica de Relatórios (outra fase, item 30/ponto 4). A tela de validação (ponto 3) nasce sem esse histórico — entra quando o módulo de Clientes existir.
+
+    **6. Área do cliente (vitrine) ganha edição de conta, além de "Meus Pedidos"**: editar dados cadastrais (nome, telefone, e-mail, cidade de entrega padrão) e trocar senha — os dois no MVP. Ver `REGRAS_DE_NEGOCIO.md` §18.4 (novo, complementa §18.2).
+
+    **7. Staff também tem autogestão de conta no painel, no MVP**: editar os próprios dados cadastrais e trocar senha — mesmo princípio do ponto 6, do lado do staff. Respeita o isolamento de papéis já crítico (cliente nunca acessa o painel e vice-versa, §1/§14 de `REGRAS_DE_NEGOCIO.md`). Ver `REGRAS_DE_NEGOCIO.md` §21 (novo).
+
+    **8. Roteiro de implementação da Fase 2 — 8 incrementos, cada um testado na URL pública antes do próximo**:
+    1. RPC pública `get_public_delivery_cities` (pendência já identificada desde a Fase 0 da Vitrine — item 20).
+    2. Contas de cliente (§14) + autogestão de conta do staff (ponto 7 acima).
+    3. Modelo de pedidos: tabelas de pedido/itens, os 4 status (ponto 1), campos de entrega/datas/observações (pontos 2/4), reserva de estoque atômica via RPC `SECURITY DEFINER` com `FOR UPDATE` (§16).
+    4. Carrinho client-side + regras (mínimo de venda §11.2, bloqueio de `pedidos_abertos` §11.3/§2, valor mínimo §11.4).
+    5. Checkout passo a passo (identificação → entrega → revisão → finaliza, cria o pedido e reserva o estoque — §15.1/§16).
+    6. Área do cliente (Meus Pedidos + gestão de conta — §18.2/§18.4).
+    7. Painel de pedidos do vendedor (listar/validar/editar/cancelar — ponto 3 acima) + política de cancelamento (§17).
+    8. Notificações (e-mail + WhatsApp via Evolution API — §18.3, Nível 1).
+
+    **Com este bloco, o planejamento de produto do MVP da Fase 2 (Carrinho/Checkout) está fechado.** Segue em aberto só o Fluxo B (Asaas, fase futura, já registrado no item 33) — o que resta agora é seguir o roteiro acima, incremento por incremento, testando cada um na URL pública antes do próximo (mesma regra de processo já em vigor, §0).
+
 ---
 
 ## 0. Regra de processo (definition of done)

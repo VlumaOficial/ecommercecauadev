@@ -450,6 +450,73 @@ Cliente logado (§14) tem uma área própria pra ver os pedidos que fez, com o *
 
 A arquitetura de notificação nasce pensada pra múltiplos canais desde o início (e-mail + WhatsApp de saída juntos no MVP), com o conversacional (N8N, Nível 2) como incremento posterior — não uma reescrita.
 
+### 18.4 Área do cliente — editar dados cadastrais e trocar senha
+
+**📐 Decidido com o PO em 18/08/2026, complementa §18.2.**
+
+Além de "Meus Pedidos" (§18.2), a área do cliente no MVP inclui:
+
+- **Editar dados cadastrais**: nome, telefone, e-mail, cidade de entrega padrão.
+- **Trocar senha**.
+
+---
+
+## 19. Status e ciclo de vida do pedido (Fase 2)
+
+**📐 Decidido com o PO em 18/08/2026.**
+
+### 19.1 Quatro status genéricos, válidos pra qualquer modalidade de entrega
+
+O pedido tem quatro status possíveis:
+
+| Status | Significa |
+|---|---|
+| **Aguardando validação** | Pedido finalizado pelo cliente, ainda não conferido pelo vendedor (estado inicial, Fluxo A — §15.3) |
+| **Confirmado** | Vendedor validou (§15.4) — pedido atende, aguardando a entrega |
+| **Concluído** | Entrega realizada |
+| **Cancelado** | Terminal — alcançável a partir de qualquer um dos três acima (§17) |
+
+Modalidade de entrega (§5) e as datas (§19.2) são **campos** do pedido, não geram status próprio — evita ter que criar um status por modalidade quando Correios/transportadora/frete calculado entrarem no futuro; os quatro status acima continuam servindo sem mudança.
+
+### 19.2 Datas de entrega — campos simples no MVP
+
+- **`data_prevista`**: orienta cliente e vendedor sobre quando a entrega deve acontecer, antes de acontecer.
+- **`data_efetiva`**: "entregue em" — preenchida no momento em que o pedido vira **Concluído**, registro histórico do que de fato ocorreu.
+
+No MVP os dois são campos simples — sem lembrete automático, sem cálculo de janela de entrega. Fica pra refinamento futuro.
+
+### 19.3 Observações — cliente e interna, nunca a mesma caixa
+
+- **`observacao_cliente`**: recado que o próprio cliente escreve no checkout (ex.: "entregar depois das 18h").
+- **`observacao_interna`**: anotação do vendedor sobre o pedido — o cliente **nunca** vê esse campo, é uso interno da equipe.
+
+---
+
+## 20. Tela de validação do pedido (painel do vendedor)
+
+**📐 Decidido com o PO em 18/08/2026, detalha a operação de "Validar" do Fluxo A (§15.3/§15.4).**
+
+A tela mostra, num só lugar:
+
+- **Cliente**: nome, telefone/WhatsApp, e-mail.
+- **Entrega**: modalidade + cidade/ponto de encontro escolhido (§5).
+- **Itens**: produto, variação, quantidade, preço, com o **estoque disponível** exibido ao lado de cada item (referência pro vendedor decidir se reduz/remove — §15.4).
+- **Total** do pedido.
+
+Três ações: **Validar** (confirma o pedido como está), **Editar** (reduzir quantidade ou remover item — nunca aumentar nem adicionar, já decidido em §15.4) e **Cancelar** (exige motivo — §17.1). Ao editar, o **novo total é recalculado e mostrado na hora**, com aviso explícito de que o cliente será notificado da mudança (§18.1).
+
+**Fora do escopo desta tela por enquanto**: histórico do cliente (quantos pedidos já fez, etc.) — é dado individual, natureza do módulo de Clientes (Fase 3, ainda não iniciado), não da tela de validação nem de Relatórios (camada agregada/analítica, outra fase). Quando o módulo de Clientes existir, a tela de validação pode passar a mostrar esse histórico como contexto — não decidido ainda.
+
+---
+
+## 21. Autogestão de conta — cliente e staff (Fase 2)
+
+**📐 Decidido com o PO em 18/08/2026.**
+
+Assim como o cliente pode editar os próprios dados e trocar senha na vitrine (§18.4), o **staff** ganha o mesmo no painel, no MVP: editar os próprios dados cadastrais e trocar senha.
+
+Vale o mesmo princípio de isolamento de papéis já crítico no sistema (§1, reforçado em §14): a autogestão de conta de cada lado nunca cruza — cliente segue sem acesso ao painel, staff segue sem aparecer como cliente na vitrine, mesmo tendo os dois agora uma tela de "minha conta" equivalente.
+
 ---
 
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
