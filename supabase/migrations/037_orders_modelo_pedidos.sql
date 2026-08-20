@@ -45,12 +45,16 @@
 -- `modalidade_entrega` é texto + CHECK (não enum) de propósito —
 -- decisão de produto já registrada é que esse campo é extensível
 -- (frete calculado, retirada, Correios entram depois); estender um
--- CHECK é mais barato que um `ALTER TYPE` em enum. Hoje só
--- `'ponto_encontro'` é aceito, e por isso `delivery_city_id` é
--- `NOT NULL` — quando uma modalidade futura não precisar de
--- cidade, essa coluna precisará virar nullable numa migration
--- própria daquela época (não faz sentido relaxar agora pra uma
--- necessidade que ainda não existe).
+-- CHECK é mais barato que um `ALTER TYPE` em enum.
+--
+-- `delivery_city_id` é NULLABLE na coluna, de propósito — modalidades
+-- futuras (retirada no local, Correios) podem não usar cidade
+-- nenhuma, e a coluna não deve travar a estrutura pra esse caso.
+-- A obrigatoriedade de cidade é regra de NEGÓCIO da modalidade
+-- "ponto de encontro" especificamente, não uma restrição estrutural
+-- da tabela — por isso vive na RPC (`criar_pedido` recusa o pedido
+-- se `modalidade_entrega='ponto_encontro'` e a cidade não vier
+-- preenchida/válida), nunca como `NOT NULL`/CHECK na tabela.
 -- =====================================================
 
 -- ---------- 1. Enum de status do pedido ----------
@@ -86,7 +90,7 @@ create table if not exists public.orders (
   customer_id uuid not null references public.customers(id) on delete restrict,
   status public.order_status not null default 'aguardando_validacao',
   modalidade_entrega text not null default 'ponto_encontro',
-  delivery_city_id uuid not null references public.delivery_cities(id) on delete restrict,
+  delivery_city_id uuid references public.delivery_cities(id) on delete restrict,
   data_prevista date,
   data_efetiva timestamptz,
   observacao_cliente text,
@@ -245,25 +249,33 @@ begin
   end if;
 
   -- 3. Modalidade de entrega - MVP so aceita ponto de encontro por
-  -- cidade, e a cidade e' sempre validada internamente (nunca um id
-  -- cego vindo do client).
+  -- cidade. delivery_city_id fica NULLABLE na coluna (modalidades
+  -- futuras sem cidade - retirada, Correios - vao deixar essa coluna
+  -- vazia); a obrigatoriedade de cidade e' regra de NEGOCIO da
+  -- modalidade "ponto de encontro" especificamente, por isso vive
+  -- aqui na RPC, condicionada a modalidade_entrega, nunca como
+  -- NOT NULL/CHECK na tabela. Cidade sempre validada internamente
+  -- (existe, pertence ao tenant, ativa) - nunca um id cego vindo do
+  -- client.
   if p_modalidade_entrega <> 'ponto_encontro' then
     raise exception 'Modalidade de entrega inválida.';
   end if;
 
-  if p_delivery_city_id is null then
-    raise exception 'Selecione a cidade de entrega.';
-  end if;
+  if p_modalidade_entrega = 'ponto_encontro' then
+    if p_delivery_city_id is null then
+      raise exception 'Selecione a cidade de entrega.';
+    end if;
 
-  select exists (
-    select 1 from public.delivery_cities dc
-    where dc.id = p_delivery_city_id
-      and dc.tenant_id = v_tenant_id
-      and dc.ativo = true
-  ) into v_cidade_ok;
+    select exists (
+      select 1 from public.delivery_cities dc
+      where dc.id = p_delivery_city_id
+        and dc.tenant_id = v_tenant_id
+        and dc.ativo = true
+    ) into v_cidade_ok;
 
-  if not v_cidade_ok then
-    raise exception 'Cidade de entrega não encontrada.';
+    if not v_cidade_ok then
+      raise exception 'Cidade de entrega não encontrada.';
+    end if;
   end if;
 
   if p_itens is null or jsonb_array_length(p_itens) = 0 then
