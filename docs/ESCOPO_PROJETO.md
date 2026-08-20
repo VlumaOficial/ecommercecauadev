@@ -363,6 +363,16 @@
 
     **Correção pedida pelo PO em 18/08/2026, antes de qualquer aplicação — inconsistência real com o próprio desenho aprovado.** O SQL como escrito tinha `delivery_city_id uuid not null`, mas o desenho aprovado nesta sessão era explicitamente **nullable** (modalidades futuras — retirada, Correios — podem não usar cidade; travar a coluna em `NOT NULL` pensava só no caso atual, não no produto extensível decidido). Corrigido antes de qualquer aplicação: coluna volta a ser nullable, e a RPC passou a checar a cidade **condicionada** a `modalidade_entrega='ponto_encontro'` explicitamente (bloco `if` próprio, mais claro que antes — antes a checagem só funcionava por tabela verdade implícita, já que só essa modalidade existia). Migration `037` segue **não aplicada** — nenhuma mudança de banco aconteceu, só o arquivo `.sql` (ainda não aplicado) foi ajustado antes de ir pro SQL Editor.
 
+    **Migration `037` aprovada (arquivo revisado de ponta a ponta pelo usuário) e aplicada em 18/08/2026, testada no mesmo dia com sessões reais de cliente (não service role) — script Node descartável, removido do repositório depois.** Dois clientes de teste criados via `signUp` + confirmação por Admin API + login real (`signInWithPassword`), reaproveitando uma variação e cidade reais do tenant `capua`:
+
+    - **(a) Pedido válido**: `criar_pedido` chamado pela sessão do Cliente A com 1 item — retornou `status='aguardando_validacao'`, `numero=1` (primeiro pedido do tenant), `total` batendo exatamente com `preço × quantidade`. `order_items` conferido com `preco_unitario` snapshot correto. **Confirmação central**: `saldo_estoque` da variação usada **idêntico antes e depois** (30→30) e contagem de `stock_movements` da variação **inalterada** (1→1, o único movimento pré-existente era o de backfill) — prova viva de que a RPC não tocou estoque em nenhuma hipótese.
+    - **(b) Sem cidade**: `modalidade_entrega='ponto_encontro'` com `delivery_city_id=null` → erro "Selecione a cidade de entrega." — exatamente a mensagem esperada.
+    - **(c) Quantidade abaixo do mínimo**: `quantidade_minima_venda` da variação temporariamente elevada pra 5 (revertida ao final), pedido com quantidade 1 → erro "Quantidade abaixo do mínimo permitido para um dos itens."
+    - **(d) RLS**: Cliente A (dono) via `select` direto em `orders` (sessão própria, sem filtro manual) viu exatamente o próprio pedido; Cliente B (sem nenhum pedido) viu lista vazia — isolamento por cliente confirmado com dado real, não só leitura de policy.
+    - **Limpeza**: pedido de teste removido (`order_items` cascata junto), os 2 usuários de teste removidos via `deleteUser`, zero resíduo confirmado (pedido e usuários reconferidos ausentes ao final).
+
+    **Migrations `001`–`037` estão todas aplicadas e validadas no banco — nenhuma pendente.** Modelo de pedidos completo e comprovado: cria pedido+itens corretamente, não toca estoque em nenhuma hipótese, valida entrada, isola por cliente. Próximo passo do roteiro (item 34/ponto 8): incremento 4 — Carrinho client-side.
+
 ---
 
 ## 0. Regra de processo (definition of done)
