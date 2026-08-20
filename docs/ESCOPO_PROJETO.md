@@ -373,6 +373,18 @@
 
     **Migrations `001`–`037` estão todas aplicadas e validadas no banco — nenhuma pendente.** Modelo de pedidos completo e comprovado: cria pedido+itens corretamente, não toca estoque em nenhuma hipótese, valida entrada, isola por cliente. Próximo passo do roteiro (item 34/ponto 8): incremento 4 — Carrinho client-side.
 
+41. **📌 18/08/2026 (continuação) — Fase 2, incremento 4 (Carrinho client-side): desenho aprovado pelo PO. Migration `038` criada (flag de valor mínimo, §11.4), aguardando revisão e aplicação manual. Nada implementado em código ainda — código vem depois da migration aplicada.**
+
+    **Diagnóstico prévio confirmou**: `store_settings.valor_minimo_pedido_habilitado` não existia — só o valor numérico (migration 002). Migration `038` cria a coluna (`boolean not null default false` — nunca liga a regra sozinha pra nenhum tenant) e estende `get_public_store_settings` (`drop`+`create`, 20ª coluna, reproduzindo as 19 já existentes lidas do estado real da função na `036`).
+
+    **Desenho do carrinho aprovado**: estado em `zustand` + middleware `persist` (localStorage, chave `carrinho:${tenantSlug}` — já pensada pra Fase SaaS). Item guarda snapshot completo (`variantId, productId, productSlug, productNome, variantNome, imagemPath, preco, precoPromocional, quantidadeMinimaVenda, quantidade`) — preço aqui é só exibição, `criar_pedido` (incremento 3) sempre relê o preço real do banco no momento do pedido, então staleness no carrinho é puramente cosmética. Exibição via **drawer** (painel lateral), não página dedicada. `(loja)/layout.tsx` (já busca `store_settings` server-side) alimenta um Provider leve que evita cada componente client refazer o fetch.
+
+    **Regras, sempre lidas de `store_settings`**: `quantidade_minima_venda` aplicado ao adicionar (nunca abaixo do mínimo; reduzir trava no mínimo, só sai com "remover" explícito); `pedidos_abertos=false` bloqueia a ação de adicionar (não a navegação), mostrando `mensagem_pedidos_fechados`; valor mínimo (`valor_minimo_pedido_habilitado`/`valor_minimo_pedido`) **só informativo** neste incremento (aviso no drawer, sem bloquear nada — não existe botão de finalizar ainda); estoque não é checado/reservado (§16.4, modo "não bloquear").
+
+    **Escopo confirmado, decisões registradas**: quick-add da listagem (`ProductCard`) fica **fora de escopo** — a RPC pública `get_public_products` não devolve `variant_id`, estender isso é decisão separada, não feita agora. Botão "Finalizar pedido" no drawer fica **placeholder** (toast) — vira real no incremento 5.
+
+    **Pendência real**: aguardando revisão e aplicação manual da migration `038`. Depois de aplicada, implementação do carrinho (zustand, drawer, integração na ficha de produto e no header), testada com Chromium real contra a URL pública antes de fechar o incremento.
+
 ---
 
 ## 0. Regra de processo (definition of done)
