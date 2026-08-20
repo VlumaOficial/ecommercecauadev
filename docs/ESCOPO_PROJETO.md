@@ -337,6 +337,18 @@
 
     **Nenhum código foi alterado nesta entrada** — nenhum bug reproduzível foi encontrado pra corrigir. Recomendação registrada pro usuário: dar um hard refresh (`Ctrl+Shift+R`/`Cmd+Shift+R`) na aba onde o problema apareceu e testar de novo; se persistir mesmo depois do hard refresh, é sinal de que a causa é outra (não timing de deploy) e precisa de mais detalhe pra investigar (navegador/dispositivo, comportamento exato observado — nada acontece? mensagem de erro? tela em branco?).
 
+39. **📌 18/08/2026 (continuação) — Fase 2, incremento 3 (Modelo de pedidos): correção de princípio na decisão de reserva/baixa de estoque, revisada com o PO ANTES de qualquer SQL. Documentação apenas, nada implementado nesta entrada.** Detalhe completo das regras em `REGRAS_DE_NEGOCIO.md` §16.4 (nova, complementa §12/§16.1).
+
+    **O que motivou a revisão**: ao propor o desenho das tabelas de pedido (diagnóstico + proposta trazidos nesta mesma sessão, aguardando aprovação — ver conversa), ficou claro que a decisão original de §16.1 (reserva/baixa de estoque na finalização do pedido, já pro MVP) tinha sido influenciada pela realidade específica do Cauã (cliente único, sem disputa real de estoque hoje) — não pelo princípio de produto que deveria guiar a decisão (critério norteador do projeto: "isso serve qualquer lojista do segmento?", registrado no topo deste documento). O PO identificou e corrigiu.
+
+    **Modelo-alvo confirmado (padrão de mercado das plataformas maduras)**: check e reserva de disponibilidade acontecem **já ao adicionar o item ao carrinho** — reserva "leve" com expiração — não só no fechamento do pedido. Avisa o cliente cedo, evita frustração no fim do checkout depois de todo o esforço de preencher o resto do formulário.
+
+    **Adiado deliberadamente pra fase de pagamento/Fluxo B (Asaas)** — não por esquecimento: esse modelo exige carrinho persistido no servidor, reserva com expiração e tratamento de concorrência, peso significativamente maior que o resto do MVP. Motivo: fechar o end-to-end mais rápido, colocar o Cauã em produção antes, trazer a reserva robusta logo em seguida (não é "nunca", é "depois do MVP funcionando ponta a ponta").
+
+    **MVP (Fluxo A) revisado**: pedido entra como solicitação, **sem** reservar/baixar estoque na criação — a baixa acontece **na validação** do vendedor (que já ajusta/remove itens sem saldo via a edição de pedido decidida em §15.4). `store_settings.baixa_estoque_na_reserva = false` no MVP.
+
+    **Impacto direto no desenho do incremento 3, ainda em aberto pra revisão**: isso **simplifica** a RPC de criação de pedido proposta nesta sessão — ela não precisa mais travar variações com `FOR UPDATE` nem tocar em `saldo_estoque`/`stock_movements` na criação (isso passa a acontecer só na RPC de **validação**, do incremento 7, ainda não desenhada). Também resolve, pro escopo do MVP, a pergunta em aberto que eu tinha trazido sobre "o que fazer se o saldo for insuficiente no momento do pedido" — resposta: não é checado na criação, fica pra decisão manual do vendedor na validação. A proposta de tabelas (`orders`/`order_items`) e o resto do desenho seguem válidos; só a parte da RPC que mexia em estoque precisa ser revisada antes do SQL final.
+
 ---
 
 ## 0. Regra de processo (definition of done)

@@ -324,6 +324,8 @@ O lojista escolhe, por configuração (nunca fixo no código), como o estoque se
 
 A **configuração** dos dois modos (qual está ativo) é modelada agora, na Fase 2 — mesmo que só o modo "não bloquear" tenha comportamento implementado no MVP.
 
+**📌 Refinado com o PO em 18/08/2026 — ver §16.4.** O mecanismo exato de "Bloquear pelo estoque" ficou mais preciso: é a reserva **"leve" com expiração desde o próprio carrinho** (não só uma checagem no fechamento do pedido) — o modelo-alvo de mercado. Tabela acima continua válida sem mudança de fundo, só ganhou mais precisão de mecanismo — o adiamento pra "junto da integração de pagamento" continua o mesmo, agora com o motivo explicado em detalhe em §16.4.
+
 ---
 
 ## 13. Módulo de Configuração do Carrinho (painel)
@@ -388,6 +390,8 @@ Consequência prática: o ajuste é sempre **a favor do cliente** — o total do
 
 Ao finalizar o pedido (Fluxo A ou B), o estoque correspondente é **reservado/consumido imediatamente** — não fica solto esperando validação do vendedor. O próximo cliente que olhar aquele produto já vê esgotado, se o saldo acabou com esse pedido. Evita frustrar um segundo cliente com um item que "acabou depois" — mesmo item que ele via disponível segundos antes. É o padrão de mercado: reserva **na submissão do pedido**, não na validação. Usa `store_settings.baixa_estoque_na_reserva` (já existe no modelo) e a baixa atômica via RPC com `FOR UPDATE` (já prevista pra fase de Pedidos — evita dois pedidos disputando o mesmo saldo ao mesmo tempo).
 
+**⚠️ Nota de revisão (18/08/2026) — ver §16.4 abaixo.** O texto acima descreve o modelo-alvo de mercado, mas a decisão original havia sido influenciada pela operação específica do Cauã (cliente único, sem disputa real de estoque hoje), não pelo princípio de produto. Revisado com o PO: o modelo-alvo de verdade reserva desde o **carrinho** (não só na finalização) e fica deliberadamente adiado pra fase de pagamento/Fluxo B. O MVP (Fluxo A) tem comportamento mais simples — baixa na **validação**, não na finalização — ver §16.4 pro detalhe completo e o motivo do adiamento.
+
 ### 16.2 Reserva modelada como registro com estado, não um decremento simples
 
 A reserva nasce como um **registro próprio** (pedido X reservou N unidades da variação Y), com estado e noção de expiração — não é só subtrair direto do saldo. No MVP só existe a reserva **"firme"** (feita na finalização do pedido, sem expiração). A estrutura já é desenhada, porém, pra comportar **sem reescrita** a reserva **"leve"** durante o próprio checkout (antes de finalizar, com expiração automática se o cliente abandonar) — peça que entra junto da fase de pagamento/Fluxo B. Mesmo princípio de "preparar a estrutura sem pagar o custo de implementar agora" já usado no carrinho client-side (§11.1).
@@ -399,6 +403,20 @@ A reserva nasce como um **registro próprio** (pedido X reservou N unidades da v
 O carrinho (client-side, §11.1) nunca reserva estoque — a reserva só existe a partir do pedido, no momento da finalização (§16.1). Consequência prática: um carrinho abandonado (cliente fecha a aba, esquece o navegador aberto, etc.) não precisa liberar nada — ele nunca reservou nada pra começar, então simplesmente some sem nenhum efeito colateral no estoque.
 
 A reserva "leve" desde o próprio carrinho (com expiração automática, pra segurar o estoque enquanto o cliente ainda está decidindo) é o modelo mais sofisticado já previsto na estrutura de dados (§16.2), mas **não implementado no MVP** — fica para quando o Fluxo B/Asaas (§15.3) entrar, junto do modo "bloquear pelo estoque" (§12), cenário onde essa garantia em tempo real realmente importa (pagamento no ato).
+
+### 16.4 Revisão de princípio (18/08/2026): modelo-alvo é reserva desde o carrinho, adiada pro Fluxo B; MVP baixa estoque na validação
+
+**📐 Revisado com o PO em 18/08/2026, corrige o comportamento de MVP descrito em §16.1 — complementa §12/§15.3/§15.4.**
+
+**Correção de princípio.** A decisão original de §16.1 (reserva/baixa na finalização do pedido, já pro MVP) havia sido influenciada pela operação específica do Cauã (cliente único, sem disputa real de estoque por múltiplos clientes simultâneos hoje) — não pelo princípio de produto, que precisa valer pra qualquer lojista do segmento (mesmo critério norteador já registrado no topo de `ESCOPO_PROJETO.md`: "isso serve qualquer lojista?", não "o Cauã precisa disso?"). O PO identificou essa influência indevida e corrigiu a decisão.
+
+**Modelo-alvo, confirmado como o correto e robusto — é o padrão de mercado das plataformas maduras.** O check e a reserva de disponibilidade de estoque devem acontecer **já ao adicionar o item ao carrinho** — reserva "leve" com expiração (a peça que §16.2 já previa na estrutura) — não só no fechamento do pedido. Avisa o cliente **cedo**, enquanto ainda está navegando/montando o pedido, em vez de barrá-lo só no fim do checkout, depois de todo o esforço de preencher entrega/identificação/etc. Exige carrinho persistido no **servidor** (evolução já prevista em §11.1, não mais só client-side) e tratamento de concorrência entre carrinhos simultâneos disputando o mesmo saldo.
+
+**Adiamento deliberado, não esquecimento.** Esse modelo-alvo é significativamente mais pesado de construir (carrinho no servidor, reserva com expiração, tratamento de concorrência) — fica **deliberadamente** pra fase de pagamento/Fluxo B (Asaas), onde reserva e pagamento andam juntos e o modelo faz sentido completo (não há por que reservar estoque em tempo real sem cobrar na hora — mesmo raciocínio já registrado em §12 pro modo "bloquear pelo estoque"). Motivo do adiamento: fechar o end-to-end do MVP mais rápido, colocando o Cauã em produção antes, trazendo a reserva robusta logo em seguida.
+
+**MVP (Fluxo A) — o que se implementa agora.** Modo "não bloquear" (§12) na prática completa: o pedido entra como **solicitação** — **sem** reservar nem baixar estoque na criação. O vendedor valida (§15.4) e é **na validação** que a baixa de estoque acontece de verdade — o vendedor confirma o que consegue atender, ajustando ou removendo itens sem saldo suficiente através da edição de pedido já decidida (§15.4: só reduzir/remover, nunca aumentar). `store_settings.baixa_estoque_na_reserva = false` nesse modo. Coerente com o estoque ficar oculto na vitrine (§12) e com a validação manual do vendedor já ser o ponto de controle do Fluxo A.
+
+**A proteção contra "dois clientes pedindo o último item ao mesmo tempo" vem do modelo-alvo (reserva desde o carrinho), não do MVP** — no MVP essa disputa é resolvida manualmente pelo vendedor na validação (ele vê os pedidos concorrentes e decide), não automaticamente pelo sistema. Isso resolve a pendência já registrada em §8 ("o que acontece se o estoque mudar entre adicionar ao carrinho e finalizar continua em aberto") — a resposta pro MVP é: fica em aberto por design, resolvido manualmente na validação; o fechamento automático só chega com o modelo-alvo do Fluxo B.
 
 ---
 
