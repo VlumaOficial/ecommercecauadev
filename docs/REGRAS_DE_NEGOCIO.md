@@ -344,6 +344,18 @@ Agrupa as configurações do carrinho num só lugar do painel: a flag + valor do
 - Staff (painel) e Cliente (vitrine) continuam sendo distinguidos **por papel**, nunca a mesma conta sendo as duas coisas (mesma regra já em vigor, §1) — reforçado aqui como **ponto de segurança crítico** desta fase: cliente nunca acessa o painel, staff nunca aparece como cliente na vitrine, com o **mesmo rigor** já aplicado ao isolamento entre lojas (§10).
 - **Base de clientes robusta desde já**: todo cliente que gera um pedido — **cadastrado** (com login) ou **convidado** (sem conta) — vira um registro vinculado ao contato (nome/telefone/e-mail), e cada pedido fica vinculado a esse registro de cliente. O fluxo **cadastrado é o principal** (login persiste histórico e dados entre visitas); o fluxo **convidado é um complemento secundário** (facilita a conversão de quem não quer criar conta na hora), não o caminho preferencial.
 
+### 14.1 Mensagem de "e-mail já cadastrado" é sempre NEUTRA — nunca revela se o e-mail existe
+
+**📐 Decidido com o PO em 20/08/2026, ainda NÃO implementado — correção pendente do Bug 1 registrado em `ESCOPO_PROJETO.md` §0.**
+
+Quando um cadastro é tentado com um e-mail que já tem conta, a mensagem mostrada ao cliente **nunca confirma nem nega** que aquele e-mail já está cadastrado — decisão de produto pensada pro SaaS (qualquer lojista, não só o Cauã), não uma peculiaridade desta loja. Motivo: revelar "esse e-mail já existe" ajuda um atacante a enumerar quais endereços têm conta na plataforma (varrer uma lista de e-mails e descobrir quais "batem"), o mesmo raciocínio de segurança que já motiva o próprio Supabase Auth a devolver sucesso silencioso (sem erro, sem criar nada) numa tentativa de `signUp()` com e-mail existente. A tela deve reagir a esse caso de forma que **pareça idêntica** à de um cadastro novo bem-sucedido (mesma mensagem "confirme seu e-mail", por exemplo) — nunca um alerta específico tipo "este e-mail já possui cadastro". Detecção técnica: `data.user.identities.length === 0` na resposta do `signUp()` é o sinal (documentado do Supabase) de que nada foi criado de verdade — usado só pra decidir o comportamento interno (ex.: não reenviar e-mail de um jeito diferente), nunca pra mudar a mensagem visível de um jeito que entregue a informação ao cliente.
+
+### 14.2 WhatsApp sem restrição de unicidade — decisão consciente, não descuido
+
+**📐 Decidido com o PO em 20/08/2026.**
+
+`customers.whatsapp` **não tem** nem vai ganhar, por enquanto, nenhuma restrição de unicidade — o mesmo número de telefone pode estar associado a mais de uma conta de cliente. O identificador único de conta é o **e-mail** (login), não o telefone. Decisão consciente, não uma lacuna esquecida: casos legítimos existem (familiares/funcionários compartilhando um número de contato, ou alguém que cria uma segunda conta com e-mail diferente mas mesmo WhatsApp) — impor unicidade aqui bloquearia esses casos sem necessidade real de negócio identificada até agora. Revisável no futuro se surgir um motivo concreto.
+
 ---
 
 ## 15. Checkout — fluxo e identificação (Fase 2)
