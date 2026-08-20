@@ -1095,6 +1095,9 @@ export type Database = {
           // trazendo o bloco pro shape real da RPC no banco.
           logo_path: string | null
           permite_autocadastro: boolean
+          // Fase 2, incremento 4 (migration 038) - flag de habilitacao
+          // separada do valor (REGRAS_DE_NEGOCIO.md §11.4).
+          valor_minimo_pedido_habilitado: boolean
         }[]
       }
       // Adicionada na migration 032 (Fase 2, incremento 1) - fecha a

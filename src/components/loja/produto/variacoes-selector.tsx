@@ -7,9 +7,22 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { formatarMoeda } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { useCarrinho, useCarrinhoRegras } from '@/components/loja/carrinho-provider'
 import type { ProdutoDetalheVariacao } from '@/lib/loja/types'
 
-export function VariacoesSelector({ variacoes }: { variacoes: ProdutoDetalheVariacao[] }) {
+export function VariacoesSelector({
+  variacoes,
+  produtoId,
+  produtoNome,
+  produtoSlug,
+  imagemPath,
+}: {
+  variacoes: ProdutoDetalheVariacao[]
+  produtoId: string
+  produtoNome: string
+  produtoSlug: string
+  imagemPath: string | null
+}) {
   const primeiraDisponivel = variacoes.find((v) => v.disponivel) ?? variacoes[0] ?? null
   const [selecionadaId, setSelecionadaId] = useState<string | null>(primeiraDisponivel?.id ?? null)
 
@@ -20,6 +33,9 @@ export function VariacoesSelector({ variacoes }: { variacoes: ProdutoDetalheVari
 
   const [quantidade, setQuantidade] = useState(selecionada?.quantidade_minima_venda ?? 1)
 
+  const adicionarItem = useCarrinho((s) => s.adicionarItem)
+  const regras = useCarrinhoRegras()
+
   function selecionar(v: ProdutoDetalheVariacao) {
     setSelecionadaId(v.id)
     setQuantidade(v.quantidade_minima_venda)
@@ -27,6 +43,36 @@ export function VariacoesSelector({ variacoes }: { variacoes: ProdutoDetalheVari
 
   const minimo = selecionada?.quantidade_minima_venda ?? 1
   const podeAdicionar = !!selecionada && selecionada.disponivel
+
+  // Bloqueio de pedidos fechados (REGRAS_DE_NEGOCIO.md §11.3/§2): a
+  // vitrine continua 100% navegavel com pedidos_abertos=false - o
+  // bloqueio so acontece aqui, no momento de adicionar ao carrinho,
+  // nunca antes. loja_aberta=false nem chega nesta tela (tratado no
+  // (loja)/layout.tsx).
+  function adicionarAoCarrinho() {
+    if (!selecionada || !podeAdicionar) return
+
+    if (!regras.pedidosAbertos) {
+      toast.error(regras.mensagemPedidosFechados ?? 'Os pedidos deste ciclo ainda não começaram.')
+      return
+    }
+
+    adicionarItem(
+      {
+        variantId: selecionada.id,
+        productId: produtoId,
+        productSlug: produtoSlug,
+        productNome: produtoNome,
+        variantNome: selecionada.nome,
+        imagemPath,
+        preco: selecionada.preco,
+        precoPromocional: selecionada.preco_promocional,
+        quantidadeMinimaVenda: selecionada.quantidade_minima_venda,
+      },
+      quantidade
+    )
+    toast.success('Adicionado ao carrinho!')
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -100,12 +146,7 @@ export function VariacoesSelector({ variacoes }: { variacoes: ProdutoDetalheVari
           </button>
         </div>
 
-        <Button
-          size="lg"
-          disabled={!podeAdicionar}
-          className="flex-1"
-          onClick={() => toast.info('O carrinho chega na próxima fase da Vitrine.')}
-        >
+        <Button size="lg" disabled={!podeAdicionar} className="flex-1" onClick={adicionarAoCarrinho}>
           <ShoppingCartIcon className="size-4" />
           {podeAdicionar ? 'Adicionar ao carrinho' : 'Esgotado'}
         </Button>

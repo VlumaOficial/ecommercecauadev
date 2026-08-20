@@ -5,7 +5,7 @@ import { TruckIcon, UserIcon } from 'lucide-react'
 import { formatarMoeda } from '@/lib/utils'
 import { urlLogoLoja } from '@/lib/loja/rpc'
 import { SearchForm } from '@/components/loja/search-form'
-import { CartButton } from '@/components/loja/cart-button'
+import { CarrinhoDrawer } from '@/components/loja/carrinho-drawer'
 
 export function Header({
   nomeLoja,
@@ -58,7 +58,7 @@ export function Header({
               <UserIcon className="size-4" />
               <span className="hidden sm:inline">Entrar</span>
             </Link>
-            <CartButton />
+            <CarrinhoDrawer />
           </div>
         </div>
         <div className="px-4 pb-3 sm:hidden">

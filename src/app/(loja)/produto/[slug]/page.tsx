@@ -66,9 +66,16 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
     { label: produto.nome },
   ]
 
-  const imagensProduto = produto.imagens
-    .filter((img) => img.variant_id === null)
-    .map((img) => ({ url: urlImagemProduto(img.storage_path), alt: img.alt_text }))
+  const imagensProdutoRaw = produto.imagens.filter((img) => img.variant_id === null)
+  const imagensProduto = imagensProdutoRaw.map((img) => ({
+    url: urlImagemProduto(img.storage_path),
+    alt: img.alt_text,
+  }))
+  // Imagem principal em storage_path cru (nao a URL montada) - o
+  // carrinho guarda o path e resolve a URL na hora de exibir, mesmo
+  // padrao usado em toda a Vitrine (urlImagemProduto).
+  const imagemPrincipalPath =
+    imagensProdutoRaw.find((img) => img.principal)?.storage_path ?? imagensProdutoRaw[0]?.storage_path ?? null
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
@@ -92,7 +99,13 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
             )}
           </div>
 
-          <VariacoesSelector variacoes={produto.variacoes} />
+          <VariacoesSelector
+            variacoes={produto.variacoes}
+            produtoId={produto.id}
+            produtoNome={produto.nome}
+            produtoSlug={produto.slug}
+            imagemPath={imagemPrincipalPath}
+          />
 
           {produto.descricao && (
             <div>

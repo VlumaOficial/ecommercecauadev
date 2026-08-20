@@ -18,6 +18,10 @@ export type StoreSettingsPublico = {
   mensagem_loja_fechada: string | null
   mensagem_pedidos_fechados: string | null
   valor_minimo_pedido: number
+  // Fase 2, incremento 4 (migration 038) - flag de habilitacao
+  // separada do valor (REGRAS_DE_NEGOCIO.md §11.4) - nunca "zero =
+  // desativado" como convencao implicita.
+  valor_minimo_pedido_habilitado: boolean
   // Vitrine Fase 1 Etapa 3 (migration 030) - banner/selos/whatsapp/
   // identidade editaveis, com default = valor hoje hardcoded.
   banner_titulo: string

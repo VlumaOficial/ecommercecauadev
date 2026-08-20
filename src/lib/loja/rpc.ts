@@ -46,6 +46,11 @@ const DEFAULTS_ETAPA3_IDENTIDADE = {
   // /cadastro continua mostrando o formulario normalmente, em vez de
   // travar autocadastro por engano num campo que ainda nao existe.
   permite_autocadastro: true,
+  // Fase 2, incremento 4 (migration 038) - default false (fail-open
+  // na direcao oposta: enquanto a migration nao estiver aplicada, o
+  // carrinho nunca mostra um aviso de valor minimo espurio por causa
+  // de um campo que ainda nao existe).
+  valor_minimo_pedido_habilitado: false,
 }
 
 export async function getPublicStoreSettings(tenantSlug: string): Promise<StoreSettingsPublico | null> {

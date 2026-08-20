@@ -11,6 +11,7 @@ import { NavCategorias } from '@/components/loja/nav-categorias'
 import { Footer } from '@/components/loja/footer'
 import { LojaFechada } from '@/components/loja/loja-fechada'
 import { WhatsAppFloatButton } from '@/components/loja/whatsapp-float-button'
+import { CarrinhoProvider } from '@/components/loja/carrinho-provider'
 
 // Open Graph dinamico por tenant (Vitrine Fase 1 Etapa 4, Parte 4) -
 // fallback pra toda pagina de (loja) que nao define o proprio
@@ -95,17 +96,27 @@ export default async function LojaLayout({ children }: { children: React.ReactNo
   const categorias = await getPublicCategories(tenant.slug)
 
   return (
-    <div className="loja-theme flex min-h-svh flex-col bg-background text-foreground" style={temaStyle}>
-      <Header nomeLoja={settings.nome} valorMinimoPedido={settings.valor_minimo_pedido} logoPath={settings.logo_path} />
-      <NavCategorias categorias={categorias} />
-      {!settings.pedidos_abertos && (
-        <div className="bg-amber-500/15 px-4 py-2 text-center text-sm text-amber-900 sm:px-6">
-          {settings.mensagem_pedidos_fechados ?? 'Os pedidos deste ciclo ainda não começaram.'}
-        </div>
-      )}
-      <main className="flex-1">{children}</main>
-      <Footer nomeLoja={settings.nome} logoPath={settings.logo_path} />
-      <WhatsAppFloatButton numero={settings.whatsapp_numero} mensagem={settings.whatsapp_mensagem} />
-    </div>
+    <CarrinhoProvider
+      tenantSlug={tenant.slug}
+      regras={{
+        pedidosAbertos: settings.pedidos_abertos,
+        mensagemPedidosFechados: settings.mensagem_pedidos_fechados,
+        valorMinimoPedido: settings.valor_minimo_pedido,
+        valorMinimoPedidoHabilitado: settings.valor_minimo_pedido_habilitado,
+      }}
+    >
+      <div className="loja-theme flex min-h-svh flex-col bg-background text-foreground" style={temaStyle}>
+        <Header nomeLoja={settings.nome} valorMinimoPedido={settings.valor_minimo_pedido} logoPath={settings.logo_path} />
+        <NavCategorias categorias={categorias} />
+        {!settings.pedidos_abertos && (
+          <div className="bg-amber-500/15 px-4 py-2 text-center text-sm text-amber-900 sm:px-6">
+            {settings.mensagem_pedidos_fechados ?? 'Os pedidos deste ciclo ainda não começaram.'}
+          </div>
+        )}
+        <main className="flex-1">{children}</main>
+        <Footer nomeLoja={settings.nome} logoPath={settings.logo_path} />
+        <WhatsAppFloatButton numero={settings.whatsapp_numero} mensagem={settings.whatsapp_mensagem} />
+      </div>
+    </CarrinhoProvider>
   )
 }
