@@ -520,6 +520,8 @@ Além de "Meus Pedidos" (§18.2), a área do cliente no MVP inclui:
 
 **Limite do teste de `/nova-senha` — mesma limitação de `generateLink()` já documentada no Bug 2**: `admin.generateLink({type:'recovery'})` também não reproduz o formato PKCE do link real de recuperação (mesmo achado da migration/incidente do Bug 2, confirmado de novo aqui) — não dá pra clicar num link 100% fiel sem uma caixa de e-mail de verdade. O que **foi** provado de ponta a ponta: um cliente com sessão estabelecida por uma rota servidor (exatamente o que `/auth/callback` faz depois de um link de recuperação real) consegue trocar a senha pela nova rota e **logar de novo com a senha nova** — a causa raiz do bug (browser client não enxerga cookies httpOnly) é a mesma independente de qual rota criou a sessão, então esse teste prova o mecanismo da correção. Recomendado ao usuário fazer uma checagem manual rápida do `/recuperar-senha` com e-mail real como confirmação final, mesmo padrão já usado pra fechar o Bug 2.
 
+**✅ CONFIRMADO com link real pelo usuário, 21/08/2026.** Teste manual de ponta a ponta (e-mail → link real de recuperação → redefinir senha → login com a senha nova) funcionou corretamente. Com isso, o bug de produção da recuperação de senha está **fechado e validado com o link real**, não só pelo mecanismo equivalente testado antes — mesmo padrão de fechamento já usado no Bug 2 (`ESCOPO_PROJETO.md` §0 item 42).
+
 ---
 
 ## 19. Status e ciclo de vida do pedido (Fase 2)
