@@ -59,13 +59,13 @@ export function CadastroForm({ cidades }: { cidades: CidadeEntregaPublica[] }) {
     setCarregando(false)
 
     if (error) {
-      if (error.message.includes('already registered')) {
-        toast.error('Este e-mail ja possui cadastro. Tente entrar.')
-      } else {
-        toast.error('Nao foi possivel concluir o cadastro. Tente novamente.')
-      }
+      // Nunca revela se o motivo foi "e-mail ja cadastrado" - REGRAS_DE_NEGOCIO.md §14.1
+      toast.error('Nao foi possivel concluir o cadastro. Tente novamente.')
       return
     }
+
+    // Supabase devolve sucesso silencioso (identities vazio) quando o e-mail ja
+    // existia, sem erro - por isso a tela abaixo e sempre a mesma, nos dois casos.
     setEnviado(true)
     setReenvioContador(60)
   }
@@ -78,16 +78,16 @@ export function CadastroForm({ cidades }: { cidades: CidadeEntregaPublica[] }) {
 
   async function reenviar() {
     setReenviando(true)
-    const { error } = await supabase.auth.resend({
+    // Nao trata erro/sucesso do resend de forma diferente (REGRAS_DE_NEGOCIO.md §14.1)
+    // - um e-mail ja confirmado faz o resend falhar do lado do Supabase, e isso não
+    // pode virar um toast diferente do caso normal, ou vira um segundo jeito de
+    // descobrir se o e-mail ja tem conta.
+    await supabase.auth.resend({
       type: 'signup',
       email: email.trim(),
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
     setReenviando(false)
-    if (error) {
-      toast.error('Nao foi possivel reenviar agora. Tente em instantes.')
-      return
-    }
     toast.success('E-mail reenviado.')
     setReenvioContador(60)
   }
@@ -98,8 +98,10 @@ export function CadastroForm({ cidades }: { cidades: CidadeEntregaPublica[] }) {
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
           <MailCheck className="h-7 w-7 text-primary" />
         </div>
-        <h2 className="font-display text-xl font-bold text-primary mb-2">Confirme seu e-mail</h2>
-        <p className="text-sm text-muted-foreground mb-1">Enviamos um link de confirmacao para</p>
+        <h2 className="font-display text-xl font-bold text-primary mb-2">Verifique seu e-mail</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Se este e-mail ainda não estiver cadastrado, você receberá um link de confirmação em instantes. Se você já tem uma conta com este e-mail, use a opção de entrar ou recuperar sua senha.
+        </p>
         <p className="text-sm font-medium text-foreground mb-4">{email}</p>
         <p className="text-xs text-muted-foreground mb-6">Pode levar alguns minutos. Verifique tambem a caixa de spam.</p>
         <Button onClick={reenviar} disabled={reenvioContador > 0 || reenviando} variant="outline" className="w-full mb-3">
