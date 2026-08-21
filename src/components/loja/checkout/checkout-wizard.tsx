@@ -8,7 +8,6 @@ import { toast } from 'sonner'
 
 import { formatarMoeda } from '@/lib/utils'
 import { urlImagemProduto } from '@/lib/loja/rpc'
-import { createClient } from '@/lib/supabase/client'
 import { useCarrinho, useCarrinhoRegras } from '@/components/loja/carrinho-provider'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -51,7 +50,6 @@ function formatarWhatsapp(digitos: string) {
 // getPublicDeliveryCities), lento e sem necessidade nenhuma aqui (os
 // dados ja estao carregados, o passo e' 100% decisao de UI).
 export function CheckoutWizard({ cliente, cidades }: { cliente: CustomerProfile; cidades: CidadeEntregaPublica[] }) {
-  const supabase = createClient()
   const itens = useCarrinho((s) => s.itens)
   const limparCarrinho = useCarrinho((s) => s.limparCarrinho)
   const regras = useCarrinhoRegras()
@@ -73,21 +71,30 @@ export function CheckoutWizard({ cliente, cidades }: { cliente: CustomerProfile;
     if (itens.length === 0 || !cidadeId || faltaParaMinimo > 0) return
     setFinalizando(true)
 
-    const { data, error } = await supabase.rpc('criar_pedido', {
-      p_modalidade_entrega: 'ponto_encontro',
-      p_delivery_city_id: cidadeId,
-      p_observacao_cliente: observacao.trim() || null,
-      p_itens: itens.map((i) => ({ variant_id: i.variantId, quantidade: i.quantidade })),
+    // Via Route Handler (nao supabase.rpc() direto do browser): a sessao
+    // deste app vive em cookies httpOnly (setados por /api/auth/login),
+    // ilegiveis por document.cookie - so o client SERVIDOR (cookies() do
+    // Next) enxerga a sessao pra auth.uid() resolver dentro da RPC.
+    const resp = await fetch('/api/loja/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        delivery_city_id: cidadeId,
+        observacao_cliente: observacao.trim() || null,
+        itens: itens.map((i) => ({ variant_id: i.variantId, quantidade: i.quantidade })),
+      }),
     })
+    const json = await resp.json().catch(() => ({}))
 
     setFinalizando(false)
 
-    if (error || !data) {
+    if (!resp.ok || !json.data) {
       // Mensagens da RPC ja vem em portugues claro (REGRAS_DE_NEGOCIO.md §9)
-      toast.error(error?.message || 'Não foi possível finalizar seu pedido. Tente novamente.')
+      toast.error(json.error || 'Não foi possível finalizar seu pedido. Tente novamente.')
       return
     }
 
+    const data = json.data
     setPedido({
       numero: data.numero,
       total: data.total,
