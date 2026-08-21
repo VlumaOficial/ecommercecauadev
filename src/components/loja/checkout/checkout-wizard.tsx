@@ -10,7 +10,6 @@ import { formatarMoeda } from '@/lib/utils'
 import { urlImagemProduto } from '@/lib/loja/rpc'
 import { createClient } from '@/lib/supabase/client'
 import { useCarrinho, useCarrinhoRegras } from '@/components/loja/carrinho-provider'
-import { useQueryParamState } from '@/hooks/use-query-param-state'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -45,16 +44,19 @@ function formatarWhatsapp(digitos: string) {
 // Fase 2, incremento 5 (Checkout). Passo a passo: gate de sessao (resolvido
 // no Server Component da page.tsx) -> Identificação -> Entrega -> Revisão
 // (bloqueio REAL de valor mínimo, diferente do aviso do carrinho) ->
-// Confirmação. Estado do passo vive na URL (?passo=), mesmo padrão de
-// useQueryParamState já usado no painel - sobrevive a um refresh.
+// Confirmação. Estado do passo e' local (useState), nao na URL - testado
+// com Chromium real e refeito de proposito: ?passo= via
+// useQueryParamState (router.replace) faz o Server Component da rota
+// re-executar a cada troca de passo (refaz getCustomerProfile +
+// getPublicDeliveryCities), lento e sem necessidade nenhuma aqui (os
+// dados ja estao carregados, o passo e' 100% decisao de UI).
 export function CheckoutWizard({ cliente, cidades }: { cliente: CustomerProfile; cidades: CidadeEntregaPublica[] }) {
   const supabase = createClient()
   const itens = useCarrinho((s) => s.itens)
   const limparCarrinho = useCarrinho((s) => s.limparCarrinho)
   const regras = useCarrinhoRegras()
 
-  const [passoStr, setPasso] = useQueryParamState('passo', 'identificacao')
-  const passo = passoStr as Passo
+  const [passo, setPasso] = useState<Passo>('identificacao')
   const [cidadeId, setCidadeId] = useState(cliente.delivery_city_id ?? '')
   const [observacao, setObservacao] = useState('')
   const [finalizando, setFinalizando] = useState(false)
