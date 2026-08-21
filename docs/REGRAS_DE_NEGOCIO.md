@@ -471,6 +471,8 @@ Cliente logado (§14) tem uma área própria pra ver os pedidos que fez, com o *
 
 **PDF do pedido não é o mecanismo principal** — fica como opção secundária/futura (útil pra imprimir ou guardar localmente, mas a área do cliente é o canal oficial de acompanhamento, sempre atualizado; um PDF gerado na finalização ficaria desatualizado assim que o vendedor ajustasse o pedido).
 
+**Comportamento conhecido a resolver aqui, registrado em 20/08/2026 (achado do usuário, não é bug de rota)**: hoje o header da vitrine sempre mostra "Entrar" e não reflete se o cliente já está logado — depois de confirmar o cadastro pelo link de e-mail, o Supabase já cria sessão automaticamente (o app fica de fato autenticado), mas o header não sabe disso e continua oferecendo "Entrar" (que não leva a nada de novo, já que a sessão já existe). Isso acontece porque o header da vitrine foi construído antes de existir conta de cliente (Fase 1). Faz parte do escopo deste incremento: quando há sessão de cliente ativa, o header deve mostrar acesso à área do cliente ("Meus Pedidos"/nome) e a opção de sair; "Entrar" só aparece pra quem está deslogado.
+
 ### 18.3 Canais de notificação: e-mail + WhatsApp, dois níveis de WhatsApp
 
 **E-mail** e a **área do cliente** (§18.2) entram no MVP como canais/registro padrão.
