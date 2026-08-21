@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { MinusIcon, PlusIcon, ShoppingCartIcon, Trash2Icon, PackageIcon } from 'lucide-react'
-import { toast } from 'sonner'
 
 import { formatarMoeda } from '@/lib/utils'
 import { urlImagemProduto } from '@/lib/loja/rpc'
@@ -14,8 +13,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/com
 
 // Icone do carrinho (com badge de contagem) + o drawer em si, num
 // componente so' - o Sheet e' controlado localmente (sem precisar de
-// contexto de "aberto/fechado" externo). Finalizar pedido continua
-// placeholder neste incremento (vira real no incremento 5, Checkout).
+// contexto de "aberto/fechado" externo). "Finalizar pedido" leva pro
+// /checkout (Fase 2, incremento 5) - o gate de sessao/validacoes reais
+// acontecem la, nao aqui.
 export function CarrinhoDrawer() {
   const [open, setOpen] = useState(false)
   const itens = useCarrinho((s) => s.itens)
@@ -156,13 +156,11 @@ export function CarrinhoDrawer() {
                   {formatarMoeda(total)}
                 </span>
               </div>
-              <Button
-                size="lg"
-                className="w-full"
-                onClick={() => toast.info('O checkout chega na próxima fase da Vitrine.')}
-              >
-                Finalizar pedido
-              </Button>
+              <Link href="/checkout" onClick={() => setOpen(false)}>
+                <Button size="lg" className="w-full">
+                  Finalizar pedido
+                </Button>
+              </Link>
             </SheetFooter>
           )}
         </SheetContent>

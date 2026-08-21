@@ -14,8 +14,17 @@ import {
 import { toast } from 'sonner'
 import { Loader2, MailCheck, Eye, EyeOff } from 'lucide-react'
 
-export function CadastroForm({ cidades }: { cidades: CidadeEntregaPublica[] }) {
+export function CadastroForm({ cidades, proximo }: { cidades: CidadeEntregaPublica[]; proximo?: string }) {
   const supabase = createClient()
+
+  // Propaga o destino pos-login (ex.: checkout) atraves do link REAL de
+  // confirmacao de e-mail - o callback (src/app/auth/callback/route.ts) ja
+  // sabe ler ?next= do redirect_to. Sem isso, confirmar o cadastro sempre
+  // levava pra vitrine, mesmo quando o cliente veio de um fluxo com destino
+  // proprio (Fase 2, incremento 5 - Checkout).
+  function montarEmailRedirectTo() {
+    return `${window.location.origin}/auth/callback${proximo ? `?next=${encodeURIComponent(proximo)}` : ''}`
+  }
 
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
@@ -48,7 +57,7 @@ export function CadastroForm({ cidades }: { cidades: CidadeEntregaPublica[] }) {
       email: email.trim(),
       password: senha,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: montarEmailRedirectTo(),
         data: {
           nome: nome.trim(),
           whatsapp: wpp,
@@ -85,7 +94,7 @@ export function CadastroForm({ cidades }: { cidades: CidadeEntregaPublica[] }) {
     await supabase.auth.resend({
       type: 'signup',
       email: email.trim(),
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: montarEmailRedirectTo() },
     })
     setReenviando(false)
     toast.success('E-mail reenviado.')
@@ -108,7 +117,7 @@ export function CadastroForm({ cidades }: { cidades: CidadeEntregaPublica[] }) {
           {reenviando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {reenvioContador > 0 ? `Reenviar em ${reenvioContador}s` : 'Reenviar e-mail'}
         </Button>
-        <Button onClick={() => router.push('/entrar')} variant="ghost" className="w-full">Voltar para entrar</Button>
+        <Button onClick={() => router.push(proximo ? `/entrar?proximo=${encodeURIComponent(proximo)}` : '/entrar')} variant="ghost" className="w-full">Voltar para entrar</Button>
       </div>
     )
   }
@@ -174,7 +183,7 @@ export function CadastroForm({ cidades }: { cidades: CidadeEntregaPublica[] }) {
 
       <p className="text-sm text-center text-muted-foreground mt-6">
         Ja tem conta?{' '}
-        <Link href="/entrar" className="text-primary font-semibold hover:underline">Entrar</Link>
+        <Link href={proximo ? `/entrar?proximo=${encodeURIComponent(proximo)}` : '/entrar'} className="text-primary font-semibold hover:underline">Entrar</Link>
       </p>
     </div>
   )

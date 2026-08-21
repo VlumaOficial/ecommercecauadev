@@ -38,3 +38,34 @@ export async function getStaffProfile(): Promise<StaffProfile | null> {
 
   return getStaffProfileForUser(supabase, user.id)
 }
+
+export type CustomerProfile = {
+  id: string
+  nome: string
+  email: string | null
+  whatsapp: string
+  delivery_city_id: string | null
+  tenant_id: string
+}
+
+// Retorna o perfil do cliente (vitrine) logado, ou null - mesmo padrao de
+// getStaffProfile(), usado pelo gate de sessao do checkout (Fase 2,
+// incremento 5). Cliente e staff nunca sao a mesma coisa (REGRAS_DE_NEGOCIO.md
+// §1/§14) - por isso e' uma consulta separada em customers, nao um branch
+// dentro de getStaffProfile().
+export async function getCustomerProfile(): Promise<CustomerProfile | null> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data } = await supabase
+    .from('customers')
+    .select('id, nome, email, whatsapp, delivery_city_id, tenant_id')
+    .eq('auth_user_id', user.id)
+    .eq('ativo', true)
+    .maybeSingle()
+
+  return (data as CustomerProfile | null) ?? null
+}

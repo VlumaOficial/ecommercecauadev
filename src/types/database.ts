@@ -313,6 +313,173 @@ export type Database = {
         }
         Relationships: []
       }
+      // Adicionadas na migration 037 (Fase 2, incremento 3 - modelo de
+      // pedidos). Ajustado a mao (sem acesso ao projeto pra `npm run
+      // types`, mesmo caso ja registrado em delivery_cities acima).
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          preco_unitario: number
+          product_id: string
+          quantidade: number
+          subtotal: number
+          tenant_id: string
+          updated_at: string
+          variant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          preco_unitario: number
+          product_id: string
+          quantidade: number
+          subtotal: number
+          tenant_id?: string
+          updated_at?: string
+          variant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          preco_unitario?: number
+          product_id?: string
+          quantidade?: number
+          subtotal?: number
+          tenant_id?: string
+          updated_at?: string
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_number_sequences: {
+        Row: {
+          tenant_id: string
+          ultimo_numero: number
+        }
+        Insert: {
+          tenant_id: string
+          ultimo_numero?: number
+        }
+        Update: {
+          tenant_id?: string
+          ultimo_numero?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_number_sequences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          customer_id: string
+          data_efetiva: string | null
+          data_prevista: string | null
+          delivery_city_id: string | null
+          id: string
+          modalidade_entrega: string
+          numero: number
+          observacao_cliente: string | null
+          observacao_interna: string | null
+          status: Database["public"]["Enums"]["order_status"]
+          tenant_id: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          data_efetiva?: string | null
+          data_prevista?: string | null
+          delivery_city_id?: string | null
+          id?: string
+          modalidade_entrega?: string
+          numero: number
+          observacao_cliente?: string | null
+          observacao_interna?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          tenant_id?: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          data_efetiva?: string | null
+          data_prevista?: string | null
+          delivery_city_id?: string | null
+          id?: string
+          modalidade_entrega?: string
+          numero?: number
+          observacao_cliente?: string | null
+          observacao_interna?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          tenant_id?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_delivery_city_id_fkey"
+            columns: ["delivery_city_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       // Adicionada na migration 024 (Codigo do Produto - modo
       // "automatico" derivado do NOME, decisao #24): contador de
       // sequencia por PREFIXO (nao por categoria nem por produto),
@@ -1038,6 +1205,19 @@ export type Database = {
         Args: { p_product_id: string; p_produto: Json; p_variacoes: Json; p_caracteristicas?: Json }
         Returns: Database["public"]["Tables"]["products"]["Row"]
       }
+      // Adicionada na migration 037 (Fase 2, incremento 3). customer_id
+      // sempre resolvido de auth.uid() dentro da funcao - nunca aceito
+      // como parametro (por isso nao aparece em Args). p_itens: array
+      // de { variant_id: string, quantidade: number }.
+      criar_pedido: {
+        Args: {
+          p_modalidade_entrega?: string
+          p_delivery_city_id?: string | null
+          p_observacao_cliente?: string | null
+          p_itens?: Json
+        }
+        Returns: Database["public"]["Tables"]["orders"]["Row"]
+      }
       // Adicionada na migration 021 (modulo de Estoque). p_quantidade
       // (delta assinado) OU p_saldo_novo_desejado (so pra tipo=ajuste,
       // a funcao calcula o delta) - nunca os dois.
@@ -1180,6 +1360,8 @@ export type Database = {
     }
     Enums: {
       field_type: "texto" | "numero" | "selecao" | "booleano" | "data"
+      // Adicionado na migration 037 (Fase 2, incremento 3).
+      order_status: "aguardando_validacao" | "confirmado" | "concluido" | "cancelado"
       stock_mode: "quantitativo" | "disponibilidade"
       // Adicionado na migration 021 (modulo de Estoque).
       stock_movement_type: "entrada" | "saida" | "ajuste" | "inventario" | "devolucao"

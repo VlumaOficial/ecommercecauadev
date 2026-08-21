@@ -23,11 +23,16 @@ export const dynamic = 'force-dynamic'
 // caso raro) cai pro comportamento antigo: formulario aberto, sem
 // cidade nenhuma pra escolher - login/cadastro nunca ficam bloqueados
 // so por causa da resolucao de tenant (mesmo principio do layout).
-export default async function CadastroPage() {
+export default async function CadastroPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ proximo?: string }>
+}) {
   const tenant = await getTenantFromHeaders()
   const [settings, cidades] = tenant
     ? await Promise.all([getPublicStoreSettings(tenant.slug), getPublicDeliveryCities(tenant.slug)])
     : [null, []]
+  const { proximo } = await searchParams
 
   if (settings && !settings.permite_autocadastro) {
     return (
@@ -43,5 +48,5 @@ export default async function CadastroPage() {
     )
   }
 
-  return <CadastroForm cidades={cidades} />
+  return <CadastroForm cidades={cidades} proximo={proximo} />
 }
