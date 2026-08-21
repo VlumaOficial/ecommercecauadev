@@ -205,14 +205,35 @@ comment on function public.ajustar_itens_pedido(uuid, jsonb) is
 grant execute on function public.ajustar_itens_pedido(uuid, jsonb) to authenticated;
 
 -- ---------- 5. RPC: validar_pedido ----------
--- Baixa de estoque REAL acontece aqui (§16.4) - chama
--- registrar_movimentacao_estoque() (migration 021) por item, que já
--- trava a linha (FOR UPDATE), garante saldo não-negativo e grava o
--- ledger. Itens travados em ORDEM ESTÁVEL (by variant_id) pra evitar
--- deadlock entre duas validações concorrentes que compartilham alguma
--- variação. Tudo ou nada (Opção A): se qualquer item não tiver saldo,
--- registrar_movimentacao_estoque levanta exceção, a transação inteira
--- desfaz, NENHUM item é baixado.
+-- Baixa de estoque REAL acontece aqui (§16.4), item por item, via
+-- registrar_movimentacao_estoque() (migration 021) - reaproveita a
+-- atomicidade/FOR UPDATE/não-negativo já testados, não reimplementa.
+--
+-- Revisão de 21/08/2026 (achado do PO na revisão desta migration,
+-- ANTES de aplicar): a primeira versão fazia a baixa direto e só
+-- enriquecia o erro dentro de um EXCEPTION WHEN OTHERS - frágil por 3
+-- motivos (fazer outro SELECT dentro do handler depois de um erro já
+-- é arriscado; WHEN OTHERS captura mais do que só estoque
+-- insuficiente; reconstruir a mensagem com SQLERRM perde o SQLSTATE
+-- original). Reescrita em DUAS FASES na mesma transação:
+--   FASE 1 (pré-validação): trava TODAS as variações do pedido de uma
+--   vez (FOR UPDATE OF pv, em ordem estável por variant_id - evita
+--   deadlock entre validações concorrentes que compartilham alguma
+--   variação) e confere existência/modo_estoque/saldo de cada item,
+--   com mensagem de erro já citando produto+variação. Nenhuma baixa
+--   acontece aqui ainda.
+--   FASE 2 (baixa de verdade): como as linhas continuam travadas pela
+--   MESMA transação desde a fase 1 (lock do Postgres é por
+--   transação, não por comando - uma trava já obtida nunca é perdida
+--   nem precisa ser refeita), nada pode ter mudado o saldo entre as
+--   duas fases. registrar_movimentacao_estoque() já não deveria mais
+--   conseguir falhar por saldo insuficiente aqui - por isso a fase 2
+--   é um loop simples, sem BEGIN/EXCEPTION nenhum: se algo ainda
+--   assim desse errado, o erro original de registrar_movimentacao_estoque
+--   propaga intacto (SQLSTATE preservado), não é reconstruído.
+-- Tudo ou nada (Opção A) continua valendo, só que agora explícito na
+-- fase 1, em vez de depender do rollback de uma exceção no meio da
+-- baixa.
 create or replace function public.validar_pedido(
   p_order_id uuid,
   p_data_prevista date default null
@@ -226,7 +247,6 @@ declare
   v_tenant_id uuid;
   v_order public.orders;
   v_item record;
-  v_item_label text;
 begin
   if not public.staff_pode_gerenciar_pedidos() then
     raise exception 'Você não tem permissão para validar pedidos.';
@@ -247,34 +267,54 @@ begin
     raise exception 'Este pedido não está aguardando validação.';
   end if;
 
-  -- Tudo ou nada (Opção A): a exceção de registrar_movimentacao_estoque
-  -- (ex.: "Estoque insuficiente...") desfaz a transação inteira sozinha
-  -- (nenhum RAISE aqui precisa forçar isso) - o bloco BEGIN/EXCEPTION
-  -- abaixo só ENRIQUECE a mensagem com qual item causou o problema
-  -- antes de repropagar, pro vendedor não precisar adivinhar.
+  -- FASE 1: trava e confere TODOS os itens antes de baixar qualquer
+  -- um (tudo ou nada, decidido aqui, explicitamente - não como efeito
+  -- colateral de uma exceção no meio do caminho).
+  for v_item in
+    select
+      oi.variant_id,
+      oi.quantidade,
+      p.nome as produto_nome,
+      pv.nome as variante_nome,
+      pv.saldo_estoque,
+      pv.modo_estoque
+    from public.order_items oi
+    join public.product_variants pv on pv.id = oi.variant_id
+    join public.products p on p.id = pv.product_id
+    where oi.order_id = p_order_id
+    order by oi.variant_id
+    for update of pv
+  loop
+    if v_item.modo_estoque <> 'quantitativo' then
+      raise exception '% (%): esta variação não controla estoque por quantidade.',
+        v_item.produto_nome, v_item.variante_nome;
+    end if;
+
+    if v_item.saldo_estoque < v_item.quantidade then
+      raise exception '% (%): estoque insuficiente — disponível % unidade(s), pedido pede % unidade(s).',
+        v_item.produto_nome, v_item.variante_nome, v_item.saldo_estoque, v_item.quantidade;
+    end if;
+  end loop;
+
+  -- FASE 2: baixa de verdade - as travas da fase 1 garantem que nada
+  -- mudou nesse meio-tempo, então isto não deveria mais conseguir
+  -- falhar por saldo (ver nota acima). Ordem estável mantida, mesmo
+  -- já não sendo estritamente necessária aqui (as linhas já estão
+  -- travadas desde a fase 1), por clareza/consistência.
   for v_item in
     select variant_id, quantidade
     from public.order_items
     where order_id = p_order_id
     order by variant_id
   loop
-    begin
-      perform public.registrar_movimentacao_estoque(
-        p_variant_id => v_item.variant_id,
-        p_tipo => 'saida',
-        p_quantidade => -v_item.quantidade,
-        p_motivo => 'Baixa na validação do pedido #' || v_order.numero,
-        p_referencia_tipo => 'pedido',
-        p_referencia_id => p_order_id
-      );
-    exception when others then
-      select p.nome || ' (' || pv.nome || ')' into v_item_label
-      from public.product_variants pv
-      join public.products p on p.id = pv.product_id
-      where pv.id = v_item.variant_id;
-
-      raise exception '%: %', coalesce(v_item_label, 'um item do pedido'), sqlerrm;
-    end;
+    perform public.registrar_movimentacao_estoque(
+      p_variant_id => v_item.variant_id,
+      p_tipo => 'saida',
+      p_quantidade => -v_item.quantidade,
+      p_motivo => 'Baixa na validação do pedido #' || v_order.numero,
+      p_referencia_tipo => 'pedido',
+      p_referencia_id => p_order_id
+    );
   end loop;
 
   update public.orders
@@ -287,7 +327,7 @@ end;
 $$;
 
 comment on function public.validar_pedido(uuid, date) is
-  'Valida o pedido (aguardando_validacao -> confirmado) e baixa o estoque de verdade (REGRAS_DE_NEGOCIO.md §16.4), item por item, via registrar_movimentacao_estoque (migration 021) - reaproveita a atomicidade/FOR UPDATE/não-negativo já testados, não reimplementa. Tudo ou nada: falta de estoque em qualquer item desfaz a transação inteira (Opção A, decisão do PO em 21/08/2026) - use ajustar_itens_pedido pra reduzir/remover o item problemático e valide de novo.';
+  'Valida o pedido (aguardando_validacao -> confirmado) e baixa o estoque de verdade (REGRAS_DE_NEGOCIO.md §16.4). Duas fases na mesma transação: pré-valida existência/modo/saldo de TODOS os itens travando as variações (FOR UPDATE OF pv, ordem estável por variant_id), só então baixa de verdade item por item via registrar_movimentacao_estoque (migration 021) - reaproveita a atomicidade já testada, não reimplementa. Tudo ou nada (Opção A, decisão do PO em 21/08/2026): falta de estoque em qualquer item é recusada já na fase 1, com o nome do produto/variação na mensagem - use ajustar_itens_pedido pra reduzir/remover o item problemático e valide de novo. Revisado em 21/08/2026 (achado na revisão desta migration): a versão anterior enriquecia erro via EXCEPTION WHEN OTHERS + SELECT dentro do handler - frágil (mascarava erro se o SELECT falhasse, capturava mais que só estoque insuficiente, perdia o SQLSTATE original ao reconstruir com SQLERRM). A versão em duas fases elimina a necessidade de qualquer EXCEPTION handler na baixa real.';
 
 grant execute on function public.validar_pedido(uuid, date) to authenticated;
 
