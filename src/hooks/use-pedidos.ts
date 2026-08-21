@@ -65,6 +65,27 @@ async function parseJsonOrThrow(response: Response) {
   return body
 }
 
+// As RPCs de validar/editar/cancelar/concluir devolvem a linha de
+// `orders` atualizada - aplicar esses campos direto no cache faz a
+// tela (badge de status, acoes disponiveis, total) reagir na hora, em
+// vez de esperar o round-trip extra do invalidateQueries (que ainda
+// roda, por baixo, pra re-sincronizar itens/estoque - a RPC nao
+// devolve isso). Sem essa mescla, um clique em "Validar" por exemplo
+// mostra o toast de sucesso mas a tela so troca pra "Confirmado"
+// alguns segundos depois, quando o refetch invalidado termina -
+// achado testando com Chromium real (a pagina recarregada do zero ja
+// mostrava o status certo, confirmando que era so' o timing do
+// re-render, nao um bug de cache no servidor).
+function mesclarPedidoNoCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  id: string,
+  ordem: Partial<
+    Pick<PedidoDetalhe, 'status' | 'total' | 'data_prevista' | 'data_efetiva' | 'motivo_cancelamento' | 'observacao_interna'>
+  >
+) {
+  queryClient.setQueryData<PedidoDetalhe>(['pedido', id], (atual) => (atual ? { ...atual, ...ordem } : atual))
+}
+
 export function usePedidos(status: PedidoStatusFiltro) {
   return useQuery({
     queryKey: ['pedidos', status],
@@ -100,7 +121,8 @@ export function useValidarPedido() {
       })
       return parseJsonOrThrow(response)
     },
-    onSuccess: (_data, { id }) => {
+    onSuccess: (data, { id }) => {
+      mesclarPedidoNoCache(queryClient, id, data.data)
       queryClient.invalidateQueries({ queryKey: ['pedidos'] })
       queryClient.invalidateQueries({ queryKey: ['pedido', id] })
       toast.success('Pedido validado — o estoque foi baixado e o cliente será notificado.')
@@ -121,7 +143,8 @@ export function useAjustarPedido() {
       })
       return parseJsonOrThrow(response)
     },
-    onSuccess: (_data, { id }) => {
+    onSuccess: (data, { id }) => {
+      mesclarPedidoNoCache(queryClient, id, data.data)
       queryClient.invalidateQueries({ queryKey: ['pedidos'] })
       queryClient.invalidateQueries({ queryKey: ['pedido', id] })
       toast.success('Pedido ajustado — o cliente será notificado da mudança.')
@@ -142,7 +165,8 @@ export function useCancelarPedido() {
       })
       return parseJsonOrThrow(response)
     },
-    onSuccess: (_data, { id }) => {
+    onSuccess: (data, { id }) => {
+      mesclarPedidoNoCache(queryClient, id, data.data)
       queryClient.invalidateQueries({ queryKey: ['pedidos'] })
       queryClient.invalidateQueries({ queryKey: ['pedido', id] })
       toast.success('Pedido cancelado — o cliente será notificado.')
@@ -159,7 +183,8 @@ export function useConcluirPedido() {
       const response = await fetch(`/api/painel/pedidos/${id}/concluir`, { method: 'POST' })
       return parseJsonOrThrow(response)
     },
-    onSuccess: (_data, id) => {
+    onSuccess: (data, id) => {
+      mesclarPedidoNoCache(queryClient, id, data.data)
       queryClient.invalidateQueries({ queryKey: ['pedidos'] })
       queryClient.invalidateQueries({ queryKey: ['pedido', id] })
       toast.success('Pedido marcado como concluído.')
@@ -180,7 +205,8 @@ export function useAtualizarObservacaoInterna() {
       })
       return parseJsonOrThrow(response)
     },
-    onSuccess: (_data, { id }) => {
+    onSuccess: (data, { id }) => {
+      mesclarPedidoNoCache(queryClient, id, data.data)
       queryClient.invalidateQueries({ queryKey: ['pedido', id] })
       toast.success('Anotação salva.')
     },
