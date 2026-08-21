@@ -79,7 +79,7 @@ export default async function VitrinePreviewPage() {
       <div className="bg-amber-500 px-4 py-2 text-center text-sm font-semibold text-amber-950">
         MODO PRÉVIA — mostrando o rascunho, não publicado. Só você (equipe logada) vê isto.
       </div>
-      <Header nomeLoja={settings.nome} valorMinimoPedido={settings.valor_minimo_pedido} logoPath={settings.logo_path} />
+      <Header nomeLoja={settings.nome} valorMinimoPedido={settings.valor_minimo_pedido} logoPath={settings.logo_path} cliente={null} />
       <NavCategorias categorias={categorias} />
       <main className="flex-1">
         <BannerHero settings={settings} />

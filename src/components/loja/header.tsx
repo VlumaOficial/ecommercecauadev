@@ -6,15 +6,19 @@ import { formatarMoeda } from '@/lib/utils'
 import { urlLogoLoja } from '@/lib/loja/rpc'
 import { SearchForm } from '@/components/loja/search-form'
 import { CarrinhoDrawer } from '@/components/loja/carrinho-drawer'
+import { HeaderContaMenu } from '@/components/loja/header-conta-menu'
+import type { CustomerProfile } from '@/lib/auth'
 
 export function Header({
   nomeLoja,
   valorMinimoPedido,
   logoPath,
+  cliente,
 }: {
   nomeLoja: string
   valorMinimoPedido: number
   logoPath: string | null
+  cliente: CustomerProfile | null
 }) {
   return (
     <>
@@ -51,13 +55,17 @@ export function Header({
           </div>
 
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
-            <Link
-              href="/entrar"
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            >
-              <UserIcon className="size-4" />
-              <span className="hidden sm:inline">Entrar</span>
-            </Link>
+            {cliente ? (
+              <HeaderContaMenu cliente={cliente} />
+            ) : (
+              <Link
+                href="/entrar"
+                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                <UserIcon className="size-4" />
+                <span className="hidden sm:inline">Entrar</span>
+              </Link>
+            )}
             <CarrinhoDrawer />
           </div>
         </div>

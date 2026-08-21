@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,7 +11,6 @@ import { toast } from 'sonner'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
 
 export default function NovaSenhaPage() {
-  const supabase = createClient()
   const router = useRouter()
   const [senha, setSenha] = useState('')
   const [confirmar, setConfirmar] = useState('')
@@ -25,10 +23,19 @@ export default function NovaSenhaPage() {
     if (senha !== confirmar) { toast.error('As senhas nao coincidem.'); return }
 
     setCarregando(true)
-    const { error } = await supabase.auth.updateUser({ password: senha })
+    // Via Route Handler (client SERVIDOR) - supabase.auth.updateUser()
+    // direto do browser client nunca enxerga a sessao criada por
+    // /auth/callback (cookies httpOnly), ver nota em
+    // src/app/api/auth/senha/route.ts.
+    const resp = await fetch('/api/auth/senha', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senha }),
+    })
+    const json = await resp.json().catch(() => ({}))
     setCarregando(false)
-    if (error) {
-      toast.error('Nao foi possivel alterar a senha. O link pode ter expirado.')
+    if (!resp.ok) {
+      toast.error(json.error || 'Nao foi possivel alterar a senha. O link pode ter expirado.')
       return
     }
     toast.success('Senha alterada com sucesso!')

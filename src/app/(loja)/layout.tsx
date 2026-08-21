@@ -6,6 +6,7 @@ import type { Metadata } from 'next'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { getPublicStoreSettings, getPublicCategories, urlArquivoLoja, urlLogoLoja } from '@/lib/loja/rpc'
 import { corTextoContraste } from '@/lib/loja/cor'
+import { getCustomerProfile } from '@/lib/auth'
 import { Header } from '@/components/loja/header'
 import { NavCategorias } from '@/components/loja/nav-categorias'
 import { Footer } from '@/components/loja/footer'
@@ -93,7 +94,7 @@ export default async function LojaLayout({ children }: { children: React.ReactNo
     )
   }
 
-  const categorias = await getPublicCategories(tenant.slug)
+  const [categorias, cliente] = await Promise.all([getPublicCategories(tenant.slug), getCustomerProfile()])
 
   return (
     <CarrinhoProvider
@@ -106,7 +107,7 @@ export default async function LojaLayout({ children }: { children: React.ReactNo
       }}
     >
       <div className="loja-theme flex min-h-svh flex-col bg-background text-foreground" style={temaStyle}>
-        <Header nomeLoja={settings.nome} valorMinimoPedido={settings.valor_minimo_pedido} logoPath={settings.logo_path} />
+        <Header nomeLoja={settings.nome} valorMinimoPedido={settings.valor_minimo_pedido} logoPath={settings.logo_path} cliente={cliente} />
         <NavCategorias categorias={categorias} />
         {!settings.pedidos_abertos && (
           <div className="bg-amber-500/15 px-4 py-2 text-center text-sm text-amber-900 sm:px-6">
