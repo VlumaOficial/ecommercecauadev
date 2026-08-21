@@ -252,8 +252,8 @@
     3. Modelo de pedidos: tabelas de pedido/itens, os 4 status (ponto 1), campos de entrega/datas/observações (pontos 2/4), reserva de estoque atômica via RPC `SECURITY DEFINER` com `FOR UPDATE` (§16). **✅ Concluído** (reserva/baixa de estoque adiada pra validação do vendedor, ponto 7 — ver §16.4).
     4. Carrinho client-side + regras (mínimo de venda §11.2, bloqueio de `pedidos_abertos` §11.3/§2, valor mínimo §11.4). **✅ Concluído.**
     5. Checkout passo a passo (identificação → entrega → revisão → finaliza, cria o pedido e reserva o estoque — §15.1/§16). **✅ Concluído em 21/08/2026** — ver item 43 abaixo e `REGRAS_DE_NEGOCIO.md` §15 pro detalhe completo.
-    6. Área do cliente (Meus Pedidos + gestão de conta — §18.2/§18.4). **Próximo passo, não iniciado.**
-    7. Painel de pedidos do vendedor (listar/validar/editar/cancelar — ponto 3 acima) + política de cancelamento (§17). **Não iniciado.**
+    6. Área do cliente (Meus Pedidos + gestão de conta — §18.2/§18.4). **✅ Concluído em 21/08/2026** — ver item 44 abaixo.
+    7. Painel de pedidos do vendedor (listar/validar/editar/cancelar — ponto 3 acima) + política de cancelamento (§17). **Próximo passo, não iniciado.**
     8. Notificações (e-mail + WhatsApp via Evolution API — §18.3, Nível 1). **Não iniciado.**
 
     **Com este bloco, o planejamento de produto do MVP da Fase 2 (Carrinho/Checkout) está fechado.** Segue em aberto só o Fluxo B (Asaas, fase futura, já registrado no item 33) — o que resta agora é seguir o roteiro acima, incremento por incremento, testando cada um na URL pública antes do próximo (mesma regra de processo já em vigor, §0).
@@ -435,6 +435,16 @@
     **Teste de ponta a ponta completo, com limpeza total ao final**: cliente de teste criado via Admin API (`email_confirm:true` — não é o fluxo de confirmação sendo testado, já validado à parte no item 42), produto real de baixo valor (Alface D'água, R$6,50) usado pra exercitar valor mínimo. `store_settings` (valor mínimo, pedidos_abertos) temporariamente alterado pra forçar os 2 cenários de bloqueio/rejeição e revertido ao estado original logo em seguida — confirmado idêntico ao original ao final (script rodou 4 vezes até fechar os 2 bugs; toda vez a limpeza rodou em `finally`, zero resíduo mesmo nas tentativas que falharam no meio). Confirmado ao final: zero usuário/cliente de teste restante, zero pedido no banco, `store_settings` e `saldo_estoque` idênticos ao estado anterior ao teste.
 
     **Próximo passo do roteiro**: incremento 6 (Área do cliente — "Meus Pedidos" + gestão de conta, `REGRAS_DE_NEGOCIO.md` §18.2/§18.4) — é também quando a lacuna do header registrada no item 42 (botão "Entrar" não reconhecer sessão ativa) é resolvida de verdade. Não iniciado ainda, aguardando autorização do usuário.
+
+44. **Fase 2, incremento 6 (Área do Cliente) implementado e testado com Chromium real contra a URL pública, 21/08/2026.** Detalhe completo do fluxo (Meus Pedidos lista/detalhe, Minha Conta, header com dropdown de sessão) está em `REGRAS_DE_NEGOCIO.md` §18.2/§18.4 — não duplicado aqui. Resumo do que mudou:
+    - Header (`HeaderContaMenu`, Base UI) resolve a lacuna do item 42 — dropdown com nome/Meus Pedidos/Minha Conta/Sair quando logado, "Entrar" quando deslogado.
+    - `/meus-pedidos` + `/meus-pedidos/[numero]`: leitura direta via client servidor + RLS já existente (`orders_select_own`), sem Route Handler novo. Query do detalhe **nunca seleciona** `observacao_interna`.
+    - `/minha-conta`: dados cadastrais (nome/whatsapp/cidade) via `PATCH /api/loja/conta`, zod restrito a 3 campos — testado com payload malicioso de verdade (email/ativo/tenant_id extras), confirmado no banco que só os campos legítimos mudam.
+    - **Achado relevante, generalizando a lição do checkout**: testei se `updateUser({password})` sofria do mesmo bug de cookies httpOnly do `criar_pedido` (incremento 5) — **sim, e era um bug real de produção**: `/nova-senha` (recuperação de senha) estava quebrada pra qualquer cliente, silenciosamente, desde que a tela existe. Corrigido com `POST /api/auth/senha` (rota genérica, staff ou cliente), reaproveitada tanto por `/nova-senha` quanto pela nova seção "Alterar senha" de `/minha-conta`.
+    - Mesma limitação de `generateLink()` do Bug 2 (item 42) reapareceu ao tentar testar o link real de recuperação — não reproduz PKCE. Provado o mecanismo da correção por outro caminho (sessão via rota servidor + Route Handler funciona), mas o clique no link real de e-mail de recuperação não foi testado de ponta a ponta por mim — recomendado ao usuário confirmar manualmente, mesmo padrão usado pra fechar o Bug 2.
+    - Zero resíduo de teste no banco ao final (cliente, pedido de teste removidos; nenhuma alteração permanente).
+
+    **Próximo passo do roteiro**: incremento 7 (Painel de pedidos do vendedor — listar/validar/editar/cancelar, `ESCOPO_PROJETO.md` §0 item 8/ponto 8, sub-item 7) + política de cancelamento (§17). Não iniciado, aguardando autorização do usuário.
 
 ---
 

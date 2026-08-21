@@ -478,11 +478,17 @@ O cliente é notificado sempre que o pedido muda de estado por ação do vendedo
 
 ### 18.2 Área do cliente ("Meus Pedidos") — nasce no MVP
 
+**✅ Implementado e testado com Chromium real contra a URL pública em 21/08/2026 — Fase 2, incremento 6 do roteiro.**
+
 Cliente logado (§14) tem uma área própria pra ver os pedidos que fez, com o **estado final e atualizado** de cada um — itens, ajustes feitos pelo vendedor, total, status. É a **fonte de verdade** do acompanhamento do pedido: qualquer dúvida sobre "o que ficou combinado", a resposta está lá, sempre refletindo o estado mais recente (não uma cópia estática do momento da finalização).
 
 **PDF do pedido não é o mecanismo principal** — fica como opção secundária/futura (útil pra imprimir ou guardar localmente, mas a área do cliente é o canal oficial de acompanhamento, sempre atualizado; um PDF gerado na finalização ficaria desatualizado assim que o vendedor ajustasse o pedido).
 
 **Comportamento conhecido a resolver aqui, registrado em 20/08/2026 (achado do usuário, não é bug de rota)**: hoje o header da vitrine sempre mostra "Entrar" e não reflete se o cliente já está logado — depois de confirmar o cadastro pelo link de e-mail, o Supabase já cria sessão automaticamente (o app fica de fato autenticado), mas o header não sabe disso e continua oferecendo "Entrar" (que não leva a nada de novo, já que a sessão já existe). Isso acontece porque o header da vitrine foi construído antes de existir conta de cliente (Fase 1). Faz parte do escopo deste incremento: quando há sessão de cliente ativa, o header deve mostrar acesso à área do cliente ("Meus Pedidos"/nome) e a opção de sair; "Entrar" só aparece pra quem está deslogado.
+
+**✅ Resolvido em 21/08/2026.** `HeaderContaMenu` (`src/components/loja/header-conta-menu.tsx`, dropdown via Base UI) mostra avatar com iniciais + primeiro nome + "Meus Pedidos"/"Minha Conta"/"Sair" quando há sessão de cliente ativa (`(loja)/layout.tsx` passa a chamar `getCustomerProfile()` uma vez, repassado pro `Header`); "Entrar" segue exatamente como antes pra quem está deslogado.
+
+**Telas implementadas**: `/meus-pedidos` (lista — número, data, status em português, cidade, total) e `/meus-pedidos/[numero]` (detalhe — itens com nome/variação/quantidade/preço, cidade + ponto de encontro + horário, datas prevista/efetiva só quando preenchidas, observação do cliente, total). Leitura via client **servidor** direto (não RPC, não Route Handler) — a RLS `orders_select_own`/`order_items_select_own` (migration 037) já garante que o cliente só vê os próprios pedidos, reforçado por um filtro explícito por `customer_id` na query (defesa em profundidade, mesmo padrão já usado em `criar_pedido`). **A query do detalhe nunca seleciona `observacao_interna`** — não é uma coluna escondida na tela, é uma coluna que o `SELECT` nem pede ao banco, confirmado com Chromium inspecionando o HTML bruto da resposta (não só a tela renderizada).
 
 ### 18.3 Canais de notificação: e-mail + WhatsApp, dois níveis de WhatsApp
 
@@ -499,12 +505,20 @@ A arquitetura de notificação nasce pensada pra múltiplos canais desde o iníc
 
 ### 18.4 Área do cliente — editar dados cadastrais e trocar senha
 
-**📐 Decidido com o PO em 18/08/2026, complementa §18.2.**
+**📐 Decidido com o PO em 18/08/2026, complementa §18.2. ✅ Implementado e testado com Chromium real contra a URL pública em 21/08/2026.**
 
 Além de "Meus Pedidos" (§18.2), a área do cliente no MVP inclui:
 
 - **Editar dados cadastrais**: nome, telefone, e-mail, cidade de entrega padrão.
 - **Trocar senha**.
+
+**Revisão na implementação (21/08/2026): e-mail ficou de fora do formulário, de propósito.** É o identificador de login gerenciado pelo Supabase Auth — permitir editar aqui exigiria um fluxo de confirmação próprio (parecido com o do cadastro, §14.1), fora de escopo deste incremento. Tela `/minha-conta` (`src/components/loja/conta/conta-form.tsx`) mostra o e-mail como informação read-only ("não pode ser alterado aqui") e só permite editar nome/WhatsApp/cidade de entrega.
+
+**Defesa em profundidade no salvamento dos dados**: a policy `customers_update_own` (migration 013) só restringe **qual linha** o cliente pode mexer (`auth_user_id = auth.uid()`) — RLS do Postgres não restringe **quais colunas**, então tecnicamente o cliente poderia tentar sobrescrever `ativo`/`tenant_id`/`email` também. O Route Handler `PATCH /api/loja/conta` fecha isso com um schema zod fechado em só 3 campos (nome/whatsapp/delivery_city_id) — nunca repassa o corpo da requisição inteiro pro `.update()`. **Testado de verdade**: uma requisição real com `email`/`ativo`/`tenant_id` extras no payload confirmou que esses 3 campos continuam intocados no banco depois (só nome/whatsapp/cidade, os campos legítimos, mudaram).
+
+**Bug real de produção encontrado e corrigido durante este incremento: `/nova-senha` (recuperação de senha) estava quebrada.** Ao generalizar a lição do checkout (incremento 5 — `supabase.rpc()` direto do browser client não enxerga sessão vinda de cookies httpOnly), testei se `supabase.auth.updateUser({password})` sofria do mesmo problema — e sim: logando um cliente via `/api/auth/login` (mesma forma que `/auth/callback` estabelece sessão após um link de recuperação) e tentando trocar a senha na tela `/nova-senha` já existente (código de produção, sem nenhuma mudança), a troca **sempre falhava** com "Não foi possível alterar a senha. O link pode ter expirado." — mesmo com sessão fresca, não expirada. Ou seja, **qualquer cliente que esquecesse a senha não conseguia recuperá-la**, silenciosamente, desde que essa tela existe. Corrigido com um Route Handler novo e genérico (`POST /api/auth/senha`, mora em `/api/auth` porque serve staff **ou** cliente, qualquer sessão autenticada — não é específico da vitrine) usando o client servidor; `/nova-senha` e a seção "Alterar senha" de `/minha-conta` usam essa mesma rota.
+
+**Limite do teste de `/nova-senha` — mesma limitação de `generateLink()` já documentada no Bug 2**: `admin.generateLink({type:'recovery'})` também não reproduz o formato PKCE do link real de recuperação (mesmo achado da migration/incidente do Bug 2, confirmado de novo aqui) — não dá pra clicar num link 100% fiel sem uma caixa de e-mail de verdade. O que **foi** provado de ponta a ponta: um cliente com sessão estabelecida por uma rota servidor (exatamente o que `/auth/callback` faz depois de um link de recuperação real) consegue trocar a senha pela nova rota e **logar de novo com a senha nova** — a causa raiz do bug (browser client não enxerga cookies httpOnly) é a mesma independente de qual rota criou a sessão, então esse teste prova o mecanismo da correção. Recomendado ao usuário fazer uma checagem manual rápida do `/recuperar-senha` com e-mail real como confirmação final, mesmo padrão já usado pra fechar o Bug 2.
 
 ---
 
