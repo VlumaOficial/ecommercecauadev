@@ -446,6 +446,8 @@
 
     **Próximo passo do roteiro**: incremento 7 (Painel de pedidos do vendedor — listar/validar/editar/cancelar, `ESCOPO_PROJETO.md` §0 item 8/ponto 8, sub-item 7) + política de cancelamento (§17). Não iniciado, aguardando autorização do usuário.
 
+45. **Fase 2, incremento 7 (Painel de Pedidos do vendedor + cancelamento automático) — diagnóstico/desenho aprovado com o PO em 21/08/2026, migration `039` criada, aguardando revisão e aplicação manual pelo usuário — NADA aplicado ainda, nenhum código de tela escrito ainda.** Detalhe completo das 4 decisões aprovadas (reaproveitar `registrar_movimentacao_estoque` por dentro das novas RPCs; estoque insuficiente ao validar = tudo ou nada; cancelamento automático via GitHub Action cron chamando uma RPC sem sessão, escopo 100% pelo `WHERE`; mesma permissão `pode_aceitar_pedido` pra Validar/Editar/Cancelar/Concluir) está em `REGRAS_DE_NEGOCIO.md` §15.4/§17.2 — não duplicado aqui. Migration traz: `store_settings.cancelamento_automatico_habilitado`/`prazo_cancelamento_automatico_horas`, `orders.motivo_cancelamento`, e as RPCs `staff_pode_gerenciar_pedidos`/`ajustar_itens_pedido`/`validar_pedido`/`cancelar_pedido`/`concluir_pedido`/`cancelar_pedidos_expirados`. Implementação segue por partes, cada parte testada na URL pública antes da próxima: (1) migration — **feito, aguardando revisão**; (2) RPCs — incluídas na mesma migration, **aguardando revisão**; (3) listagem + tela de validação do painel — não iniciado; (4) ações plugadas — não iniciado; (5) workflow do cron — não iniciado.
+
 ---
 
 ## 0. Regra de processo (definition of done)

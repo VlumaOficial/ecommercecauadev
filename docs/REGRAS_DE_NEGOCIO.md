@@ -407,6 +407,8 @@ Ao validar um pedido do Fluxo A, o vendedor pode ajustar o pedido **sem precisar
 
 Consequência prática: o ajuste é sempre **a favor do cliente** — o total do pedido só pode diminuir nessa etapa, nunca aumentar. O estoque correspondente às reduções/remoções volta pro saldo disponível (mesma liberação de §16/§17). O cliente é notificado do ajuste — ver §18.
 
+**Desenho decidido com o PO em 21/08/2026 (Fase 2, incremento 7), migration `039` — 📐 desenhado, aguardando aplicação/implementação.** Nota de correção, mesmo princípio já registrado em §17.2: "Editar" (RPC `ajustar_itens_pedido`) só é permitido enquanto o pedido está `aguardando_validacao` — estado que **nunca reservou estoque nenhum** (§16.4) — então reduzir/remover um item aqui não "devolve" nada, simplesmente nunca chegou a ser baixado. É só a partir da **validação** (`validar_pedido`) que o estoque é baixado de verdade; se o vendedor precisar reduzir um pedido **já confirmado**, o caminho é cancelar (`cancelar_pedido`, §17.1), que aí sim devolve o que foi baixado. **Estoque insuficiente ao validar é tratado como tudo-ou-nada**: se qualquer item do pedido não tiver saldo suficiente, a validação inteira é recusada (nenhum item é baixado, reaproveitando a garantia de saldo não-negativo que o módulo de Estoque já impõe desde a migration 021) — o vendedor usa "Editar" pra resolver o item problemático e tenta validar de novo, em vez do sistema decidir sozinho o que ignorar ou permitir saldo negativo. **Permissão**: "Validar", "Editar", "Cancelar" e "Concluir" exigem a mesma permissão (`profiles.pode_aceitar_pedido` — admin sempre tem, operador só se essa flag individual estiver ligada, §1) — regra única, quem decide o destino do pedido decide pras quatro ações.
+
 ---
 
 ## 16. Reserva de estoque na finalização do pedido
@@ -465,6 +467,8 @@ Pedido que fica **não validado** por mais que um prazo configurado é cancelado
 - **Desligável**: o lojista pode desativar o cancelamento automático por completo, se preferir controlar isso manualmente. Padrão de fábrica é **conservador** (ligado, com um prazo razoável) — mesmo princípio de "nunca esconder uma regra atrás de comportamento implícito" já usado noutras flags do sistema (§11.4, §5).
 
 Em ambos os casos (manual ou automático), o cliente é notificado do cancelamento — ver §18.
+
+**Mecanismo decidido com o PO em 21/08/2026 (Fase 2, incremento 7), migration `039` — 📐 desenhado, aguardando aplicação/implementação.** Nota de correção: pedido `aguardando_validacao` (o único estado que o cancelamento automático alcança) **nunca reservou estoque** (§16.4 — a baixa só acontece na validação) — "liberando o estoque reservado" no parágrafo acima é a formulação original da decisão de 18/08, mas na prática o cancelamento automático não gera nenhum movimento de estoque, porque nunca houve baixa pra desfazer nesse estado. O mecanismo em si: RPC `cancelar_pedidos_expirados()`, chamada por um **GitHub Action cron** (mesmo padrão já em produção do `keepalive_ping`, `.github/workflows/keepalive.yml`), sem sessão de usuário nenhuma — a RPC nunca depende de `auth.uid()`/`is_staff()` pra decidir o que cancelar, só das condições estritas do prazo/flag configurados em cada tenant. Escolhido em vez de verificação sob demanda (checar validade toda vez que o painel de pedidos é aberto) por rodar de forma confiável mesmo em dias sem nenhum staff logado — evita pedido zumbi ficar parado indefinidamente só porque ninguém abriu o painel.
 
 ---
 
