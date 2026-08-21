@@ -416,6 +416,11 @@ export type Database = {
           delivery_city_id: string | null
           id: string
           modalidade_entrega: string
+          // Adicionada na migration 039 (incremento 7) - drift do tipo
+          // gerado, corrigido a mao (CLI sem privilegio pra regenerar
+          // nesta sessao, ver nota no topo do arquivo). Preenchida so
+          // quando status=cancelado.
+          motivo_cancelamento: string | null
           numero: number
           observacao_cliente: string | null
           observacao_interna: string | null
@@ -432,6 +437,7 @@ export type Database = {
           delivery_city_id?: string | null
           id?: string
           modalidade_entrega?: string
+          motivo_cancelamento?: string | null
           numero: number
           observacao_cliente?: string | null
           observacao_interna?: string | null
@@ -448,6 +454,7 @@ export type Database = {
           delivery_city_id?: string | null
           id?: string
           modalidade_entrega?: string
+          motivo_cancelamento?: string | null
           numero?: number
           observacao_cliente?: string | null
           observacao_interna?: string | null
@@ -1004,6 +1011,11 @@ export type Database = {
       store_settings: {
         Row: {
           baixa_estoque_na_reserva: boolean
+          // Migration 039 (incremento 7) - drift do tipo gerado,
+          // corrigido a mao. Nao expostas em get_public_store_settings
+          // de proposito (configuracao operacional interna do staff).
+          cancelamento_automatico_habilitado: boolean
+          prazo_cancelamento_automatico_horas: number
           created_at: string
           loja_aberta: boolean
           mensagem_loja_fechada: string | null
@@ -1033,6 +1045,8 @@ export type Database = {
         }
         Insert: {
           baixa_estoque_na_reserva?: boolean
+          cancelamento_automatico_habilitado?: boolean
+          prazo_cancelamento_automatico_horas?: number
           created_at?: string
           loja_aberta?: boolean
           mensagem_loja_fechada?: string | null
@@ -1059,6 +1073,8 @@ export type Database = {
         }
         Update: {
           baixa_estoque_na_reserva?: boolean
+          cancelamento_automatico_habilitado?: boolean
+          prazo_cancelamento_automatico_horas?: number
           created_at?: string
           loja_aberta?: boolean
           mensagem_loja_fechada?: string | null
@@ -1216,6 +1232,52 @@ export type Database = {
           p_observacao_cliente?: string | null
           p_itens?: Json
         }
+        Returns: Database["public"]["Tables"]["orders"]["Row"]
+      }
+      // Adicionadas na migration 039 (Fase 2, incremento 7 - Painel de
+      // Pedidos do vendedor). Drift do tipo gerado, corrigido a mao (CLI
+      // sem privilegio pra regenerar nesta sessao).
+      staff_pode_gerenciar_pedidos: {
+        Args: never
+        Returns: boolean
+      }
+      // Editar (REGRAS_DE_NEGOCIO.md §15.4) - so reduz/remove, nunca
+      // aumenta/adiciona. p_itens: array de { variant_id: string,
+      // quantidade: number }. So permitido com status=aguardando_validacao.
+      ajustar_itens_pedido: {
+        Args: { p_order_id: string; p_itens: Json }
+        Returns: Database["public"]["Tables"]["orders"]["Row"]
+      }
+      // Baixa de estoque REAL acontece aqui (aguardando_validacao ->
+      // confirmado). Tudo ou nada se faltar saldo em qualquer item.
+      validar_pedido: {
+        Args: { p_order_id: string; p_data_prevista?: string | null }
+        Returns: Database["public"]["Tables"]["orders"]["Row"]
+      }
+      // Cancela manualmente (aguardando_validacao ou confirmado ->
+      // cancelado) - exige motivo, devolve estoque so se ja estava
+      // confirmado.
+      cancelar_pedido: {
+        Args: { p_order_id: string; p_motivo: string }
+        Returns: Database["public"]["Tables"]["orders"]["Row"]
+      }
+      // Marca a entrega como realizada (confirmado -> concluido), grava
+      // data_efetiva=now().
+      concluir_pedido: {
+        Args: { p_order_id: string }
+        Returns: Database["public"]["Tables"]["orders"]["Row"]
+      }
+      // Roda SEM sessao (GitHub Action cron, anon key) - nunca chamada
+      // pelo painel. Retorna quantos pedidos foram cancelados.
+      cancelar_pedidos_expirados: {
+        Args: never
+        Returns: number
+      }
+      // Adicionada na migration 040 (achado ao construir a tela do
+      // painel de pedidos - a 039 nao tinha RPC nenhuma pra gravar
+      // observacao_interna). Sem restricao de status.
+      atualizar_observacao_interna_pedido: {
+        Args: { p_order_id: string; p_observacao: string | null }
         Returns: Database["public"]["Tables"]["orders"]["Row"]
       }
       // Adicionada na migration 021 (modulo de Estoque). p_quantidade
