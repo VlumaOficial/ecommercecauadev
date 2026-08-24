@@ -1,0 +1,40 @@
+name: Cancelamento automático de pedidos expirados
+
+on:
+  schedule:
+    # A cada hora, no minuto 0. A RPC e' idempotente e autolimitada
+    # (so cancela pedido que ja passou do prazo configurado por
+    # tenant - migration 039, REGRAS_DE_NEGOCIO.md §17.2) - rodar
+    # cedo ou repetido nao tem efeito colateral, entao uma janela de
+    # ate 1h de atraso pra pegar um pedido vencido e' aceitavel dado
+    # que o prazo default e' de 48h.
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  cancelar-expirados:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar cancelar_pedidos_expirados()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            "${SUPABASE_URL}/rest/v1/rpc/cancelar_pedidos_expirados" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          STATUS=$(echo "$RESPONSE" | tail -n 1)
+
+          echo "HTTP Status: ${STATUS}"
+          echo "Pedidos cancelados nesta execução: ${BODY}"
+
+          if [ "$STATUS" -ne 200 ]; then
+            echo "::error::cancelar_pedidos_expirados falhou (HTTP ${STATUS})"
+            exit 1
+          fi
