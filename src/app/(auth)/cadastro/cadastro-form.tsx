@@ -4,17 +4,23 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import type { CidadeEntregaPublica } from '@/lib/loja/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
 import { toast } from 'sonner'
 import { Loader2, MailCheck, Eye, EyeOff } from 'lucide-react'
 
-export function CadastroForm({ cidades, proximo }: { cidades: CidadeEntregaPublica[]; proximo?: string }) {
+// Cidade de entrega NAO entra mais aqui (decisao de produto,
+// 24/08/2026, REGRAS_DE_NEGOCIO.md §14) - "ponto de encontro por
+// cidade" e' um detalhe da modalidade de entrega do Cauã, nao algo
+// universal de cadastro (uma loja com Correios/retirada fixa nao
+// teria isso), e a escolha de onde receber pertence ao momento da
+// COMPRA (checkout), nao ao momento de criar a conta. `delivery_city_id`
+// nasce nulo no cadastro; o cliente escolhe no checkout (passo de
+// Entrega) ou depois em /minha-conta - handle_new_user (migration 033)
+// ja trata a ausencia do campo como null de proposito (nullif + try/catch),
+// coluna e' nullable desde a 005, nenhuma migration nova precisou disso.
+export function CadastroForm({ proximo }: { proximo?: string }) {
   const supabase = createClient()
 
   // Propaga o destino pos-login (ex.: checkout) atraves do link REAL de
@@ -29,7 +35,6 @@ export function CadastroForm({ cidades, proximo }: { cidades: CidadeEntregaPubli
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
-  const [cidadeId, setCidadeId] = useState('')
   const [senha, setSenha] = useState('')
   const [carregando, setCarregando] = useState(false)
   const [enviado, setEnviado] = useState(false)
@@ -47,7 +52,6 @@ export function CadastroForm({ cidades, proximo }: { cidades: CidadeEntregaPubli
 
   async function cadastrar(e: React.FormEvent) {
     e.preventDefault()
-    if (!cidadeId) { toast.error('Selecione sua cidade de entrega.'); return }
     const wpp = whatsapp.replace(/\D/g, '')
     if (wpp.length < 10) { toast.error('Informe um WhatsApp valido com DDD.'); return }
     if (senha.length < 8) { toast.error('A senha deve ter ao menos 8 caracteres.'); return }
@@ -61,7 +65,6 @@ export function CadastroForm({ cidades, proximo }: { cidades: CidadeEntregaPubli
         data: {
           nome: nome.trim(),
           whatsapp: wpp,
-          delivery_city_id: cidadeId,
         },
       },
     })
@@ -141,28 +144,6 @@ export function CadastroForm({ cidades, proximo }: { cidades: CidadeEntregaPubli
         <div className="space-y-2">
           <Label htmlFor="whatsapp">WhatsApp</Label>
           <Input id="whatsapp" inputMode="tel" required value={whatsapp} onChange={(e) => setWhatsapp(formatarWhatsapp(e.target.value))} placeholder="(71) 99999-9999" />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="cidade">Cidade de entrega</Label>
-          <Select value={cidadeId} onValueChange={(v) => setCidadeId(v ?? '')}>
-            <SelectTrigger id="cidade" className="w-full">
-              <SelectValue placeholder={cidades.length === 0 ? 'Nenhuma cidade disponivel' : 'Selecione sua cidade'}>
-                {(value: string | null) => {
-                  const c = cidades.find((x) => x.id === value)
-                  return c ? `${c.nome}${c.uf ? ' - ' + c.uf : ''}` : ''
-                }}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {cidades.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.nome}{c.uf ? ` - ${c.uf}` : ''}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">Entregamos apenas nas cidades listadas.</p>
         </div>
 
         <div className="space-y-2">

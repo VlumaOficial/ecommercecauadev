@@ -1,37 +1,33 @@
 import Link from 'next/link'
 
 import { getTenantFromHeaders } from '@/lib/tenant'
-import { getPublicStoreSettings, getPublicDeliveryCities } from '@/lib/loja/rpc'
+import { getPublicStoreSettings } from '@/lib/loja/rpc'
 import { Button } from '@/components/ui/button'
 import { CadastroForm } from './cadastro-form'
 
 export const dynamic = 'force-dynamic'
 
-// Server Component: resolve tenant/config ANTES de renderizar, em vez
-// do hook client-side (useDeliveryCities) que a tela usava antes -
-// esse hook consultava delivery_cities direto pela tabela com sessao
-// anonima, acesso que a migration 028 fechou (dropou
-// cities_select_anon) sem RPC publica equivalente na epoca. Resultado
-// real, confirmado ao vivo: o dropdown de cidade ficava sempre vazio
-// pra qualquer visitante, cadastro de cliente nao dava pra concluir.
-// Corrigido usando get_public_delivery_cities (migration 032, Fase 2
-// incremento 1) - ja resolvida aqui no servidor, sem sessao nenhuma.
+// Server Component: resolve tenant/config ANTES de renderizar.
+//
+// Cidade de entrega NAO e' mais pedida aqui (decisao de produto,
+// 24/08/2026, REGRAS_DE_NEGOCIO.md §14) - pertence ao checkout (onde
+// o cliente decide onde receber a COMPRA), nao ao cadastro (so' cria
+// a conta). get_public_delivery_cities (migration 032) deixou de ser
+// necessaria nesta tela por isso.
 //
 // permite_autocadastro (migration 036, Fase 2 incremento 2): o
 // lojista pode desligar autocadastro - checado aqui, antes de montar
 // o formulario. Tenant nao resolvido (host fora de tenant_domains,
-// caso raro) cai pro comportamento antigo: formulario aberto, sem
-// cidade nenhuma pra escolher - login/cadastro nunca ficam bloqueados
-// so por causa da resolucao de tenant (mesmo principio do layout).
+// caso raro) cai pro comportamento antigo: formulario aberto -
+// login/cadastro nunca ficam bloqueados so por causa da resolucao de
+// tenant (mesmo principio do layout).
 export default async function CadastroPage({
   searchParams,
 }: {
   searchParams: Promise<{ proximo?: string }>
 }) {
   const tenant = await getTenantFromHeaders()
-  const [settings, cidades] = tenant
-    ? await Promise.all([getPublicStoreSettings(tenant.slug), getPublicDeliveryCities(tenant.slug)])
-    : [null, []]
+  const settings = tenant ? await getPublicStoreSettings(tenant.slug) : null
   const { proximo } = await searchParams
 
   if (settings && !settings.permite_autocadastro) {
@@ -48,5 +44,5 @@ export default async function CadastroPage({
     )
   }
 
-  return <CadastroForm cidades={cidades} proximo={proximo} />
+  return <CadastroForm proximo={proximo} />
 }
