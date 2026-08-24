@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ArrowLeftIcon, MessageCircleIcon } from 'lucide-react'
 import { usePedido } from '@/hooks/use-pedidos'
+import { Button } from '@/components/ui/button'
 import { PedidoStatusBadge } from '@/components/loja/pedidos/status-badge'
 import { PedidoItensSection } from './pedido-itens-section'
 import { PedidoObservacaoInterna } from './pedido-observacao-interna'
@@ -129,7 +130,14 @@ export function PedidoDetalheView({ id }: { id: string }) {
         podeGerenciar={pedido.pode_gerenciar}
       />
 
-      <PedidoAcoes pedido={pedido} />
+      <div className="mt-6 flex flex-wrap gap-2 border-t border-border pt-6">
+        <Link href="/painel/pedidos">
+          <Button type="button" variant="outline">
+            Voltar para pedidos
+          </Button>
+        </Link>
+        <PedidoAcoes pedido={pedido} />
+      </div>
     </div>
   )
 }

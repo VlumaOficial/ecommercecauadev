@@ -35,16 +35,13 @@ export function PedidoAcoes({ pedido }: { pedido: PedidoDetalhe }) {
   const cancelar = useCancelarPedido()
   const concluir = useConcluirPedido()
 
-  if (!pedido.pode_gerenciar) return null
-
-  const podeValidar = pedido.status === 'aguardando_validacao'
-  const podeCancelar = pedido.status === 'aguardando_validacao' || pedido.status === 'confirmado'
-  const podeConcluir = pedido.status === 'confirmado'
-
-  if (!podeValidar && !podeCancelar && !podeConcluir) return null
+  const podeValidar = pedido.pode_gerenciar && pedido.status === 'aguardando_validacao'
+  const podeCancelar =
+    pedido.pode_gerenciar && (pedido.status === 'aguardando_validacao' || pedido.status === 'confirmado')
+  const podeConcluir = pedido.pode_gerenciar && pedido.status === 'confirmado'
 
   return (
-    <div className="mt-6 flex flex-wrap gap-2 border-t border-border pt-6">
+    <>
       {podeValidar && <Button onClick={() => setValidarAberto(true)}>Validar pedido</Button>}
       {podeConcluir && <Button onClick={() => setConcluirAberto(true)}>Marcar como concluído</Button>}
       {podeCancelar && (
@@ -155,6 +152,6 @@ export function PedidoAcoes({ pedido }: { pedido: PedidoDetalhe }) {
         loading={concluir.isPending}
         onConfirm={() => concluir.mutate(pedido.id, { onSuccess: () => setConcluirAberto(false) })}
       />
-    </div>
+    </>
   )
 }
