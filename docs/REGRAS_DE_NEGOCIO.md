@@ -361,6 +361,19 @@ Quando um cadastro é tentado com um e-mail que já tem conta, a mensagem mostra
 
 `customers.whatsapp` **não tem** nem vai ganhar, por enquanto, nenhuma restrição de unicidade — o mesmo número de telefone pode estar associado a mais de uma conta de cliente. O identificador único de conta é o **e-mail** (login), não o telefone. Decisão consciente, não uma lacuna esquecida: casos legítimos existem (familiares/funcionários compartilhando um número de contato, ou alguém que cria uma segunda conta com e-mail diferente mas mesmo WhatsApp) — impor unicidade aqui bloquearia esses casos sem necessidade real de negócio identificada até agora. Revisável no futuro se surgir um motivo concreto.
 
+### 14.3 Cidade de entrega sai do cadastro — pertence ao checkout/conta, não à criação da conta
+
+**📐 Decidido com o PO em 24/08/2026. ✅ Implementado e testado com Chromium real contra a URL pública no mesmo dia.**
+
+O cadastro (`/cadastro`) **não pede mais cidade de entrega** — coleta só nome, e-mail, WhatsApp e senha. Dois motivos, os dois de produto:
+
+- **Acoplamento errado**: "ponto de encontro por cidade" é a modalidade de entrega hoje usada pelo Cauã (§5), não algo universal — uma loja com Correios, transportadora ou retirada em endereço fixo não teria "cidade de entrega" nenhuma pra pedir no cadastro. Pedir isso na criação de conta amarra o cadastro (peça de infraestrutura, deveria servir qualquer lojista do SaaS) a uma decisão operacional de uma loja específica.
+- **Momento errado**: onde receber pertence à decisão da **compra** (checkout, passo de Entrega — §15.1), não ao momento de só criar uma conta. Perguntar no cadastro adianta uma escolha que só faz sentido no contexto de um pedido real sendo montado.
+
+`customers.delivery_city_id` continua existindo, nullable (sem mudança de schema — já era nullable desde a migration `005`, `handle_new_user`/migration `033` já tratava a ausência do campo como `null` de propósito, com `nullif` + `try/catch` de segurança). Nasce **nulo** em todo cadastro novo; é preenchido normalmente no checkout (o passo de Entrega já bloqueia "Continuar" até uma cidade ser escolhida, com ou sem valor prévio) ou depois em `/minha-conta` (§18.4). Cliente que já tinha `delivery_city_id` preenchido antes desta mudança **não é afetado** — o campo só deixou de ser perguntado em telas novas, nenhum dado existente foi tocado.
+
+**Teste completo (Chromium real, `ecommercecauahml.vluma.com.br`)**: formulário de `/cadastro` confirmado sem nenhum campo/texto de cidade; cadastro real via UI (sem escolher cidade nenhuma, porque não há onde escolher) — `customers` criado corretamente com `delivery_city_id = null` (confirma que `handle_new_user` não erra com o campo ausente); logado em seguida, checkout no passo de Entrega mostra o seletor de cidade normalmente, "Continuar" desabilitado até escolher (cliente realmente sem cidade prévia) e habilitado depois de escolher; `/minha-conta` confirmado ainda mostrando o campo de cidade, editável. Zero resíduo de teste (nenhuma conta/pedido de teste sobrou).
+
 ---
 
 ## 15. Checkout — fluxo e identificação (Fase 2)
