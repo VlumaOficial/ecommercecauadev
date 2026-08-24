@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CheckCircle2Icon, Loader2Icon, PackageIcon } from 'lucide-react'
+import { CheckCircle2Icon, Loader2Icon, MinusIcon, PackageIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { formatarMoeda } from '@/lib/utils'
 import { urlImagemProduto } from '@/lib/loja/rpc'
 import { useCarrinho, useCarrinhoRegras } from '@/components/loja/carrinho-provider'
 import { Button } from '@/components/ui/button'
+import { Preco } from '@/components/ui/preco'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -52,6 +53,8 @@ function formatarWhatsapp(digitos: string) {
 export function CheckoutWizard({ cliente, cidades }: { cliente: CustomerProfile; cidades: CidadeEntregaPublica[] }) {
   const itens = useCarrinho((s) => s.itens)
   const limparCarrinho = useCarrinho((s) => s.limparCarrinho)
+  const alterarQuantidade = useCarrinho((s) => s.alterarQuantidade)
+  const removerItem = useCarrinho((s) => s.removerItem)
   const regras = useCarrinhoRegras()
 
   const [passo, setPasso] = useState<Passo>('identificacao')
@@ -134,6 +137,8 @@ export function CheckoutWizard({ cliente, cidades }: { cliente: CustomerProfile;
       ) : passo === 'revisao' ? (
         <PassoRevisao
           itens={itens}
+          onAlterarQuantidade={alterarQuantidade}
+          onRemoverItem={removerItem}
           cidadeEscolhida={cidadeEscolhida}
           observacao={observacao}
           onObservacaoChange={setObservacao}
@@ -275,6 +280,8 @@ function PassoEntrega({
 
 function PassoRevisao({
   itens,
+  onAlterarQuantidade,
+  onRemoverItem,
   cidadeEscolhida,
   observacao,
   onObservacaoChange,
@@ -286,6 +293,8 @@ function PassoRevisao({
   onFinalizar,
 }: {
   itens: ItemCarrinho[]
+  onAlterarQuantidade: (variantId: string, quantidade: number) => void
+  onRemoverItem: (variantId: string) => void
   cidadeEscolhida: CidadeEntregaPublica | null
   observacao: string
   onObservacaoChange: (v: string) => void
@@ -299,7 +308,9 @@ function PassoRevisao({
   return (
     <div className="bg-card rounded-2xl border border-border p-6 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.15)] sm:p-8">
       <h1 className="font-display text-lg font-bold text-primary mb-1">Revisão</h1>
-      <p className="text-sm text-muted-foreground mb-6">Confira seu pedido antes de finalizar.</p>
+      <p className="text-sm text-muted-foreground mb-6">
+        Confira seu pedido antes de finalizar — ajuste quantidade ou remova itens aqui, se precisar.
+      </p>
 
       <ul className="mb-4 flex flex-col gap-3">
         {itens.map((item) => {
@@ -315,15 +326,49 @@ function PassoRevisao({
                   </div>
                 )}
               </div>
-              <div className="flex flex-1 items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{item.productNome}</p>
-                  {item.variantNome !== 'Padrão' && (
-                    <p className="text-xs text-muted-foreground">{item.variantNome}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">Qtd: {item.quantidade}</p>
+              <div className="flex flex-1 flex-col gap-1.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{item.productNome}</p>
+                    {item.variantNome !== 'Padrão' && (
+                      <p className="text-xs text-muted-foreground">{item.variantNome}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onRemoverItem(item.variantId)}
+                    className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
+                    aria-label={`Remover ${item.productNome} do pedido`}
+                  >
+                    <Trash2Icon className="size-4" />
+                  </button>
                 </div>
-                <span className="text-sm font-semibold text-foreground">{formatarMoeda(preco * item.quantidade)}</span>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center rounded-lg border border-border">
+                    <button
+                      type="button"
+                      disabled={item.quantidade <= item.quantidadeMinimaVenda}
+                      onClick={() => onAlterarQuantidade(item.variantId, item.quantidade - 1)}
+                      className="flex size-7 items-center justify-center text-foreground disabled:opacity-40"
+                      aria-label={`Diminuir quantidade de ${item.productNome}`}
+                    >
+                      <MinusIcon className="size-3.5" />
+                    </button>
+                    <span className="w-7 text-center text-xs font-medium tabular-nums">{item.quantidade}</span>
+                    <button
+                      type="button"
+                      onClick={() => onAlterarQuantidade(item.variantId, item.quantidade + 1)}
+                      className="flex size-7 items-center justify-center text-foreground"
+                      aria-label={`Aumentar quantidade de ${item.productNome}`}
+                    >
+                      <PlusIcon className="size-3.5" />
+                    </button>
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">
+                    {formatarMoeda(preco * item.quantidade)}
+                  </span>
+                </div>
               </div>
             </li>
           )
@@ -352,7 +397,7 @@ function PassoRevisao({
 
       <div className="mb-4 flex items-center justify-between border-t border-border pt-4">
         <span className="text-sm font-medium text-muted-foreground">Total</span>
-        <span className="font-display text-lg font-extrabold text-foreground">{formatarMoeda(total)}</span>
+        <Preco valor={total} className="text-lg font-extrabold text-foreground" />
       </div>
 
       {faltaParaMinimo > 0 && (

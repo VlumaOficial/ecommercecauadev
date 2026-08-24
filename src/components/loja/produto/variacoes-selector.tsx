@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { formatarMoeda } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Preco } from '@/components/ui/preco'
 import { useCarrinho, useCarrinhoRegras } from '@/components/loja/carrinho-provider'
 import type { ProdutoDetalheVariacao } from '@/lib/loja/types'
 
@@ -117,9 +118,10 @@ export function VariacoesSelector({
           {selecionada.preco_promocional && (
             <p className="text-sm text-muted-foreground line-through">{formatarMoeda(selecionada.preco)}</p>
           )}
-          <p className="font-display text-3xl font-extrabold text-foreground sm:text-[32px]">
-            {formatarMoeda(selecionada.preco_promocional ?? selecionada.preco)}
-          </p>
+          <Preco
+            valor={selecionada.preco_promocional ?? selecionada.preco}
+            className="text-3xl font-extrabold text-foreground sm:text-[32px]"
+          />
         </div>
       )}
 
