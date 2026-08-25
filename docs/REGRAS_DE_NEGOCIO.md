@@ -30,6 +30,8 @@ Cada regra abaixo indica seu status: **✅ Em vigor** (implementada e funcionand
 
 **📐 Decidida e modelada, migration `007` aplicada no banco.** **✅ Em vigor no lado da leitura desde 12/08/2026** — a Vitrine pública (`(loja)/**`, Fase 1 Etapa 2) já respeita os dois níveis: `loja_aberta=false` mostra só a mensagem, sem header/nav/catálogo nenhum; `pedidos_abertos=false` (com loja aberta) mostra uma faixa com `mensagem_pedidos_fechados` acima do catálogo, que continua navegável — não há botão de finalizar pedido ainda pra bloquear de verdade (Carrinho/Checkout é fase futura), então esse nível só afeta o aviso por enquanto. **UI de configuração pro lojista editar os dois campos ainda não existe** — a Etapa 4 do plano da Vitrine Fase 1 (`ESCOPO_PROJETO.md` §0 itens 28/29, concluída em 14/08/2026) ficou restrita a banner/selos/WhatsApp/identidade (o que os pedidos da etapa listaram); `loja_aberta`/`pedidos_abertos`/as duas mensagens de fechamento **continuam só editáveis por SQL direto**, sem tela — pendência real pra uma etapa futura (fora do escopo do que já foi pedido), não coberta por engano.
 
+**✅ Pendência fechada em 25/08/2026** — item (4) da sequência pré-incremento 8 (`ESCOPO_PROJETO.md` §0), módulo de Configuração (`/painel/configuracoes`), traz a tela pro grupo "Status da loja": `loja_aberta`, `mensagem_loja_fechada`, `pedidos_abertos`, `mensagem_pedidos_fechados` agora são editáveis pelo lojista (admin), sem precisar de SQL direto. Detalhe completo (desenho, escopo, teste) em `ESCOPO_PROJETO.md` §0 item 49/50.
+
 A loja tem dois interruptores independentes, não um só:
 
 | Nível | Campo | Efeito quando desligado |
