@@ -505,6 +505,20 @@
 
 **Com isso, os itens (1)–(3) da sequência pré-incremento 8 estão fechados.** Próximo passo: item (4), módulo de Configuração.
 
+**Item (4) — módulo de Configuração (`/painel/configuracoes`). Desenho fechado com o PO em 24/08/2026, mas nunca chegou a ficar registrado nos docs (compactado do contexto visível) — reconstruído e reconfirmado com o PO em 25/08/2026, antes de qualquer código, exatamente pra fechar esse vácuo.** Tela única, form único, salva direto (sem rascunho/publicar como a Vitrine — estes campos são regra de negócio operacional, não conteúdo editorial). `GET` (leitura) liberado pra qualquer staff; `PATCH` (escrita) admin-only, gate em app (`perfil.role !== 'admin'`) **e** RLS `settings_admin_write` (migration `013`, já em vigor) por baixo — mesma defesa em profundidade já usada em `/painel/equipe`. **Nenhuma migration nova** — todas as colunas já existem em `store_settings` desde migrations anteriores (`002`/`007`/`038`/`039`).
+
+4 grupos de campos, todos colunas de `store_settings` sem tela até agora:
+- **Status da loja**: `loja_aberta`, `mensagem_loja_fechada`, `pedidos_abertos`, `mensagem_pedidos_fechados` (§2).
+- **Cadastro**: `permite_autocadastro` (grupo próprio — **não** entra em "Status da loja", ajuste feito na reconfirmação de 25/08/2026).
+- **Pedido mínimo**: `valor_minimo_pedido_habilitado`, `valor_minimo_pedido` (§11.4).
+- **Cancelamento automático**: `cancelamento_automatico_habilitado`, `prazo_cancelamento_automatico_horas` (§17.2).
+
+**Deliberadamente fora do escopo desta tela**: `baixa_estoque_na_reserva`/`minutos_expiracao_reserva` — pertencem ao modo "bloquear pelo estoque" (§12/§16.4), que só entra junto da integração de pagamento (Fluxo B, ainda não implementado); expor um toggle que não muda nenhum comportamento no MVP confundiria o lojista. Os campos de identidade/banner/selos/whatsapp/cor (migrations `030`/`031`) já têm tela própria em `/painel/vitrine` — não duplicados aqui.
+
+**Achado ao implementar, corrigido no mesmo incremento**: `src/types/database.ts` (tipo gerado, mantido manualmente) tinha `valor_minimo_pedido_habilitado` faltando no bloco de tabela `store_settings` (`Row`/`Insert`/`Update`) — presente só no shape de retorno de `get_public_store_settings`. Coluna real desde a migration `038`, só o tipo TypeScript estava incompleto (mesmo drift já documentado outras vezes nesta árvore de migrations). Corrigido junto, sem migration nenhuma (é só o tipo do client, não o banco).
+
+**Implementado em 25/08/2026** (`src/app/api/painel/configuracoes/route.ts`, `src/hooks/use-configuracoes.ts`, `src/components/painel/configuracoes/*`, `src/app/painel/configuracoes/page.tsx`) — `npm run build` (typecheck) passou. **Pendente**: teste com Chromium real contra a URL pública (`ecommercecauahml.vluma.com.br`), sessão de staff real, antes de fechar o item.
+
 **Nota de esclarecimento registrada com o PO em 24/08/2026 — "módulo de Clientes" (Fase 3) não é pendência esquecida, é sequenciamento deliberado.** Distinção importante pra não confundir com o item (3) acima (gestão de **equipe**, só staff): "módulo de Clientes" é a tela `/painel/clientes` onde o lojista administra os **clientes** da loja (ficha + histórico de pedidos) — ainda não existe, e não faz parte desta sequência pré-incremento 8. Motivo do sequenciamento (já registrado em 15/08/2026, §4 "Planejadas"): a ficha do cliente com histórico se apoia no módulo de Pedidos **completo** da Fase 3 — construir uma versão básica agora seria trabalho descartável quando a versão de verdade chegar. **O que já existe hoje sobre clientes** (não é essa pendência): contas de cliente na vitrine — cadastro/login/gestão de conta (`REGRAS_DE_NEGOCIO.md` §14, Fase 2 incremento 2) e a área do cliente com "Meus Pedidos" (§18.2, incremento 6). **O que falta e é Fase 3**: só a tela de *administração* de clientes no painel (visão do lojista, não do cliente). `/painel/clientes` já está reservado como item de sidebar (ícone `Users`) especificamente pra essa tela futura.
 
 ---

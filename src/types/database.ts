@@ -1026,6 +1026,12 @@ export type Database = {
           tenant_id: string
           updated_at: string
           valor_minimo_pedido: number
+          // Fase 2, incremento 4 (migration 038) - flag de habilitacao
+          // separada do valor (REGRAS_DE_NEGOCIO.md §11.4). Faltava
+          // aqui (drift do tipo gerado, ja corrigido no bloco de
+          // get_public_store_settings acima mas nao neste bloco de
+          // tabela) - corrigido no item 4 (modulo de Configuracao).
+          valor_minimo_pedido_habilitado: boolean
           // Vitrine Fase 1 Etapa 3 (migration 030) - ver src/lib/loja/rpc.ts
           // pros defaults usados enquanto a migration nao estiver aplicada.
           banner_titulo: string
@@ -1057,6 +1063,7 @@ export type Database = {
           tenant_id: string
           updated_at?: string
           valor_minimo_pedido?: number
+          valor_minimo_pedido_habilitado?: boolean
           banner_titulo?: string
           banner_subtitulo?: string
           banner_botao_texto?: string
@@ -1085,6 +1092,7 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
           valor_minimo_pedido?: number
+          valor_minimo_pedido_habilitado?: boolean
           banner_titulo?: string
           banner_subtitulo?: string
           banner_botao_texto?: string
