@@ -619,6 +619,24 @@ Vale o mesmo princípio de isolamento de papéis já crítico no sistema (§1, r
 
 ---
 
+## 22. Gestão de equipe (painel) — item 3 da sequência pré-incremento 8
+
+**📐 Decidido com o PO em 24/08/2026, desenho aprovado antes de implementar. ✅ Implementado e testado com Chromium real contra a URL pública, sessão real de admin, no mesmo dia.**
+
+Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de Clientes completo com ficha/histórico) — consome pela primeira vez o fluxo de 2 passos que corrigiu o bug 46 (§2 "Padrão de autenticação", migration `041`).
+
+**Escopo**: listar (filtro Ativos/Inativos/Todos), criar, editar (nome/papel/`pode_aceitar_pedido`), desativar/reativar, reenviar link de senha. Criar/editar/desativar são **ação de admin**, não de qualquer staff — diferente de `pode_aceitar_pedido` (que é sobre gerenciar *pedidos*, §15.4, não sobre gerenciar *a equipe*). E-mail não é editável no MVP (identificador de login ligado a `auth.users`, mudar exigiria coordenar com a Auth API — decisão deliberada de campo imutável, mesmo padrão do Código do Produto).
+
+**Senha inicial do novo staff**: nunca é definida por ninguém (nem admin, nem sistema exibindo). `POST /api/painel/equipe` gera uma senha aleatória que não é vista/logada em lugar nenhum e imediatamente dispara `resetPasswordForEmail()` — **o mesmo mecanismo de recuperação de senha já testado com link real** (§18.4), não um convite novo. O novo membro recebe um e-mail de verdade e define a própria senha. Se o e-mail se perder, "Reenviar link" (ação de linha) dispara o mesmo mecanismo de novo.
+
+**Autoproteção**: um admin não pode desativar a própria conta nem trocar o próprio papel (os dois via `id !== sessão atual` no Route Handler) — evita se trancar fora sozinho. Refinamento registrado pra o futuro, não implementado agora: uma regra "sempre ≥1 admin ativo" no sistema.
+
+**Segurança**: `src/lib/supabase/admin.ts` (client com a service role key) só existe pra este fluxo — `import 'server-only'` no topo quebra o **build** se qualquer componente client tentar importá-lo, mesmo transitivamente (confirmado com um teste real: um componente client importando o helper derrubou o build do Next com o erro exato de `server-only`, removido em seguida). Duas camadas: o Route Handler confere `role === 'admin'` da sessão real antes de tudo; a RPC `promover_para_staff` continua `service_role`-only por baixo (mesma garantia estrutural da migration `041`) — mesmo que a primeira camada tivesse um bug, a segunda segura sozinha.
+
+**Teste completo (Chromium real, sessão de admin real)**: staff novo criado ponta a ponta pela tela (toast confirma o e-mail enviado, não caiu no fallback de "não conseguimos enviar"); confirmado no banco que saiu de `customers` e entrou em `profiles` com papel/e-mail corretos; sessão do **operador recém-criado** tentando chamar `POST /api/painel/equipe` recebe 403 (gate admin-only funcionando de verdade, não só no código); admin tentando se autodesativar e tentando trocar o próprio papel — os dois recusados com mensagem clara, e o botão de desativar já vem desabilitado na própria linha na UI; edição de nome confirmada persistida no banco; desativar confirmado no banco. Zero resíduo de teste ao final.
+
+---
+
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
 
 *Entregável planejado: ao final do desenvolvimento, este documento é a base para gerar o **manual formal do usuário/lojista** — por isso a linguagem aqui evita jargão técnico desde o início.*
