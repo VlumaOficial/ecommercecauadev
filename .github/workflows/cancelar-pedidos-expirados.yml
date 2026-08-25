@@ -15,26 +15,31 @@ jobs:
   cancelar-expirados:
     runs-on: ubuntu-latest
     steps:
-      - name: Chamar cancelar_pedidos_expirados()
+      # Incremento 8 (Notificacoes, 25/08/2026): a RPC
+      # cancelar_pedidos_expirados() (migration 042) deixou de ser
+      # chamavel por anon key - agora devolve os pedidos afetados
+      # (nao so' a contagem) e por isso e' service-role-only. Este
+      # step passou a chamar a rota do Next.js (que usa service role
+      # internamente e notifica cada cliente), nao mais a RPC direto
+      # via REST.
+      - name: Chamar /api/cron/notificar-cancelamentos
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           RESPONSE=$(curl -s -w "\n%{http_code}" \
             -X POST \
-            "${SUPABASE_URL}/rest/v1/rpc/cancelar_pedidos_expirados" \
-            -H "apikey: ${SUPABASE_ANON_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
-            -H "Content-Type: application/json" \
-            -d '{}')
+            "${APP_URL}/api/cron/notificar-cancelamentos" \
+            -H "x-cron-secret: ${CRON_SECRET}" \
+            -H "Content-Type: application/json")
 
           BODY=$(echo "$RESPONSE" | head -n -1)
           STATUS=$(echo "$RESPONSE" | tail -n 1)
 
           echo "HTTP Status: ${STATUS}"
-          echo "Pedidos cancelados nesta execução: ${BODY}"
+          echo "Resumo: ${BODY}"
 
           if [ "$STATUS" -ne 200 ]; then
-            echo "::error::cancelar_pedidos_expirados falhou (HTTP ${STATUS})"
+            echo "::error::notificar-cancelamentos falhou (HTTP ${STATUS})"
             exit 1
           fi

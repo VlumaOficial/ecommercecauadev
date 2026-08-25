@@ -313,6 +313,53 @@ export type Database = {
         }
         Relationships: []
       }
+      // Migration 043 (incremento 8, Notificacoes). Ajustado a mao
+      // (sem acesso ao projeto pra `npm run types`, mesmo caso ja
+      // registrado em delivery_cities acima).
+      notification_templates: {
+        Row: {
+          id: string
+          tenant_id: string
+          evento: 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado'
+          canal: 'email' | 'whatsapp'
+          assunto: string | null
+          corpo: string
+          ativo: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id?: string
+          evento: 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado'
+          canal: 'email' | 'whatsapp'
+          assunto?: string | null
+          corpo: string
+          ativo?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          evento?: 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado'
+          canal?: 'email' | 'whatsapp'
+          assunto?: string | null
+          corpo?: string
+          ativo?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       // Adicionadas na migration 037 (Fase 2, incremento 3 - modelo de
       // pedidos). Ajustado a mao (sem acesso ao projeto pra `npm run
       // types`, mesmo caso ja registrado em delivery_cities acima).
@@ -894,6 +941,41 @@ export type Database = {
           },
         ]
       }
+      // Adicionada na migration 028 (Vitrine Fase 0). Faltava aqui
+      // (nunca precisou ser consultada direto pelo app ate agora -
+      // sem policy de select nenhuma, so' via RPC SECURITY DEFINER,
+      // ver comentario da tabela no banco). Passa a ser lida direto
+      // por notificar-pedido.ts (service role, bypassa RLS mesmo
+      // assim - leitura interna do sistema).
+      tenant_domains: {
+        Row: {
+          id: string
+          tenant_id: string
+          dominio: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          dominio: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          dominio?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_domains_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           ativo: boolean
@@ -1275,11 +1357,14 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: Database["public"]["Tables"]["orders"]["Row"]
       }
-      // Roda SEM sessao (GitHub Action cron, anon key) - nunca chamada
-      // pelo painel. Retorna quantos pedidos foram cancelados.
+      // Migration 042 (incremento 8, Notificacoes) - deixou de
+      // devolver so' a contagem, agora devolve os pedidos afetados
+      // (pra notificar cada cliente). Deixou de ser chamavel por
+      // anon/authenticated - so' service_role, via
+      // /api/cron/notificar-cancelamentos.
       cancelar_pedidos_expirados: {
         Args: never
-        Returns: number
+        Returns: { id: string; tenant_id: string; customer_id: string; numero: number }[]
       }
       // Adicionada na migration 040 (achado ao construir a tela do
       // painel de pedidos - a 039 nao tinha RPC nenhuma pra gravar

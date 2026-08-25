@@ -1,7 +1,8 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest, after } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getStaffProfile } from '@/lib/auth'
+import { notificarPedido } from '@/lib/notificacoes/notificar-pedido'
 
 // Escrita via RPC + client SERVIDOR (mesma licao do checkout/nova-senha:
 // sessao httpOnly nao e visivel ao client do navegador). validar_pedido
@@ -37,6 +38,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
+
+  after(() =>
+    notificarPedido(perfil.tenant_id, id, 'pedido_validado').catch((e) =>
+      console.error('[notificacoes] falha inesperada ao notificar validação:', e)
+    )
+  )
 
   return NextResponse.json({ data })
 }

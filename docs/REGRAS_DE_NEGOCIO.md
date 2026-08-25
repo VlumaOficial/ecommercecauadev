@@ -551,6 +551,30 @@ Além de "Meus Pedidos" (§18.2), a área do cliente no MVP inclui:
 
 **✅ CONFIRMADO com link real pelo usuário, 21/08/2026.** Teste manual de ponta a ponta (e-mail → link real de recuperação → redefinir senha → login com a senha nova) funcionou corretamente. Com isso, o bug de produção da recuperação de senha está **fechado e validado com o link real**, não só pelo mecanismo equivalente testado antes — mesmo padrão de fechamento já usado no Bug 2 (`ESCOPO_PROJETO.md` §0 item 42).
 
+### 18.5 Arquitetura de envio (item 5 da sequência pré-incremento 8) — desenhado e implementado em 25/08/2026
+
+**📐 Desenho aprovado com o PO em 25/08/2026, antes de qualquer código.** Cobre o envio de fato das notificações de §18.1 (validado/ajustado/cancelado) pelos dois canais de §18.3 (e-mail + WhatsApp Nível 1).
+
+**Canal-agnóstico por desenho**: `NotificationChannel` (`src/lib/notificacoes/types.ts`) é a interface única — `notificar-pedido.ts` (orquestrador) não conhece Zoho nem Evolution API, só fala com a interface. Cada provedor concreto é uma implementação separada (`canal-email.ts`, `canal-whatsapp.ts`), trocável sem tocar em quem chama.
+
+- **E-mail**: Zoho Mail via SMTP (`nodemailer`), primeira implementação concreta. Nomes de env var **genéricos** de propósito (`EMAIL_SMTP_*`, não `ZOHO_*`) — uma troca futura de provedor SMTP não exige renomear nada.
+- **Débito conhecido, registrado como roadmap, não implementado agora**: Zoho Mail SMTP tem limite diário baixo, não é feito pra volume transacional — a própria Zoho recomenda **ZeptoMail** (API própria, mesmo grupo) pra esse caso de uso. Zoho SMTP serve pra validar o fluxo agora; ZeptoMail vira uma segunda implementação de `NotificationChannel` quando o volume justificar — troca de adapter, não reescrita.
+- **WhatsApp**: Evolution API (instância já provisionada pela VLUMA, `https://evo.vluma.com.br`), Nível 1 (saída) — `fetch` puro contra `POST {url}/message/sendText/{instance}`, sem lib nova. `customers.whatsapp` é gravado só com DDD+número (sem DDI, ver §14.3/cadastro) — o canal prefixa `55` antes de enviar, premissa a confirmar no primeiro envio real.
+- **Credenciais**: só env var (secrets no Vercel/GitHub), nunca em arquivo/banco. Um painel de gestão de provedores/credenciais por tenant fica pra fase futura — a arquitetura (interface + templates por tenant, ver abaixo) já nasce pronta pra receber isso, mas a tela **não é construída agora**.
+
+**Templates em dados, não em código** (decisão de produto do PO): tabela nova `notification_templates` (por tenant — migration `043`), 3 eventos × 2 canais, com placeholders (`{nome_cliente}`, `{numero_pedido}`, `{nome_loja}`, `{link_pedido}`, `{motivo}` — só cancelamento) resolvidos em `src/lib/notificacoes/templates.ts`. RLS staff-select/admin-write (mesmo padrão de `store_settings`) já pronta pra uma tela de edição futura, **não construída agora** — hoje os textos só são editáveis por SQL direto.
+
+**Onde o envio é disparado**: nos Route Handlers do painel de Pedidos (`/validar`, `/editar`, `/cancelar`), depois do RPC ter sucesso — nunca dentro da RPC (Postgres não tem como chamar API HTTP externa neste projeto). Usa `after()` (Next.js) pra não atrasar a resposta que o vendedor vê — a notificação roda depois da resposta ser enviada, mas antes da função serverless ser encerrada. Falha de envio **nunca** desfaz nem bloqueia a ação do vendedor (mesmo princípio já usado no e-mail de "definir senha" da Equipe, §22) — só loga no console do servidor (best-effort; há staff olhando a tela nesses caminhos).
+
+**Gap de arquitetura fechado — cancelamento automático (cron) também notifica.** `cancelar_pedidos_expirados()` (migration `039`) rodava sem sessão via GitHub Action, chamando a RPC direto via REST com a `anon key`, e só devolvia a **quantidade** cancelada — sem saber *quais* pedidos, não havia como notificar esses clientes. Migration `042`: a RPC passa a devolver os pedidos afetados (id/tenant_id/customer_id/numero) via `RETURNING`. **Decisão de segurança tomada ao desenhar a migration**: devolver esses dados não pode mais ser aberto a `anon`/`authenticated` (viraria enumeração de pedidos/clientes de qualquer tenant pra quem tiver a anon key, pública por design) — revogado desses papéis, concedido só a `service_role` (mesmo padrão estrutural de `promover_para_staff`, migration `041`). O GitHub Action deixa de chamar a RPC direto e passa a chamar uma rota nova (`POST /api/cron/notificar-cancelamentos`, autenticada por um segredo compartilhado `CRON_SECRET`, não por login) que usa o client de service role internamente, recebe a lista de pedidos cancelados e notifica cada um.
+
+**Observabilidade do caminho automático (pedido do PO)**: como não há staff olhando o cron rodar, best-effort/console não é suficiente — `POST /api/cron/notificar-cancelamentos` devolve um **resumo no corpo da resposta** (quantos pedidos cancelados, quantos envios OK/falha por canal, detalhe por pedido), e o workflow do GitHub Actions imprime essa resposta no log da run. Sem tabela de log nova neste incremento (superdimensionaria) — o log da Action é a observabilidade deste caminho.
+
+**Env vars novas a cadastrar** (nomes exatos, nenhum valor nos docs — secrets no Vercel/GitHub):
+`EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, `EMAIL_SMTP_SECURE`, `EMAIL_SMTP_USER`, `EMAIL_SMTP_PASSWORD` (app password do Zoho, nunca a senha da conta — 2FA ativo), `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME`, `CRON_SECRET` (novo). `EVOLUTION_API_URL`/`EVOLUTION_API_KEY`/`EVOLUTION_INSTANCE` já estavam reservadas desde o `.env.example` original — só faltavam os valores. No GitHub Actions: `APP_URL` (novo, URL pública do deploy) + `CRON_SECRET`.
+
+Ver `ESCOPO_PROJETO.md` §0 item 49/50 (item 5 da sequência) pro estado de implementação/teste.
+
 ---
 
 ## 19. Status e ciclo de vida do pedido (Fase 2)

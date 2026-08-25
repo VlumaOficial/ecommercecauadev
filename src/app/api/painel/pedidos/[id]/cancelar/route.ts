@@ -1,7 +1,8 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest, after } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getStaffProfile } from '@/lib/auth'
+import { notificarPedido } from '@/lib/notificacoes/notificar-pedido'
 
 // Cancelamento manual (REGRAS_DE_NEGOCIO.md §17.1) - motivo obrigatorio
 // (a RPC cancelar_pedido, migration 039, ja recusa sem motivo; validado
@@ -35,6 +36,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
+
+  after(() =>
+    notificarPedido(perfil.tenant_id, id, 'pedido_cancelado', { motivo: parsed.data.motivo }).catch((e) =>
+      console.error('[notificacoes] falha inesperada ao notificar cancelamento:', e)
+    )
+  )
 
   return NextResponse.json({ data })
 }

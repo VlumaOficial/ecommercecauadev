@@ -1,7 +1,8 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest, after } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getStaffProfile } from '@/lib/auth'
+import { notificarPedido } from '@/lib/notificacoes/notificar-pedido'
 
 // "Editar" (REGRAS_DE_NEGOCIO.md §15.4) - so' reduzir/remover, nunca
 // aumentar/adicionar. A validacao de "nunca aumentar" e "so itens ja
@@ -43,6 +44,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
+
+  after(() =>
+    notificarPedido(perfil.tenant_id, id, 'pedido_ajustado').catch((e) =>
+      console.error('[notificacoes] falha inesperada ao notificar ajuste:', e)
+    )
+  )
 
   return NextResponse.json({ data })
 }
