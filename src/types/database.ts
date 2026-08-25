@@ -1280,6 +1280,18 @@ export type Database = {
         Args: { p_order_id: string; p_observacao: string | null }
         Returns: Database["public"]["Tables"]["orders"]["Row"]
       }
+      // Migration 041 (correção do bug 46) - service_role-only, nunca
+      // chamada pelo client de sessão comum (src/lib/supabase/server.ts),
+      // só pelo client admin (src/lib/supabase/admin.ts).
+      promover_para_staff: {
+        Args: {
+          p_auth_user_id: string
+          p_nome: string
+          p_role: Database["public"]["Enums"]["user_role"]
+          p_pode_aceitar_pedido?: boolean
+        }
+        Returns: Database["public"]["Tables"]["profiles"]["Row"]
+      }
       // Adicionada na migration 021 (modulo de Estoque). p_quantidade
       // (delta assinado) OU p_saldo_novo_desejado (so pra tipo=ajuste,
       // a funcao calcula o delta) - nunca os dois.

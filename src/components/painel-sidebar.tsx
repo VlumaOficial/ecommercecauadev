@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Package, FolderTree, ShoppingCart, Users,
-  MapPin, Ruler, Boxes, Settings, Menu, X, LogOut, Store, Palette,
+  MapPin, Ruler, Boxes, Settings, Menu, X, LogOut, Store, Palette, UserCog,
 } from 'lucide-react'
 
 const SIMBOLO =
@@ -22,6 +22,7 @@ const ITENS = [
   { href: '/painel/cidades', rotulo: 'Cidades', icone: MapPin },
   { href: '/painel/unidades-venda', rotulo: 'Unidades de venda', icone: Ruler },
   { href: '/painel/vitrine', rotulo: 'Vitrine', icone: Palette },
+  { href: '/painel/equipe', rotulo: 'Equipe', icone: UserCog },
   { href: '/painel/configuracoes', rotulo: 'Configuracoes', icone: Settings },
 ]
 
