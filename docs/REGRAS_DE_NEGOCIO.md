@@ -579,6 +579,23 @@ Além de "Meus Pedidos" (§18.2), a área do cliente no MVP inclui:
 
 Ver `ESCOPO_PROJETO.md` §0 item 49/50 (item 5 da sequência) pro estado de implementação/teste.
 
+**✅ Testado ponta a ponta em 26/08/2026, com recebimento real confirmado nos dois canais (e-mail e WhatsApp, número real do PO) — incremento 8 fechado.** Detalhe completo do teste em `ESCOPO_PROJETO.md` §0 item 49/50. Com isso, a **Fase 2 (Carrinho/Checkout/Pedidos/Notificações) está 100% completa**.
+
+### 18.6 Duas melhorias de notificação — aprovadas pelo PO como próximo incremento, NÃO implementadas ainda
+
+**📌 Registradas com o PO em 26/08/2026, logo após o incremento 8 fechar — reaproveitam o mesmo pipeline (`NotificationChannel`, `notificar-pedido.ts`, templates em dados), só novos gatilhos + novos templates. Curto de implementar, mas não começar sem autorização explícita — mesma regra de sempre.**
+
+**(c) — PRIORIDADE MAIOR: notificar o VENDEDOR (Cauã) quando entra um pedido novo.** Hoje o vendedor só descobre um pedido novo abrindo o painel manualmente — sem isso, um pedido pode ficar horas esperando validação sem o lojista saber, impacto operacional real (é exatamente o tipo de solicitação perdida que o cancelamento automático de 48h, §17.2, existe pra não deixar acumular silenciosamente, mas 48h é tempo demais pra um lojista que quer atender rápido). Ainda a definir antes de implementar:
+- **Gatilho**: mais provável é depois de `criar_pedido` ter sucesso, no Route Handler de checkout — a confirmar quando for desenhado.
+- **Destinatário**: **não é o cliente** — é o contato do **tenant** (telefone/e-mail do Cauã), não gravado em `customers`. Hoje seria env var (mesmo padrão de `EMAIL_FROM_ADDRESS`/`EVOLUTION_INSTANCE`); no SaaS vira contato configurável por-tenant — mesmo princípio já registrado em `ESCOPO_PROJETO.md` §1 (visão SaaS mesmo em single-tenant).
+- Novo evento (`pedido_novo` ou nome a definir) + 2 templates novos (e-mail + WhatsApp, tom voltado pro lojista, não pro cliente).
+
+**(b) — confirmar ao CLIENTE que o pedido foi RECEBIDO, no momento em que ele finaliza o checkout** (antes de qualquer validação do vendedor) — "recebemos seu pedido, em breve confirmaremos". Dá segurança imediata ao cliente. Menos crítico que (c): o cliente já vê o pedido em "Meus Pedidos" assim que finaliza, isto é só reforço de UX, não corrige uma lacuna operacional real como (c).
+- Gatilho: mesmo ponto de (c) — depois de `criar_pedido` ter sucesso.
+- Novo evento (`pedido_recebido` ou nome a definir) + 2 templates novos (e-mail + WhatsApp, pro cliente desta vez).
+
+Ambos ficam **registrados como próximo incremento, não implementados agora** — desenho completo (nome exato dos eventos, textos-base, ponto exato do gatilho) fica pra quando o PO autorizar o início, seguindo o mesmo método já em vigor: desenho apresentado e aprovado antes de codar.
+
 ---
 
 ## 19. Status e ciclo de vida do pedido (Fase 2)
