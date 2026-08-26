@@ -573,6 +573,10 @@ Além de "Meus Pedidos" (§18.2), a área do cliente no MVP inclui:
 **Env vars novas a cadastrar** (nomes exatos, nenhum valor nos docs — secrets no Vercel/GitHub):
 `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, `EMAIL_SMTP_SECURE`, `EMAIL_SMTP_USER`, `EMAIL_SMTP_PASSWORD` (app password do Zoho, nunca a senha da conta — 2FA ativo), `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME`, `CRON_SECRET` (novo). `EVOLUTION_API_URL`/`EVOLUTION_API_KEY`/`EVOLUTION_INSTANCE` já estavam reservadas desde o `.env.example` original — só faltavam os valores. No GitHub Actions: `APP_URL` (novo, URL pública do deploy) + `CRON_SECRET`.
 
+**📌 Credenciais atuais são de TESTE, não as reais do Cauã — troca antes de produção fica registrada como pendência formal em `ESCOPO_PROJETO.md` §1 "Checklist de pré-produção do Cauã", item 1.** Não esquecer quando o Cauã for pra produção de verdade.
+
+**Visão de SaaS aplicada aqui, mesmo o Cauã sendo single-tenant hoje**: a interface `NotificationChannel` (canal-agnóstica) já desacopla o pipeline de notificação de onde a credencial mora — hoje env var global, no SaaS vira config por-tenant (`ESCOPO_PROJETO.md` §1, pilar 5 "Autonomia de configuração do lojista") — sem precisar reescrever `notificar-pedido.ts`/`canal-email.ts`/`canal-whatsapp.ts`, só trocar de onde a credencial é lida.
+
 Ver `ESCOPO_PROJETO.md` §0 item 49/50 (item 5 da sequência) pro estado de implementação/teste.
 
 ---
