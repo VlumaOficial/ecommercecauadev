@@ -623,6 +623,16 @@ O produto é **arquitetado como SaaS multi-tenant desde a primeira tabela**, mas
 
 **Método de execução quando a Fase SaaS começar (registro de processo, PO 25/08/2026):** a Fase SaaS será **planejada antes de codar** — mapear e decidir item a item as questões de negócio (planos, preços, modelo de cobrança) e técnicas (multi-tenancy real, Super Admin VLUMA, self-service, onboarding, credenciais por-tenant, LGPD multi-tenant), registrar cada decisão nos docs, e só então implementar em incrementos — o mesmo método que já funcionou na Fase 2 (Carrinho/Checkout/Pedidos, ver §0). A Fase SaaS provavelmente ocorre no clone de código+banco já descrito acima (item 4), com o Cauã congelado como tenant de referência.
 
+**Sequência estratégica de marcos, concretizando o roadmap acima (registrada com o PO em 26/08/2026):**
+
+1. **Checklist de pré-produção do Cauã** (lista aberta, ver mais acima nesta seção — item novo já reforçado em 26/08/2026, dependente da Frente A/Catálogo em Escala pra fazer sentido subir o catálogo real).
+2. **Cauã em produção** — tenant único, mundo real. Valida o produto de verdade com um cliente pagante **antes** de clonar pra SaaS — mesmo racional já registrado acima ("por quê clonar em vez de evoluir o mesmo ambiente direto").
+3. **Preparar o ambiente do SaaS**: clonar projeto/repositório + base nova; Cauã-produção **congela** como referência, o SaaS evolui só no clone (item 4 da lista original acima, sem mudança).
+
+**Decisões em aberto no marco 3 — registradas pra não se perder, não resolver agora:**
+- **(a) Momento do clone**: gera duas bases pra manter simultaneamente — definir se o Cauã de fato congela por completo nesse momento, ou se ainda evolui em paralelo por um tempo (trade-off ainda não decidido).
+- **(b) Clone vs. multi-tenant numa base única** — reabertura deliberada da pergunta com os olhos de hoje, não uma decisão nova: **clone** dá isolamento total (nenhum risco de uma mudança de SaaS afetar o Cauã em produção), mas duas bases divergindo ao longo do tempo; **base única multi-tenant** (o SaaS nasce como mais um tenant dentro do mesmo projeto que já serve o Cauã) evita duplicação, mas qualquer mudança estrutural de SaaS passa a tocar, ainda que indiretamente, a base de quem já paga. Decisão de arquitetura a ser tomada no **início** da Fase SaaS, não antes.
+
 #### Questões a resolver na Fase SaaS (decididas em 01/08/2026 — a construir no clone, não agora)
 
 **📐 Registradas em 01/08/2026, sem implementação nenhuma ainda — fica para a Fase SaaS (item 4 acima), depois do Cauã congelar.** Três frentes fechadas como escopo da fase, para não perder o fio da meada quando essa fase começar:
@@ -649,6 +659,8 @@ Itens que só fazem sentido resolver quando o Cauã estiver de fato indo pra pro
 1. **📌 Registrado em 25/08/2026 (item 5/incremento 8, Notificações) — trocar credenciais de teste pelas credenciais reais do Cauã antes de produção.** As env vars de notificação (`EMAIL_SMTP_*`, `EVOLUTION_API_*` — ver `REGRAS_DE_NEGOCIO.md` §18.5) são cadastradas agora com credenciais/número de **teste**, só pra validar o pipeline. Antes de o Cauã ir pra produção de verdade, essas env vars precisam ser trocadas pro número de WhatsApp e e-mail **reais** do Criatório Capuã — senão o cliente final recebe notificação de um número/e-mail que não é da loja dele. É troca de **valor** de env var, não mudança de arquitetura — mas é crítica e fácil de esquecer, mesma classe de risco já vivida com a configuração de JWT expiry (`REGRAS_DE_NEGOCIO.md`/histórico do bug de 60s, §0 item 48): **documentar que foi trocado não é o mesmo que ter trocado de verdade** — antes de considerar este item fechado, confirmar no sistema real (Vercel → env vars, não só no que os docs dizem que deveria estar lá).
 
    **Confirmado empiricamente em 26/08/2026, não é mais hipotético.** O teste ponta a ponta do incremento 8 (`ESCOPO_PROJETO.md` §0 item 49/50) rodou de propósito com identidade de remetente/instância de **teste** — o número de WhatsApp conectado na instância `ecommercecauahml` e o e-mail configurado em `EMAIL_FROM_ADDRESS` no momento do teste **são de teste, não do Criatório Capuã**. As duas notificações reais que o PO recebeu (e-mail do pedido #28, WhatsApp do pedido #29) chegaram a partir dessa identidade de teste — prova viva de que, se o Cauã for pra produção sem trocar essas credenciais, o cliente final recebe a mensagem de um remetente que não é a loja dele. Item permanece **aberto**, prioridade alta antes de qualquer lançamento real.
+
+   **Sequenciamento registrado em 26/08/2026 (mapa de prioridade, seção "Roadmap e Frentes pós-Fase 2" em §4)**: este checklist inteiro está classificado como **Estratégico** (não Alta prioridade) — depende da Frente A (Gestão de Catálogo em Escala) existir primeiro, já que não faz sentido preparar o Cauã pra produção sem ter como subir o catálogo real (~1.000 itens) em escala.
 
 ---
 
@@ -945,11 +957,55 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 - **Carrinho e checkout**: valor mínimo, quantidade mínima por variação, reserva/baixa de estoque atômica no Postgres. **Pré-requisito pendente identificado em 10/08/2026** (migration `028`, Vitrine Fase 0): a RPC pública `get_public_delivery_cities(p_tenant_slug)` ainda não existe — leitura anônima de `delivery_cities` está fechada desde a `028` (mesmo padrão `SECURITY DEFINER` das outras 4 RPCs públicas), precisa ser criada como parte do desenho desta fase, antes do checkout conseguir calcular frete/área de entrega pro visitante anônimo. Ver §0 item 20 e `MIGRATIONS.md` (entrada da `028`) pro detalhe completo. **📌 15/08/2026 — plano de decisões de produto da Fase 2 registrado com o PO antes de qualquer implementação** (carrinho client-side evolutivo, quantidade/valor mínimo, estoque configurável em 2 modos faseados, entrega extensível, contas de cliente) — ver §0 item 31 e `REGRAS_DE_NEGOCIO.md` §§11–14.
 - **Pedidos**: fluxo pendente → aceite (staff) → PDF → envio (WhatsApp/Evolution API, mencionado na visão original, não iniciado).
 - **Importação em massa via CSV**: o catálogo real do cliente piloto tem **~1.000 itens** — cadastro manual produto a produto é inviável nessa escala. Importação de produtos/variações via CSV é planejada; fase exata a definir (provavelmente logo após o CRUD de Produtos existir).
+- **Detalhada em 26/08/2026 como a Frente "Gestão de Catálogo em Escala"** — ver seção "Roadmap e Frentes pós-Fase 2" ao final deste §4, não duplicado aqui (complementa o item acima, não o substitui).
 - **Super Admin VLUMA**: camada pós-MVP, separada do painel do tenant — gestão multi-tenant (criação de novas lojas), métricas entre clientes, e consumidora do `audit_log` (decisão #15). Ainda não desenhada.
 - **Manual do usuário/lojista**: entregável planejado para o final do desenvolvimento — gerado a partir de `docs/REGRAS_DE_NEGOCIO.md` (que já é escrito em linguagem clara, pensado pra isso desde a origem).
 - **Documentos Legais e Aceite (LGPD)**: aceite obrigatório de Política de Privacidade e Termos de Uso no cadastro do cliente, registro do aceite (quem/quando/versão/IP) para comprovação, documentos versionados por tenant, páginas públicas linkadas no rodapé. Ver decisão #17 e `REGRAS_DE_NEGOCIO.md` §7. **Sequenciado para depois da vitrine (F4)**, já na fase de preparação para produção.
 - **Módulo de Clientes**: o lojista administra os próprios clientes (ver quem comprou, histórico de pedidos). **📌 Decidido com o PO em 15/08/2026 (§0 item 30)**: entra junto com ou logo depois do módulo de Pedidos (Fase 3) — o cliente aparece no contexto de um pedido, não faz sentido como tela isolada antes disso. **Reforçado em 24/08/2026 (§0 item 49)**: não é pendência esquecida — motivo explícito é que a ficha do cliente com histórico se apoia no módulo de Pedidos **completo** (Fase 3, refinamentos além do que a Fase 2 já entregou); uma versão básica agora seria trabalho descartável quando a versão de verdade chegar. `/painel/clientes` já existe como item reservado na sidebar (ícone `Users`) especificamente pra essa tela futura — não confundir com "gestão de equipe" (`/painel/equipe`, item 3 da sequência pré-incremento 8, só staff, ✅ concluído).
 - **Relatórios financeiro/vendas**: faturamento, produtos mais vendidos, etc. **📌 Decidido com o PO em 15/08/2026 (§0 item 30)**: frente futura, depois do end-to-end — só há o que relatar depois que houver vendas de verdade rodando.
+- **Detalhada em 26/08/2026 como a Frente "Relatórios/Dashboard"** — ver seção abaixo, não duplicado aqui (complementa o item acima, não o substitui).
+
+---
+
+### Roadmap e Frentes pós-Fase 2 (registrado em 26/08/2026)
+
+**📌 Registro consolidado de um planejamento fechado com o PO logo após a Fase 2 completar (§0 item 49/50) — nada implementado aqui, é só roadmap.** Junta numa seção só o que antes estava espalhado em menções pontuais (linhas de "Planejadas" acima, `REGRAS_DE_NEGOCIO.md` §18.6, checklist de pré-produção em §1) para nenhuma sessão futura perder o contexto. As menções antigas continuam de pé (nunca apagadas), só passam a apontar pra cá.
+
+#### Frente A — Gestão de Catálogo em Escala
+
+**Contexto**: o CRUD de produto individual já existe e é maduro — cadastro/edição com variações/SKU, upload de foto individual (Supabase Storage, bucket `product-images`), tela de estoque com movimentação manual (`registrar_movimentacao_estoque`, migration `021`). Ver diagnóstico completo do estado atual em §0 (levantamento de 26/08/2026, cadastro/foto/preço/estoque confirmados prontos). **A lacuna é só a ESCALA** — um catálogo real de lojista tem centenas/milhares de itens (o do Cauã tem ~1.000); cadastro/atualização item a item não escala.
+
+**Princípios de produto, transversais a toda a frente** (decisão do PO, valem pra todos os incrementos abaixo):
+
+1. **CSV único**: o mesmo formato de CSV serve pra importar, exportar e atualizar — fecha o ciclo exporta→edita→reimporta, o lojista aprende um formato só.
+2. **SKU como chave da foto**: a foto se relaciona ao produto/variação pelo SKU em toda operação (carga, exportação, atualização) — mecanismo único e consistente.
+3. **Foto é cidadã de primeira classe**: entra em **todas** as operações de catálogo, não só na carga inicial — inclusive na atualização em massa. Correção explícita de um viés anterior que tratava foto só como parte da carga.
+
+**Fluxo de produto** (resolve a carga sem depender de fotos pré-hospedadas em lugar nenhum): importa **dados** (gera SKUs) → **exporta** com os SKUs → lojista nomeia os arquivos de foto pelos SKUs → importa as **fotos** (casa por SKU).
+
+**Incrementos** (desenho detalhado de cada um fica pra quando for a vez de implementar, não agora):
+
+1. **Importação inicial via CSV** (categoria + produto + variações + preço + estoque) — **o de maior valor da frente**. A desenhar quando chegar a vez: template CSV guiado (lojista baixa modelo com as colunas certas); categorias novas criadas durante a importação **com confirmação explícita** ("vou criar estas N categorias novas", cuidado com duplicata por digitação); variações agrupadas por produto (uma linha por variação, coluna identificando o produto-pai); validação antes de aplicar (erros por linha, ex. "linha 47: preço inválido"); preview ("vou criar X produtos e Y categorias — confirma?"); aplicação idempotente/segura o quanto possível.
+2. **Exportação na tela de Produtos** — botão "Exportar" respeitando busca/filtros ativos (tudo ou só o filtrado), mesmo formato do CSV de importação (fecha o ciclo). **Vive em `/painel/produtos`, não num módulo de Relatórios** — não espera pela Frente B abaixo.
+3. **Importação de fotos por SKU** — lojista nomeia os arquivos pelos SKUs exportados e sobe (ZIP ou múltiplos arquivos), sistema casa por SKU. A desenhar quando chegar a vez: convenção de capa/ordem (ex. `SKU-1.jpg` = capa, `SKU-2.jpg`...); distinguir foto de produto vs. foto de variação (o SKU já resolve isso, mesma lógica de §4.4); substituir vs. adicionar à galeria existente.
+4. **Atualização em massa via reimportação** — preço + estoque + **foto**, os três juntos (não só dados, por causa do princípio 3 acima). A desenhar quando chegar a vez: substituir vs. adicionar foto; remoção em massa de foto (coluna "remover"?); foto de produto vs. variação na atualização.
+
+**Conexão com a Fase SaaS**: um importador de catálogo é feature que **todo** tenant vai usar (todo lojista sobe o catálogo dele no onboarding) — nasce pensada multi-tenant por design (isolada por tenant), mesmo princípio já registrado em §1 ("visão de SaaS em tudo que for construído daqui pra frente").
+
+#### Frente B — Relatórios/Dashboard
+
+Área dedicada de extrações e visão gerencial: vendas, estoque, produtos, clientes, financeiro. **Frente de maturação, não de MVP** — faz mais sentido depois de dados reais acumulados (produto operando um tempo, não no dia 1). **Não confundir com a exportação de produtos** (Frente A, incremento 2) — aquela vive na tela de Produtos e não espera por este módulo; este é o lar futuro de relatórios múltiplos e dashboards de verdade.
+
+#### Mapa de prioridade de todas as frentes (parecer do PO, 26/08/2026)
+
+| Nível | Frentes | Por quê |
+|---|---|---|
+| **Alta** (caminho crítico pra operar em escala) | Frente A (Catálogo em Escala) — estruturante; **+** as 2 melhorias de notificação (`REGRAS_DE_NEGOCIO.md` §18.6 — avisar o lojista de pedido novo, impacto operacional real; confirmar recebido ao cliente) | Catálogo é o que trava o lojista real de operar; notificações são curtas e o contexto do pipeline está fresco |
+| **Média** (completam o produto, ele opera sem) | Fase 3 (módulo de Clientes + refinamento de Pedidos); Frente B (Relatórios/Dashboard) | Frente B depende de dados acumulados — não faz sentido cedo |
+| **Estratégico** (quando o foco virar "colocar no mundo") | Checklist de pré-produção do Cauã (§1) | Depende da Frente A existir — só faz sentido subir o catálogo real depois de ter como fazer isso em escala |
+| **Horizonte** (fase grande, sem prazo) | Fase SaaS (pilares em §1: self-service, Super Admin VLUMA, landing+Asaas, cobrança); Fluxo B/Asaas (pagamento no checkout) | — |
+
+**Recomendação de sequência do PO**: próximo passo = Frente A (Catálogo em Escala), com as 2 melhorias de notificação possivelmente encaixadas como incremento curto antes/junto (curtas, mesmo contexto do pipeline recém-fechado). Depois, conforme o objetivo do usuário no momento.
 
 ---
 
