@@ -24,10 +24,15 @@ export const canalWhatsapp: NotificationChannel = {
         },
         body: JSON.stringify({ number: numeroComDDI(destinatario), text: corpo }),
       })
+      const corpoResposta = await response.text().catch(() => '')
       if (!response.ok) {
-        const corpoErro = await response.text().catch(() => '')
-        return { ok: false, erro: `Evolution API respondeu ${response.status}: ${corpoErro.slice(0, 200)}` }
+        return { ok: false, erro: `Evolution API respondeu ${response.status}: ${corpoResposta.slice(0, 200)}` }
       }
+      // Sucesso tambem loga o corpo da resposta (id/status da mensagem)
+      // - antes so' o erro era logado, o que impedia diagnosticar o
+      // envio mesmo quando deu certo (achado ao verificar o formato
+      // do numero com o PO, 26/08/2026).
+      console.log(`[notificacoes] Evolution API respondeu ${response.status}:`, corpoResposta.slice(0, 500))
       return { ok: true }
     } catch (e) {
       return { ok: false, erro: e instanceof Error ? e.message : 'Erro desconhecido ao enviar WhatsApp.' }
