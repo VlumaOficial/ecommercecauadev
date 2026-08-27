@@ -19,6 +19,15 @@ function transportador() {
       user: process.env.EMAIL_SMTP_USER,
       pass: process.env.EMAIL_SMTP_PASSWORD,
     },
+    // Timeouts explicitos: o SMTP tem que FALHAR RAPIDO e ser pego pelo
+    // catch abaixo (que loga), em vez de ficar pendurado ate a funcao
+    // serverless ser terminada por maxDuration - nesse caso o envio some
+    // sem nenhum log (foi exatamente o sintoma do e-mail ao lojista que
+    // nao chegava). Defaults do nodemailer sao longos demais (conn 2min,
+    // socket 10min) pra rodar dentro do orcamento de um after().
+    connectionTimeout: 10_000, // TCP connect
+    greetingTimeout: 10_000, // banner SMTP apos conectar
+    socketTimeout: 20_000, // inatividade durante a sessao
   })
 }
 

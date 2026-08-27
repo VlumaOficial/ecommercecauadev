@@ -4,6 +4,12 @@ import { createClient } from '@/lib/supabase/server'
 import { getCustomerProfile } from '@/lib/auth'
 import { notificarPedidoNovoParaLojista } from '@/lib/notificacoes/notificar-lojista'
 
+// O after() (aviso de pedido novo ao lojista, §18.6c) roda DEPOIS da
+// resposta, mas ainda dentro do tempo de vida da funcao. O default do
+// plano (10-15s) e' curto pro DB + handshake SMTP do Zoho: a funcao era
+// terminada com o e-mail no meio do envio, sem log. 30s da' folga.
+export const maxDuration = 30
+
 // Fase 2, incremento 5 (Checkout). RPC criar_pedido (migration 037) so'
 // resolve auth.uid() de verdade quando chamada com o client SERVIDOR (le
 // os cookies httpOnly da sessao via cookies() do Next) - o client do
