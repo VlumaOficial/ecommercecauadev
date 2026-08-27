@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { PackageIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
-import { formatarMoeda } from '@/lib/utils'
 import { urlImagemProduto } from '@/lib/loja/rpc'
+import { Preco } from '@/components/ui/preco'
 import { ProductBadges } from '@/components/loja/product-badges'
 import type { ProdutoPublico } from '@/lib/loja/types'
 
@@ -48,9 +48,10 @@ export function ProductCard({ produto, categoriaNome }: { produto: ProdutoPublic
               {produto.preco_varia && (
                 <p className="text-[11px] font-medium text-muted-foreground">a partir de</p>
               )}
-              <p className="font-display text-lg font-extrabold text-foreground">
-                {formatarMoeda(produto.preco_a_partir_de)}
-              </p>
+              <Preco
+                valor={produto.preco_a_partir_de}
+                className="block text-lg font-extrabold text-foreground"
+              />
               <p className="text-xs text-muted-foreground">por {produto.unidade_venda}</p>
             </>
           ) : (

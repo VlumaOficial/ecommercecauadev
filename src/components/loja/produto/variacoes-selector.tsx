@@ -5,7 +5,6 @@ import { CheckCircle2Icon, MinusIcon, PlusIcon, ShoppingCartIcon } from 'lucide-
 import { toast } from 'sonner'
 
 import { cn } from '@/lib/utils'
-import { formatarMoeda } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Preco } from '@/components/ui/preco'
 import { useCarrinho, useCarrinhoRegras } from '@/components/loja/carrinho-provider'
@@ -99,11 +98,11 @@ export function VariacoesSelector({
                 <span className="text-xs text-muted-foreground">
                   {v.preco_promocional ? (
                     <>
-                      <span className="line-through">{formatarMoeda(v.preco)}</span>{' '}
-                      <span className="font-semibold text-primary">{formatarMoeda(v.preco_promocional)}</span>
+                      <Preco valor={v.preco} inline className="line-through" />{' '}
+                      <Preco valor={v.preco_promocional} inline className="font-semibold text-primary" />
                     </>
                   ) : (
-                    formatarMoeda(v.preco)
+                    <Preco valor={v.preco} inline />
                   )}
                   {!v.disponivel && ' · esgotado'}
                 </span>
@@ -116,7 +115,11 @@ export function VariacoesSelector({
       {selecionada && (
         <div>
           {selecionada.preco_promocional && (
-            <p className="text-sm text-muted-foreground line-through">{formatarMoeda(selecionada.preco)}</p>
+            <Preco
+              valor={selecionada.preco}
+              inline
+              className="block text-sm text-muted-foreground line-through"
+            />
           )}
           <Preco
             valor={selecionada.preco_promocional ?? selecionada.preco}

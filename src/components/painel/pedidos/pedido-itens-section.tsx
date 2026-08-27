@@ -5,7 +5,8 @@ import { PencilIcon, RotateCcwIcon, XIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { cn, formatarMoeda } from '@/lib/utils'
+import { Preco } from '@/components/ui/preco'
+import { cn } from '@/lib/utils'
 import { useAjustarPedido, type PedidoDetalhe } from '@/hooks/use-pedidos'
 
 type ItemEdit = { variant_id: string; quantidade: number; removido: boolean }
@@ -126,7 +127,7 @@ export function PedidoItensSection({ pedido }: { pedido: PedidoDetalhe }) {
                     {item.saldo_estoque} unidade(s)
                     {estoqueInsuficiente && ' — insuficiente'}
                   </TableCell>
-                  <TableCell className="text-right">{formatarMoeda(item.preco_unitario)}</TableCell>
+                  <TableCell className="text-right"><Preco valor={item.preco_unitario} /></TableCell>
                   <TableCell className="text-right">
                     {editando ? (
                       <Input
@@ -145,7 +146,7 @@ export function PedidoItensSection({ pedido }: { pedido: PedidoDetalhe }) {
                     )}
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {formatarMoeda(item.preco_unitario * quantidadeAtual)}
+                    <Preco valor={item.preco_unitario * quantidadeAtual} />
                   </TableCell>
                   {editando && (
                     <TableCell className="text-right">
@@ -169,9 +170,10 @@ export function PedidoItensSection({ pedido }: { pedido: PedidoDetalhe }) {
 
       <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
         <span className="text-sm font-medium text-muted-foreground">Total</span>
-        <span className="font-display text-lg font-extrabold text-foreground">
-          {formatarMoeda(editando ? totalEditado() : pedido.total)}
-        </span>
+        <Preco
+          valor={editando ? totalEditado() : pedido.total}
+          className="text-lg font-extrabold text-foreground"
+        />
       </div>
 
       {editando && (

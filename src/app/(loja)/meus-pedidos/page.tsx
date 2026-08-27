@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 
 import { getCustomerProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
-import { formatarMoeda } from '@/lib/utils'
+import { Preco } from '@/components/ui/preco'
 import { NavConta } from '@/components/loja/pedidos/nav-conta'
 import { PedidoStatusBadge } from '@/components/loja/pedidos/status-badge'
 
@@ -53,7 +53,7 @@ export default async function MeusPedidosPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <PedidoStatusBadge status={p.status} />
-                  <span className="text-sm font-semibold text-foreground">{formatarMoeda(p.total)}</span>
+                  <Preco valor={p.total} className="text-sm font-semibold text-foreground" />
                 </div>
               </Link>
             </li>

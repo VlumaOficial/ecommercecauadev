@@ -5,10 +5,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { MinusIcon, PlusIcon, ShoppingCartIcon, Trash2Icon, PackageIcon } from 'lucide-react'
 
-import { formatarMoeda } from '@/lib/utils'
 import { urlImagemProduto } from '@/lib/loja/rpc'
 import { useCarrinho, useCarrinhoRegras } from '@/components/loja/carrinho-provider'
 import { Button } from '@/components/ui/button'
+import { Preco } from '@/components/ui/preco'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet'
 
 // Icone do carrinho (com badge de contagem) + o drawer em si, num
@@ -130,9 +130,10 @@ export function CarrinhoDrawer() {
                               <PlusIcon className="size-3.5" />
                             </button>
                           </div>
-                          <span className="text-sm font-semibold text-foreground">
-                            {formatarMoeda(preco * item.quantidade)}
-                          </span>
+                          <Preco
+                            valor={preco * item.quantidade}
+                            className="text-sm font-semibold text-foreground"
+                          />
                         </div>
                       </div>
                     </li>
@@ -146,15 +147,13 @@ export function CarrinhoDrawer() {
             <SheetFooter className="border-t border-border">
               {faltaParaMinimo > 0 && (
                 <p className="rounded-lg bg-amber-500/15 px-3 py-2 text-xs text-amber-900">
-                  Faltam {formatarMoeda(faltaParaMinimo)} para o pedido mínimo de{' '}
-                  {formatarMoeda(regras.valorMinimoPedido)}.
+                  Faltam <Preco valor={faltaParaMinimo} inline /> para o pedido mínimo de{' '}
+                  <Preco valor={regras.valorMinimoPedido} inline />.
                 </p>
               )}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground">Total</span>
-                <span className="font-display text-lg font-extrabold text-foreground">
-                  {formatarMoeda(total)}
-                </span>
+                <Preco valor={total} className="text-lg font-extrabold text-foreground" />
               </div>
               <Link href="/checkout" onClick={() => setOpen(false)}>
                 <Button size="lg" className="w-full">

@@ -13,7 +13,7 @@ import {
 import { StatusBadge } from '@/components/painel/crud/status-badge'
 import { useProduto, type Produto } from '@/hooks/use-produtos'
 import { useUnidadesVenda } from '@/hooks/use-unidades-venda'
-import { formatarMoeda } from '@/lib/utils'
+import { Preco } from '@/components/ui/preco'
 
 function Campo({ rotulo, valor }: { rotulo: string; valor: React.ReactNode }) {
   return (
@@ -98,7 +98,7 @@ export function ProdutoViewDialog({
                       <tr key={v.id} className="border-t border-border">
                         <td className="px-3 py-1.5">{v.nome}</td>
                         <td className="px-3 py-1.5 text-muted-foreground">{v.sku ?? '—'}</td>
-                        <td className="px-3 py-1.5 text-right">{formatarMoeda(v.preco)}</td>
+                        <td className="px-3 py-1.5 text-right"><Preco valor={v.preco} /></td>
                         <td className="px-3 py-1.5 text-right">
                           {v.modo_estoque === 'quantitativo' ? v.saldo_estoque : '—'}
                         </td>

@@ -2,8 +2,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { TruckIcon, UserIcon } from 'lucide-react'
 
-import { formatarMoeda } from '@/lib/utils'
 import { urlLogoLoja } from '@/lib/loja/rpc'
+import { Preco } from '@/components/ui/preco'
 import { SearchForm } from '@/components/loja/search-form'
 import { CarrinhoDrawer } from '@/components/loja/carrinho-drawer'
 import { HeaderContaMenu } from '@/components/loja/header-conta-menu'
@@ -31,7 +31,7 @@ export function Header({
               <span aria-hidden className="opacity-60">
                 ·
               </span>
-              <b className="font-bold">Pedido mínimo {formatarMoeda(valorMinimoPedido)}</b>
+              <b className="font-bold">Pedido mínimo <Preco valor={valorMinimoPedido} inline /></b>
             </>
           )}
           <span aria-hidden className="opacity-60">

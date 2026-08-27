@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PedidoStatusBadge } from '@/components/loja/pedidos/status-badge'
-import { formatarMoeda } from '@/lib/utils'
+import { Preco } from '@/components/ui/preco'
 import type { PedidoResumo } from '@/hooks/use-pedidos'
 
 export function PedidosTable({ pedidos, isLoading }: { pedidos: PedidoResumo[]; isLoading: boolean }) {
@@ -51,7 +51,7 @@ export function PedidosTable({ pedidos, isLoading }: { pedidos: PedidoResumo[]; 
             <TableCell>
               <PedidoStatusBadge status={pedido.status} />
             </TableCell>
-            <TableCell className="text-right font-semibold">{formatarMoeda(pedido.total)}</TableCell>
+            <TableCell className="text-right font-semibold"><Preco valor={pedido.total} /></TableCell>
           </TableRow>
         ))}
       </TableBody>

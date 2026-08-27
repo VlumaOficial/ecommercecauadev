@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { CheckCircle2Icon, Loader2Icon, MinusIcon, PackageIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { formatarMoeda } from '@/lib/utils'
 import { urlImagemProduto } from '@/lib/loja/rpc'
 import { useCarrinho, useCarrinhoRegras } from '@/components/loja/carrinho-provider'
 import { Button } from '@/components/ui/button'
@@ -365,9 +364,7 @@ function PassoRevisao({
                       <PlusIcon className="size-3.5" />
                     </button>
                   </div>
-                  <span className="text-sm font-semibold text-foreground">
-                    {formatarMoeda(preco * item.quantidade)}
-                  </span>
+                  <Preco valor={preco * item.quantidade} className="text-sm font-semibold text-foreground" />
                 </div>
               </div>
             </li>
@@ -402,8 +399,8 @@ function PassoRevisao({
 
       {faltaParaMinimo > 0 && (
         <p className="mb-4 rounded-lg bg-amber-500/15 px-3 py-2 text-sm text-amber-900">
-          Faltam {formatarMoeda(faltaParaMinimo)} para o pedido mínimo de {formatarMoeda(valorMinimoPedido)}. Volte à
-          loja e adicione mais itens ao carrinho.
+          Faltam <Preco valor={faltaParaMinimo} inline /> para o pedido mínimo de{' '}
+          <Preco valor={valorMinimoPedido} inline />. Volte à loja e adicione mais itens ao carrinho.
         </p>
       )}
 
@@ -443,7 +440,7 @@ function ConfirmacaoPedido({ pedido }: { pedido: PedidoConfirmado }) {
             <span className="font-medium text-foreground">Itens:</span> {pedido.itens.length}
           </p>
           <p>
-            <span className="font-medium text-foreground">Total:</span> {formatarMoeda(pedido.total)}
+            <span className="font-medium text-foreground">Total:</span> <Preco valor={pedido.total} inline />
           </p>
           <p className="text-muted-foreground">O vendedor vai confirmar seu pedido em breve.</p>
         </div>

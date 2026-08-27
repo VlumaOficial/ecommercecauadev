@@ -1,5 +1,6 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { formatarMoeda } from '@/lib/utils'
 import { canalEmail } from './canal-email'
 import { canalWhatsapp } from './canal-whatsapp'
 import { buscarTemplate } from './templates'
@@ -31,8 +32,6 @@ export type ResultadoNotificacaoLojista = {
   destinatarios: number
   envios: ResultadoEnvioLojista[]
 }
-
-const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 
 export async function notificarPedidoNovoParaLojista(
   tenantId: string,
@@ -83,7 +82,10 @@ export async function notificarPedidoNovoParaLojista(
     const vars: Record<string, string> = {
       numero_pedido: String(pedido.numero),
       nome_cliente: cliente?.nome ?? '',
-      valor_total: Number.isFinite(totalNum) ? brl.format(totalNum) : String(pedido.total ?? ''),
+      // formatarMoeda e' a funcao de string pura (mesma de lib/utils que
+      // o <Preco> usa por dentro) - templates de notificacao sao texto,
+      // nao UI, entao usam ela direto.
+      valor_total: Number.isFinite(totalNum) ? formatarMoeda(totalNum) : String(pedido.total ?? ''),
       nome_loja: tenant?.nome ?? '',
       // Link pro PAINEL do vendedor (por id), NUNCA a área do cliente.
       link_painel_pedido: dominio ? `https://${dominio.dominio}/painel/pedidos/${orderId}` : '',

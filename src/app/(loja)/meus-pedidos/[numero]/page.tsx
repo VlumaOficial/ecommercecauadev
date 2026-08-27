@@ -4,7 +4,7 @@ import { ArrowLeftIcon } from 'lucide-react'
 
 import { getCustomerProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
-import { formatarMoeda } from '@/lib/utils'
+import { Preco } from '@/components/ui/preco'
 import { PedidoStatusBadge } from '@/components/loja/pedidos/status-badge'
 
 export const dynamic = 'force-dynamic'
@@ -65,9 +65,11 @@ export default async function MeuPedidoDetalhePage({ params }: { params: Promise
                 {item.product_variants?.nome && item.product_variants.nome !== 'Padrão' && (
                   <p className="text-xs text-muted-foreground">{item.product_variants.nome}</p>
                 )}
-                <p className="text-xs text-muted-foreground">Qtd: {item.quantidade} · {formatarMoeda(item.preco_unitario)} cada</p>
+                <p className="text-xs text-muted-foreground">
+                  Qtd: {item.quantidade} · <Preco valor={item.preco_unitario} inline /> cada
+                </p>
               </div>
-              <span className="font-semibold text-foreground">{formatarMoeda(item.subtotal)}</span>
+              <Preco valor={item.subtotal} className="font-semibold text-foreground" />
             </li>
           ))}
         </ul>
@@ -117,7 +119,7 @@ export default async function MeuPedidoDetalhePage({ params }: { params: Promise
 
         <div className="flex items-center justify-between border-t border-border pt-4">
           <span className="text-sm font-medium text-muted-foreground">Total</span>
-          <span className="font-display text-lg font-extrabold text-foreground">{formatarMoeda(pedido.total)}</span>
+          <Preco valor={pedido.total} className="text-lg font-extrabold text-foreground" />
         </div>
       </div>
     </div>

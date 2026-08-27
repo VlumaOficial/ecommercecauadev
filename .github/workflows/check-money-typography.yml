@@ -1,0 +1,28 @@
+name: Tipografia de valores
+
+# Trava a regressao da decisao do PO: todo valor monetario na UI passa
+# pelo componente <Preco> e nenhum valor usa a fonte decorativa (Syne).
+# Ver scripts/check-money-typography.mjs.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/check-money-typography.mjs'
+      - '.github/workflows/check-money-typography.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'scripts/check-money-typography.mjs'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Sem dependencias: o script e' Node puro (fs), nao precisa de npm ci.
+      - run: node scripts/check-money-typography.mjs
