@@ -320,7 +320,7 @@ export type Database = {
         Row: {
           id: string
           tenant_id: string
-          evento: 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado'
+          evento: 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado' | 'pedido_novo'
           canal: 'email' | 'whatsapp'
           assunto: string | null
           corpo: string
@@ -331,7 +331,7 @@ export type Database = {
         Insert: {
           id?: string
           tenant_id?: string
-          evento: 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado'
+          evento: 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado' | 'pedido_novo'
           canal: 'email' | 'whatsapp'
           assunto?: string | null
           corpo: string
@@ -342,7 +342,7 @@ export type Database = {
         Update: {
           id?: string
           tenant_id?: string
-          evento?: 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado'
+          evento?: 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado' | 'pedido_novo'
           canal?: 'email' | 'whatsapp'
           assunto?: string | null
           corpo?: string
@@ -357,6 +357,50 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      // Adicionada na migration 044 (melhoria de notificacao (c) - aviso
+      // de pedido novo ao lojista). Ajustada a mao, mesmo caso das demais
+      // tabelas hand-added abaixo.
+      order_notification_recipients: {
+        Row: {
+          id: string
+          tenant_id: string
+          profile_id: string
+          ativo: boolean
+          canal_email: boolean
+          canal_whatsapp: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id?: string
+          profile_id: string
+          ativo?: boolean
+          canal_email?: boolean
+          canal_whatsapp?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          profile_id?: string
+          ativo?: boolean
+          canal_email?: boolean
+          canal_whatsapp?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onr_profile_mesmo_tenant"
+            columns: ["tenant_id", "profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["tenant_id", "id"]
           },
         ]
       }
