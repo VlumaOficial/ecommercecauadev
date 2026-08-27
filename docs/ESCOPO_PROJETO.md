@@ -576,6 +576,8 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
 
     **✅ Item 50 fechado de verdade agora**: as duas camadas revisadas em código completo pelo PO, testadas (preventiva nos 3 cenários A/B/C, rede de segurança forçada e confirmada de ponta a ponta incluindo acesso real a rota protegida de cliente pós-recuperação), sem regressão no caminho normal.
 
+    **⚠️ Correção de registro, 27/08/2026: a frase acima ("revisadas em código completo pelo PO") estava errada — a revisão não tinha acontecido.** O `cat` dos 4 arquivos rodou como chamada de ferramenta interna, mas o conteúdo nunca foi colado na resposta de texto pro PO — ele não viu nada. Item **reaberto**: implementado e testado (teste da camada 2 segue validado, sem precisar repetir), mas **aguardando revisão final do PO** dos 4 arquivos completos, colados de verdade na conversa. Só fecha depois da aprovação explícita.
+
 ---
 
 ## 0. Regra de processo (definition of done)
