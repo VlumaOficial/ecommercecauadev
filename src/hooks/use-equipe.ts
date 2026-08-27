@@ -11,12 +11,16 @@ export type StaffRole = Database['public']['Enums']['user_role']
 export type StaffCreateValues = {
   nome: string
   email: string
+  // Só dígitos (DDD+número, sem DDI) ou '' quando não informado — mesma
+  // convenção de customers.whatsapp. O Route Handler normaliza '' → null.
+  whatsapp: string
   role: StaffRole
   pode_aceitar_pedido: boolean
 }
 
 export type StaffUpdateValues = {
   nome: string
+  whatsapp: string
   role: StaffRole
   pode_aceitar_pedido: boolean
 }

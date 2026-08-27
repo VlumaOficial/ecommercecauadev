@@ -43,10 +43,24 @@ export function EquipeView() {
     setFormAberto(true)
   }
 
-  function handleSubmit(values: { nome: string; email: string; role: 'admin' | 'operador'; pode_aceitar_pedido: boolean }) {
+  function handleSubmit(values: {
+    nome: string
+    email: string
+    whatsapp: string
+    role: 'admin' | 'operador'
+    pode_aceitar_pedido: boolean
+  }) {
     if (membroEditando) {
       atualizar.mutate(
-        { id: membroEditando.id, values: { nome: values.nome, role: values.role, pode_aceitar_pedido: values.pode_aceitar_pedido } },
+        {
+          id: membroEditando.id,
+          values: {
+            nome: values.nome,
+            whatsapp: values.whatsapp,
+            role: values.role,
+            pode_aceitar_pedido: values.pode_aceitar_pedido,
+          },
+        },
         { onSuccess: () => setFormAberto(false) }
       )
     } else {

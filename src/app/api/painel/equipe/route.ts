@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStaffProfile } from '@/lib/auth'
+import { whatsappOpcional } from '@/lib/validations/whatsapp'
 
 // Fase 2, item 3 da sequência pré-incremento 8 (gestão de usuários) -
 // consome pela primeira vez o fluxo de 2 passos que corrigiu o bug 46
@@ -16,6 +17,7 @@ import { getStaffProfile } from '@/lib/auth'
 const staffCreateSchema = z.object({
   nome: z.string().trim().min(1, 'Informe o nome.'),
   email: z.string().trim().email('Informe um e-mail válido.'),
+  whatsapp: whatsappOpcional,
   role: z.enum(['admin', 'operador']),
   pode_aceitar_pedido: z.boolean().optional().default(false),
 })
@@ -95,6 +97,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: erroPromover.message }, { status: 400 })
   }
 
+  // Passo 2b: grava o WhatsApp (opcional) por UPDATE simples - NUNCA
+  // dentro de promover_para_staff (migration 041 fica intocada, é a RPC
+  // que corrigiu o bug 46). O perfil já existe de verdade aqui; se este
+  // UPDATE falhar, o staff foi criado sem telefone e um admin ajusta
+  // depois na edição - não desfaz a criação.
+  let perfilFinal = perfilCriado
+  if (parsed.data.whatsapp) {
+    const { data: perfilComWhatsapp } = await admin
+      .from('profiles')
+      .update({ whatsapp: parsed.data.whatsapp })
+      .eq('id', novoUsuario.user.id)
+      .select()
+      .single()
+    if (perfilComWhatsapp) perfilFinal = perfilComWhatsapp
+  }
+
   // Passo 3: dispara o e-mail de "definir senha" - reaproveita 100% o
   // mecanismo de recuperação de senha já testado com link real
   // (REGRAS_DE_NEGOCIO.md §18.4), não um convite novo. Falha aqui NÃO
@@ -106,5 +124,5 @@ export async function POST(request: NextRequest) {
     redirectTo: `${origin}/auth/callback?next=/nova-senha`,
   })
 
-  return NextResponse.json({ data: perfilCriado, emailEnviado: !erroEmail }, { status: 201 })
+  return NextResponse.json({ data: perfilFinal, emailEnviado: !erroEmail }, { status: 201 })
 }

@@ -9,6 +9,16 @@ import {
 import { StatusBadge } from '@/components/painel/crud/status-badge'
 import type { StaffMembro } from '@/hooks/use-equipe'
 
+// Só exibição (mesma ideia de formatarWhatsappExibicao em
+// pedido-detalhe-view.tsx). O valor no banco é só dígitos.
+function formatarWhatsappExibicao(digitos: string | null) {
+  if (!digitos) return '—'
+  const d = digitos.replace(/\D/g, '')
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+  return digitos
+}
+
 export function EquipeTable({
   membros,
   meuId,
@@ -40,6 +50,7 @@ export function EquipeTable({
         <TableRow>
           <TableHead>Nome</TableHead>
           <TableHead>E-mail</TableHead>
+          <TableHead>WhatsApp</TableHead>
           <TableHead>Papel</TableHead>
           <TableHead>Aceita pedidos</TableHead>
           <TableHead>Status</TableHead>
@@ -56,6 +67,7 @@ export function EquipeTable({
                 {souEu && <span className="ml-1.5 text-xs text-muted-foreground">(você)</span>}
               </TableCell>
               <TableCell className="text-muted-foreground">{membro.email}</TableCell>
+              <TableCell className="text-muted-foreground">{formatarWhatsappExibicao(membro.whatsapp)}</TableCell>
               <TableCell>
                 <Badge variant={membro.role === 'admin' ? 'default' : 'outline'}>
                   {membro.role === 'admin' ? 'Administrador' : 'Operador'}

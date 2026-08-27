@@ -14,9 +14,26 @@ import {
 } from '@/components/ui/select'
 import type { StaffMembro } from '@/hooks/use-equipe'
 
+// Mesma máscara de exibição usada no cadastro/edição de cliente
+// (cadastro-form.tsx, conta-form.tsx). O valor guardado no formulário é
+// mascarado; vira só dígitos no submit (ver onSubmit abaixo) e o Route
+// Handler ainda re-normaliza (whatsappOpcional).
+function formatarWhatsapp(v: string) {
+  const d = v.replace(/\D/g, '').slice(0, 11)
+  if (d.length <= 2) return d
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+}
+
 const staffSchema = z.object({
   nome: z.string().trim().min(1, 'Informe o nome.'),
   email: z.string().trim().email('Informe um e-mail válido.'),
+  // Opcional: vazio é válido (staff sem WhatsApp só recebe aviso por
+  // e-mail). Se preenchido, exige DDD + número (10 ou 11 dígitos).
+  whatsapp: z.string().trim().refine((v) => {
+    const d = v.replace(/\D/g, '')
+    return d === '' || d.length === 10 || d.length === 11
+  }, 'Informe um WhatsApp válido com DDD ou deixe em branco.'),
   role: z.enum(['admin', 'operador']),
   pode_aceitar_pedido: z.boolean(),
 })
@@ -26,6 +43,7 @@ type StaffFormValues = z.infer<typeof staffSchema>
 const VALORES_PADRAO: StaffFormValues = {
   nome: '',
   email: '',
+  whatsapp: '',
   role: 'operador',
   pode_aceitar_pedido: false,
 }
@@ -66,6 +84,7 @@ export function StaffFormDialog({
         ? {
             nome: membro.nome,
             email: membro.email,
+            whatsapp: membro.whatsapp ? formatarWhatsapp(membro.whatsapp) : '',
             role: membro.role,
             pode_aceitar_pedido: membro.pode_aceitar_pedido,
           }
@@ -85,7 +104,9 @@ export function StaffFormDialog({
           ? 'Ajuste o papel e as permissões deste membro.'
           : 'Um e-mail será enviado para o novo membro definir a própria senha.'
       }
-      onSubmit={handleSubmit(onSubmit)}
+      // Tira a máscara antes de subir pro pai/Route Handler — só dígitos,
+      // mesma convenção de customers.whatsapp.
+      onSubmit={handleSubmit((v) => onSubmit({ ...v, whatsapp: v.whatsapp.replace(/\D/g, '') }))}
       submitLabel={membro ? 'Salvar alterações' : 'Adicionar membro'}
       loading={loading}
     >
@@ -107,6 +128,29 @@ export function StaffFormDialog({
         />
         {membro && <p className="text-xs text-muted-foreground">O e-mail não pode ser alterado aqui.</p>}
         {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="staff-whatsapp">WhatsApp</Label>
+        <Controller
+          control={control}
+          name="whatsapp"
+          render={({ field }) => (
+            <Input
+              id="staff-whatsapp"
+              inputMode="tel"
+              placeholder="(71) 99999-9999"
+              aria-invalid={!!errors.whatsapp}
+              value={field.value}
+              onChange={(e) => field.onChange(formatarWhatsapp(e.target.value))}
+              onBlur={field.onBlur}
+            />
+          )}
+        />
+        <p className="text-xs text-muted-foreground">
+          Opcional. Necessário para receber o aviso de novo pedido por WhatsApp.
+        </p>
+        {errors.whatsapp && <p className="text-xs text-destructive">{errors.whatsapp.message}</p>}
       </div>
 
       <div className="space-y-1.5">

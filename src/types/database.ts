@@ -987,6 +987,7 @@ export type Database = {
           role: Database["public"]["Enums"]["user_role"]
           tenant_id: string
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
           ativo?: boolean
@@ -998,6 +999,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           tenant_id: string
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
           ativo?: boolean
@@ -1009,6 +1011,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           tenant_id?: string
           updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {

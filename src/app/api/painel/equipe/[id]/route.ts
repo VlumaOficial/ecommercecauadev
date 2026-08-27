@@ -2,9 +2,11 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getStaffProfile } from '@/lib/auth'
+import { whatsappOpcional } from '@/lib/validations/whatsapp'
 
 const staffUpdateSchema = z.object({
   nome: z.string().trim().min(1, 'Informe o nome.'),
+  whatsapp: whatsappOpcional,
   role: z.enum(['admin', 'operador']),
   pode_aceitar_pedido: z.boolean(),
 })
@@ -40,6 +42,7 @@ export async function PATCH(
     .from('profiles')
     .update({
       nome: parsed.data.nome,
+      whatsapp: parsed.data.whatsapp,
       role: parsed.data.role,
       pode_aceitar_pedido: parsed.data.pode_aceitar_pedido,
     })

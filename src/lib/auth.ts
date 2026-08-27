@@ -6,6 +6,7 @@ export type StaffProfile = {
   id: string
   nome: string
   email: string
+  whatsapp: string | null
   role: 'admin' | 'operador'
   pode_aceitar_pedido: boolean
   tenant_id: string
@@ -20,7 +21,7 @@ export async function getStaffProfileForUser(
 ): Promise<StaffProfile | null> {
   const { data } = await supabase
     .from('profiles')
-    .select('id, nome, email, role, pode_aceitar_pedido, tenant_id')
+    .select('id, nome, email, whatsapp, role, pode_aceitar_pedido, tenant_id')
     .eq('id', userId)
     .eq('ativo', true)
     .maybeSingle()
