@@ -495,6 +495,20 @@ Em ambos os casos (manual ou automático), o cliente é notificado do cancelamen
 
 **✅ Workflow implementado em 21/08/2026 — `.github/workflows/cancelar-pedidos-expirados.yml`.** Roda de hora em hora (`workflow_dispatch` também disponível pra disparo manual) — a RPC é idempotente e autolimitada (só cancela o que já passou do prazo configurado por tenant), então uma janela de até 1h de atraso é irrelevante contra um prazo default de 48h. Chama `POST {SUPABASE_URL}/rest/v1/rpc/cancelar_pedidos_expirados` com a `anon key` (mesmos secrets já usados pelo `keepalive.yml`, nenhum novo). **Chamada validada de verdade**: reproduzida a mesma chamada (mesmo endpoint, mesma `anon key`) fora do workflow — HTTP 200, retornou `0` pedidos cancelados (esperado, sem pedido vencido no banco no momento do teste). O disparo do workflow em si dentro do GitHub Actions (via `workflow_dispatch`) não foi executado nesta sessão — sem `gh` CLI disponível e sem um token de API do GitHub com permissão liberada pra chamar a API de Actions (bloqueado pelo classificador de auto-modo do harness ao tentar). Recomendado ao usuário disparar manualmente pela aba Actions do GitHub como confirmação final de que o YAML roda igual no runner.
 
+### 17.3 Cancelamento pelo cliente — frente futura, mecanismo configurável (NÃO construir agora)
+
+**📌 Registrado com o PO em 26/08/2026 — só registro de roadmap, nenhuma implementação.** Hoje só o lojista cancela um pedido (§17.1) ou o sistema cancela automaticamente por prazo (§17.2) — o **cliente** não tem como cancelar o próprio pedido.
+
+**Princípio de produto decidido**: quando construído, é um **mecanismo configurável pelo lojista**, nunca uma regra fixa no código. O **produto** oferece a capacidade técnica; a **política** (se cancelamento pelo cliente é permitido, em que condições) é decisão de cada lojista, não da VLUMA. Motivo explícito: política de cancelamento varia por tipo de negócio e tem implicações jurídicas (ex.: direito de arrependimento do CDC, prazos e condições que variam por segmento/produto) que são responsabilidade do lojista definir com o próprio jurídico — o produto não codifica lei, só entrega alavancas configuráveis (mesmo princípio de "flag explícita, nunca comportamento implícito" já usado em §11.4/§17.2).
+
+**O que a frente inclui, quando for desenhada e construída** (nada disto está decidido em detalhe ainda):
+- Configuração do lojista: habilita ou não; condições (prazo pra cancelar, quais status do pedido permitem, automático vs. exige aprovação do vendedor).
+- Ação disponível na área do cliente ("Meus Pedidos", §18.2).
+- Tratamento de estoque (devolver saldo, mesmo mecanismo de §17.1).
+- Notificação ao lojista quando o cliente cancela — conecta com a melhoria de notificação de §18.6(c) (mesmo destinatário/mecanismo: staff escolhidos, canal configurável), só um evento novo no mesmo pipeline.
+
+Ver `ESCOPO_PROJETO.md` §4 "Roadmap e Frentes pós-Fase 2" pro registro desta frente no mapa geral.
+
 ---
 
 ## 18. Notificações e Área do Cliente (Fase 2)
@@ -591,6 +605,14 @@ Ver `ESCOPO_PROJETO.md` §0 item 49/50 (item 5 da sequência) pro estado de impl
 - **Gatilho**: mais provável é depois de `criar_pedido` ter sucesso, no Route Handler de checkout — a confirmar quando for desenhado.
 - **Destinatário**: **não é o cliente** — é o contato do **tenant** (telefone/e-mail do Cauã), não gravado em `customers`. Hoje seria env var (mesmo padrão de `EMAIL_FROM_ADDRESS`/`EVOLUTION_INSTANCE`); no SaaS vira contato configurável por-tenant — mesmo princípio já registrado em `ESCOPO_PROJETO.md` §1 (visão SaaS mesmo em single-tenant).
 - Novo evento (`pedido_novo` ou nome a definir) + 2 templates novos (e-mail + WhatsApp, tom voltado pro lojista, não pro cliente).
+
+**Decisões de produto detalhadas com o PO em 26/08/2026 — revisam/substituem a suposição de "destinatário = env var" registrada acima:**
+- **Destinatários escolhidos entre os STAFF cadastrados** (`profiles`), não um número/e-mail avulso — o admin escolhe quais membros da equipe recebem. Nunca um contato gravado fora do cadastro de equipe já existente (`/painel/equipe`, §22).
+- **Canal configurável por destinatário**: cada staff escolhido recebe por WhatsApp, e-mail, ou os dois — não é um canal único pra todo mundo.
+- **Permissão de configurar**: só **admin** (mesmo padrão de `/painel/equipe` e do módulo de Configuração, §22/item 4 da sequência pré-incremento 8) — operador não configura quem recebe.
+- **Exige tela de configuração própria** (autonomia do lojista/self-service) — sem tela, vira dependência de suporte da VLUMA pra ligar/desligar destinatário, contradizendo o princípio de self-service já registrado em `ESCOPO_PROJETO.md` §1.
+- **Distinção clara de propósito**: esta notificação é pro **lojista** (staff) saber que chegou um pedido — **diferente** das notificações ao **cliente** (§18.1, já construídas, vão pro contato do próprio cliente). Os dois pipelines reaproveitam o mesmo `NotificationChannel`/`notificar-pedido.ts`, mas nunca se misturam (destinatários diferentes, tabela diferente de onde vem o destinatário).
+- **Escopo do MVP desta melhoria**: só o evento "pedido novo". O evento "cancelamento pelo cliente" (§17.3, ainda não construído) entra na mesma tela/mecanismo **quando** aquela frente for construída — não há granularidade de escolher eventos individualmente no MVP desta melhoria (é tudo-ou-nada por destinatário, não por evento).
 
 **(b) — confirmar ao CLIENTE que o pedido foi RECEBIDO, no momento em que ele finaliza o checkout** (antes de qualquer validação do vendedor) — "recebemos seu pedido, em breve confirmaremos". Dá segurança imediata ao cliente. Menos crítico que (c): o cliente já vê o pedido em "Meus Pedidos" assim que finaliza, isto é só reforço de UX, não corrige uma lacuna operacional real como (c).
 - Gatilho: mesmo ponto de (c) — depois de `criar_pedido` ter sucesso.
