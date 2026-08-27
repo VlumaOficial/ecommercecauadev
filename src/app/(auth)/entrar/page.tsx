@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense, useEffect } from 'react'
+import { useState, useRef, Suspense, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -9,18 +9,44 @@ import { Label } from '@/components/ui/label'
 import { Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
+// Robustez de login (ESCOPO_PROJETO.md §0 item 50) - rede de seguranca,
+// client. O POST nativo continua sendo o caminho PRINCIPAL (progressive
+// enhancement - funciona mesmo sem este JS); isto so' cobre o caso raro
+// em que a camada preventiva do proxy.ts nao pegou a tempo (residuo de
+// sessao ainda causando trava). Deteccao e' "de graca": se este timeout
+// chega a disparar, a pagina NAO navegou ainda - uma navegacao real
+// destroi o contexto JS antes do timer rodar, entao nao ha falso
+// positivo por "a pagina ja tinha saido". So' tenta recuperar 1x (nao
+// insiste em loop se a segunda tentativa tambem nao navegar).
+const PRAZO_TRAVAMENTO_MS = 7000
+
 function FormularioLogin() {
   const searchParams = useSearchParams()
   const proximo = searchParams.get('proximo') || '/'
   const erro = searchParams.get('erro')
   const [mostrarSenha, setMostrarSenha] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
+  const jaTentouRecuperar = useRef(false)
 
   useEffect(() => {
     if (erro) toast.error(erro)
   }, [erro])
 
+  function handleSubmit() {
+    if (jaTentouRecuperar.current) return
+    setTimeout(async () => {
+      jaTentouRecuperar.current = true
+      toast.info('Isso está demorando mais que o normal - tentando de novo...')
+      try {
+        await fetch('/api/auth/limpar-sessao', { method: 'POST' })
+      } finally {
+        formRef.current?.requestSubmit()
+      }
+    }, PRAZO_TRAVAMENTO_MS)
+  }
+
   return (
-    <form action="/api/auth/login" method="POST" className="space-y-4">
+    <form ref={formRef} action="/api/auth/login" method="POST" onSubmit={handleSubmit} className="space-y-4">
       <input type="hidden" name="proximo" value={proximo} />
       <div className="space-y-2">
         <Label htmlFor="email">E-mail</Label>

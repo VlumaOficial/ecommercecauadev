@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { limparCookiesDeSessao } from '@/lib/supabase/limpar-sessao'
 
 const ROTAS_AUTH = ['/entrar', '/cadastro', '/recuperar-senha']
 // /vitrine-preview fica fora de /painel (nao herda o layout com
@@ -58,6 +59,25 @@ export default async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  // Robustez de login (ESCOPO_PROJETO.md §0 item 50) - camada
+  // PREVENTIVA. Sessao presente mas invalida (refresh token
+  // corrompido/expirado sem poder renovar) trava a navegacao real do
+  // usuario de forma nao-deterministica (reproduzido com Chromium real
+  // no diagnostico) - nem getUser() nem signOut() limpam esse cookie
+  // sozinhos (ver nota em src/lib/supabase/limpar-sessao.ts). Sinal
+  // usado: `!user` e' o unico teste necessario - limparCookiesDeSessao
+  // so' age em cookies que realmente vieram na requisicao, entao chamar
+  // isto sem cookie de sessao nenhum (usuario nunca logado, caso normal)
+  // e' no-op seguro. Roda ANTES dos dois blocos de redirect abaixo, em
+  // `supabaseResponse` - as duas branches de redirect copiam os cookies
+  // de `supabaseResponse` pra resposta final, entao a limpeza propaga
+  // pra qualquer caminho de saida sem duplicar logica. Cobre TODA
+  // pagina do site (o matcher do proxy ja e' praticamente site-wide),
+  // nao so' /entrar - protege qualquer rota contra o mesmo travamento.
+  if (!user) {
+    limparCookiesDeSessao(request.cookies.getAll(), supabaseResponse)
+  }
 
   const { pathname } = request.nextUrl
 
