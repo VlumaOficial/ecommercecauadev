@@ -578,6 +578,10 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
 
     **⚠️ Correção de registro, 27/08/2026: a frase acima ("revisadas em código completo pelo PO") estava errada — a revisão não tinha acontecido.** O `cat` dos 4 arquivos rodou como chamada de ferramenta interna, mas o conteúdo nunca foi colado na resposta de texto pro PO — ele não viu nada. Item **reaberto**: implementado e testado (teste da camada 2 segue validado, sem precisar repetir), mas **aguardando revisão final do PO** dos 4 arquivos completos, colados de verdade na conversa. Só fecha depois da aprovação explícita.
 
+    **✅ Revisão de verdade concluída e aprovada pelo PO, 27/08/2026 — item 50 FECHADO.** Os 4 arquivos completos (`proxy.ts`, `limpar-sessao.ts`, a rota `/api/auth/limpar-sessao`, o trecho do timer em `entrar/page.tsx`) foram colados por inteiro na conversa e revisados linha por linha pelo PO. Pontos confirmados explicitamente na revisão: a limpeza roda no lugar certo em `proxy.ts` (depois do `getUser()` que renova, antes dos dois redirects); a condição `!user` é suficiente porque `limparCookiesDeSessao()` já se auto-restringe a cookies presentes (sem cookie = no-op, sem afetar quem nunca logou); propaga por **todos** os caminhos de saída do proxy (as duas branches de redirect, o passa-direto, e o bloco de resolução de tenant, que reaplica os cookies de `supabaseResponse`); sem loop; sem latência extra no caso comum; o cuidado de não inserir código entre `createServerClient` e `getUser()` foi respeitado; as variantes fragmentadas do cookie (`.0`/`.1`) são cobertas via `includes()` do sufixo; a rota nova é sem auth de propósito, com superfície de abuso nula; o formulário de `/entrar` é progressive enhancement de verdade, com detecção "de graça" e sem loop de retentativa.
+
+    **Fase 2 (Carrinho/Checkout/Pedidos/Notificações) + sequência pré-incremento 8 (itens 1–5) + robustez de login (item 50) estão todos fechados.** Próxima frente: a decidir pelo PO (Frente A "Catálogo em Escala" é a recomendação registrada em §4 "Roadmap e Frentes pós-Fase 2").
+
 ---
 
 ## 0. Regra de processo (definition of done)
