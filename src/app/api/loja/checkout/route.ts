@@ -1,7 +1,8 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest, after } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getCustomerProfile } from '@/lib/auth'
+import { notificarPedidoNovoParaLojista } from '@/lib/notificacoes/notificar-lojista'
 
 // Fase 2, incremento 5 (Checkout). RPC criar_pedido (migration 037) so'
 // resolve auth.uid() de verdade quando chamada com o client SERVIDOR (le
@@ -49,6 +50,16 @@ export async function POST(request: NextRequest) {
     // Mensagem ja vem em portugues claro da RPC (REGRAS_DE_NEGOCIO.md §9)
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
+
+  // Best-effort: avisa a equipe configurada (REGRAS_DE_NEGOCIO.md §18.6c).
+  // after() roda DEPOIS da resposta ao cliente - nao atrasa nem quebra o
+  // checkout se o envio falhar ou nao houver destinatario configurado.
+  // Pipeline do LOJISTA, separado do notificarPedido() (cliente).
+  after(() =>
+    notificarPedidoNovoParaLojista(cliente.tenant_id, data.id).catch((e) =>
+      console.error('[notificacoes] falha inesperada ao avisar lojista de pedido novo:', e)
+    )
+  )
 
   return NextResponse.json({ data }, { status: 201 })
 }

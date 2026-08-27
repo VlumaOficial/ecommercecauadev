@@ -7,5 +7,8 @@ export type NotificationChannel = {
   send(params: { destinatario: string; assunto?: string; corpo: string }): Promise<{ ok: boolean; erro?: string }>
 }
 
-export type EventoNotificacao = 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado'
+// 'pedido_novo' (melhoria (c), REGRAS_DE_NEGOCIO.md §18.6c) é o único
+// evento cujo destinatário é a EQUIPE (staff), não o cliente — disparado
+// por src/lib/notificacoes/notificar-lojista.ts, nunca por notificar-pedido.ts.
+export type EventoNotificacao = 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado' | 'pedido_novo'
 export type CanalNotificacao = 'email' | 'whatsapp'
