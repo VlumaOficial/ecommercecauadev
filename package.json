@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "types": "supabase gen types typescript --project-id embgxkrfwtbqfkwmquvo > src/types/database.ts",
-    "check:money": "node scripts/check-money-typography.mjs"
+    "check:money": "node scripts/check-money-typography.mjs",
+    "check:auth": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-limpar-sessao.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

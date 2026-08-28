@@ -1,0 +1,35 @@
+name: Checks
+
+# Guardas rápidas contra regressões já sofridas:
+#  - tipografia de valores: todo valor monetário na UI passa pelo <Preco>,
+#    nenhum usa a fonte decorativa (Syne). Ver scripts/check-money-typography.mjs.
+#  - limpeza de sessão (GRUPO A do item 50): a classificação de erro do
+#    getUser() e o match do cookie de sessão. Ver scripts/test-limpar-sessao.mjs
+#    e src/lib/supabase/limpar-sessao.ts.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/check-money-typography.mjs'
+      - 'scripts/test-limpar-sessao.mjs'
+      - '.github/workflows/checks.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'scripts/check-money-typography.mjs'
+      - 'scripts/test-limpar-sessao.mjs'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Node 24 (import nativo de .ts) para o test-limpar-sessao.
+          node-version: 24
+      # Sem dependências: os dois scripts são Node puro, sem npm ci.
+      - run: node scripts/check-money-typography.mjs
+      - run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-limpar-sessao.mjs

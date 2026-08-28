@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { limparCookiesDeSessao } from '@/lib/supabase/limpar-sessao'
+import { ausenciaDefinitivaDeSessao, limparCookiesDeSessao } from '@/lib/supabase/limpar-sessao'
 
 const ROTAS_AUTH = ['/entrar', '/cadastro', '/recuperar-senha']
 // /vitrine-preview fica fora de /painel (nao herda o layout com
@@ -58,28 +58,32 @@ export default async function proxy(request: NextRequest) {
   // faltar menos de 90s pra expirar, independente de autoRefreshToken).
   const {
     data: { user },
+    error: erroSessao,
   } = await supabase.auth.getUser()
 
-  // Robustez de login (ESCOPO_PROJETO.md §0 item 50) - camada
-  // PREVENTIVA. Sessao presente mas invalida (refresh token
-  // corrompido/expirado sem poder renovar) trava a navegacao real do
-  // usuario de forma nao-deterministica (reproduzido com Chromium real
-  // no diagnostico) - nem getUser() nem signOut() limpam esse cookie
-  // sozinhos (ver nota em src/lib/supabase/limpar-sessao.ts). Sinal
-  // usado: `!user` e' o unico teste necessario - limparCookiesDeSessao
-  // so' age em cookies que realmente vieram na requisicao, entao chamar
-  // isto sem cookie de sessao nenhum (usuario nunca logado, caso normal)
-  // e' no-op seguro. Roda ANTES dos dois blocos de redirect abaixo, em
-  // `supabaseResponse` - as duas branches de redirect copiam os cookies
-  // de `supabaseResponse` pra resposta final, entao a limpeza propaga
-  // pra qualquer caminho de saida sem duplicar logica. Cobre TODA
-  // pagina do site (o matcher do proxy ja e' praticamente site-wide),
-  // nao so' /entrar - protege qualquer rota contra o mesmo travamento.
-  if (!user) {
+  const { pathname } = request.nextUrl
+
+  // Robustez de login (ESCOPO_PROJETO.md §0 item 50) - camada PREVENTIVA,
+  // ESCOPADA A /entrar (correcao de 27/08/2026, GRUPO A). A versao
+  // anterior rodava em TODA rota do site e, sem checar o `error` do
+  // getUser(), apagava o cookie de uma sessao VALIDA sempre que a Auth
+  // API tinha um blip (rede / rate-limit / 5xx) - quebrava login,
+  // onboarding de staff e reset de senha de uma vez. Agora:
+  //  (1) so' na tela de login - o unico lugar onde um cookie residual
+  //      efetivamente TRAVA o usuario; fora de /entrar o proxy nao mexe
+  //      em cookie de sessao (comportamento pre-item-50, que rodou meses
+  //      sem esse problema);
+  //  (2) so' quando ausenciaDefinitivaDeSessao() confirma que nao ha
+  //      sessao (AuthSessionMissingError / AuthApiError 4xx exceto 429) -
+  //      NUNCA em erro transitorio (fail-safe a favor da sessao);
+  //  (3) limparCookiesDeSessao age so' nos cookies presentes (no-op se
+  //      nao houver) e nunca no -code-verifier do PKCE (ver
+  //      ehCookieDeSessao). Escreve em `supabaseResponse`, que os
+  //      caminhos de saida abaixo (redirects + resolucao de tenant)
+  //      copiam pra resposta final.
+  if (pathname.startsWith('/entrar') && !user && ausenciaDefinitivaDeSessao(erroSessao)) {
     limparCookiesDeSessao(request.cookies.getAll(), supabaseResponse)
   }
-
-  const { pathname } = request.nextUrl
 
   if (user && ROTAS_AUTH.some((r) => pathname.startsWith(r))) {
     const url = request.nextUrl.clone()
