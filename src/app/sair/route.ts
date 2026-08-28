@@ -23,5 +23,20 @@ export async function POST(request: NextRequest) {
     }
   )
   await supabase.auth.signOut()
+  // [login-debug] instrumentacao TEMPORARIA (GRUPO A) - remover apos o diagnostico.
+  console.log(
+    '[login-debug] /sair',
+    JSON.stringify({
+      cookiesSbAntes: cookieStore
+        .getAll()
+        .filter((c) => c.name.startsWith('sb-'))
+        .map((c) => c.name),
+      cookiesSbNaResposta: response.cookies
+        .getAll()
+        .filter((c) => c.name.startsWith('sb-'))
+        .map((c) => ({ name: c.name, vazio: !c.value })),
+      redirect: `${origin}/entrar`,
+    })
+  )
   return response
 }

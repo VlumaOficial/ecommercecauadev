@@ -48,6 +48,14 @@ export default async function proxy(request: NextRequest) {
           // §2 levou dias pra diagnosticar por falta de visibilidade;
           // isso da rastro imediato no log da Vercel se algo quebrar.
           console.log('[proxy] sessao renovada, cookies persistidos:', cookiesToSet.map((c) => c.name).join(', '))
+          // [login-debug] instrumentacao TEMPORARIA (GRUPO A) - setAll
+          // dispara em RENOVACAO e tambem em REMOCAO de sessao pelo SDK
+          // (_removeSession escreve cookie vazio). `vazio:true` = o SDK
+          // esta APAGANDO a sessao aqui. Remover apos o diagnostico.
+          console.log('[login-debug] proxy setAll', JSON.stringify({
+            path: request.nextUrl.pathname,
+            cookies: cookiesToSet.map((c) => ({ name: c.name, vazio: !c.value })),
+          }))
         },
       },
     }
@@ -62,6 +70,27 @@ export default async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
+
+  // ── [login-debug] instrumentacao TEMPORARIA (GRUPO A problema 1) ──────
+  // Aparece nos Function Logs do Vercel. Filtrar por "[login-debug]".
+  // REMOVER apos o diagnostico - NAO altera nenhuma logica.
+  const debugRotaProtegida = ROTAS_PROTEGIDAS.some((r) => pathname.startsWith(r))
+  const debugRelevante = pathname.startsWith('/entrar') || debugRotaProtegida
+  if (debugRelevante) {
+    console.log(
+      '[login-debug] proxy',
+      JSON.stringify({
+        pathname,
+        temUser: !!user,
+        erroName: erroSessao?.name ?? null,
+        erroStatus: (erroSessao as { status?: number } | null | undefined)?.status ?? null,
+        cookiesSbNaRequisicao: request.cookies
+          .getAll()
+          .filter((c) => c.name.startsWith('sb-'))
+          .map((c) => c.name),
+      })
+    )
+  }
 
   // Robustez de login (ESCOPO_PROJETO.md §0 item 50) - camada PREVENTIVA,
   // ESCOPADA A /entrar (correcao de 27/08/2026, GRUPO A). A versao
@@ -82,7 +111,20 @@ export default async function proxy(request: NextRequest) {
   //      caminhos de saida abaixo (redirects + resolucao de tenant)
   //      copiam pra resposta final.
   if (pathname.startsWith('/entrar') && !user && ausenciaDefinitivaDeSessao(erroSessao)) {
-    limparCookiesDeSessao(request.cookies.getAll(), supabaseResponse)
+    const limpos = limparCookiesDeSessao(request.cookies.getAll(), supabaseResponse)
+    console.log('[login-debug] proxy LIMPOU cookies em /entrar:', JSON.stringify({ limpos }))
+  } else if (debugRelevante) {
+    console.log(
+      '[login-debug] proxy NAO limpou cookie',
+      JSON.stringify({
+        pathname,
+        motivo: !pathname.startsWith('/entrar')
+          ? 'fora de /entrar (limpeza escopada)'
+          : user
+            ? 'ha user (sessao valida)'
+            : `erro nao-definitivo: ${erroSessao?.name ?? 'nenhum'} (transitorio -> nao limpa)`,
+      })
+    )
   }
 
   if (user && ROTAS_AUTH.some((r) => pathname.startsWith(r))) {
@@ -99,6 +141,14 @@ export default async function proxy(request: NextRequest) {
     url.searchParams.set('proximo', pathname)
     const redir = NextResponse.redirect(url)
     supabaseResponse.cookies.getAll().forEach((c) => redir.cookies.set(c.name, c.value, c))
+    console.log(
+      '[login-debug] proxy REDIRECT deslogado ->',
+      JSON.stringify({
+        de: pathname,
+        para: '/entrar?proximo=' + pathname,
+        cookiesNaResposta: redir.cookies.getAll().map((c) => ({ name: c.name, vazio: !c.value })),
+      })
+    )
     return redir
   }
 

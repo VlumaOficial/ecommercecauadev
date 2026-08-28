@@ -33,13 +33,22 @@ function FormularioLogin() {
   }, [erro])
 
   function handleSubmit() {
+    // [login-debug] instrumentacao TEMPORARIA (GRUPO A) - estes logs saem
+    // no console do NAVEGADOR (componente client), nao nos Function Logs.
+    // Filtrar por "[login-debug]". Remover apos o diagnostico.
+    console.log('[login-debug] /entrar: POST nativo do formulario disparado')
     if (jaTentouRecuperar.current) return
     setTimeout(async () => {
       jaTentouRecuperar.current = true
+      console.log(
+        '[login-debug] /entrar: timer de 7s DISPAROU - a pagina nao navegou (login travou); vou limpar sessao e re-submeter'
+      )
       toast.info('Isso está demorando mais que o normal - tentando de novo...')
       try {
         await fetch('/api/auth/limpar-sessao', { method: 'POST' })
+        console.log('[login-debug] /entrar: POST /api/auth/limpar-sessao concluido')
       } finally {
+        console.log('[login-debug] /entrar: re-submetendo o formulario (2a tentativa)')
         formRef.current?.requestSubmit()
       }
     }, PRAZO_TRAVAMENTO_MS)

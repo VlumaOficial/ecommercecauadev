@@ -18,5 +18,16 @@ export async function POST() {
   if (limpos.length > 0) {
     console.log('[limpar-sessao] cookies de sessão expirados manualmente:', limpos.join(', '))
   }
+  // [login-debug] instrumentacao TEMPORARIA (GRUPO A) - remover apos o diagnostico.
+  console.log(
+    '[login-debug] api/auth/limpar-sessao',
+    JSON.stringify({
+      cookiesSbNaRequisicao: cookieStore
+        .getAll()
+        .filter((c) => c.name.startsWith('sb-'))
+        .map((c) => c.name),
+      limpos,
+    })
+  )
   return response
 }

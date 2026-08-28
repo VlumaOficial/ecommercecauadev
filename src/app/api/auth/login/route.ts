@@ -38,6 +38,23 @@ export async function POST(request: Request) {
     password: senha,
   })
 
+  // [login-debug] instrumentacao TEMPORARIA (GRUPO A) - Function Logs do
+  // Vercel, filtrar por "[login-debug]". Remover apos o diagnostico.
+  console.log(
+    '[login-debug] api/auth/login',
+    JSON.stringify({
+      email: email.trim(),
+      proximo,
+      sucesso: !error && !!data.user,
+      erro: error?.message ?? null,
+      userId: data.user?.id ?? null,
+      cookiesSbSetadosNaResposta: response.cookies
+        .getAll()
+        .filter((c) => c.name.startsWith('sb-'))
+        .map((c) => ({ name: c.name, vazio: !c.value })),
+    })
+  )
+
   if (error) {
     const msg = error.message.includes('Invalid login credentials')
       ? 'E-mail ou senha incorretos.'
@@ -47,6 +64,7 @@ export async function POST(request: Request) {
     // Mesma response (preserva quaisquer cookies ja gravados pelo setAll),
     // so troca o destino do redirect.
     response.headers.set('Location', `${origin}/entrar?erro=${encodeURIComponent(msg)}`)
+    console.log('[login-debug] api/auth/login FALHOU, redirect ->', response.headers.get('Location'))
     return response
   }
 
@@ -62,5 +80,6 @@ export async function POST(request: Request) {
   }
 
   // 303 See Other: cookie (Set-Cookie) + redirect na MESMA resposta = atomico
+  console.log('[login-debug] api/auth/login OK, redirect ->', response.headers.get('Location'))
   return response
 }
