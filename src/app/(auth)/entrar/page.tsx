@@ -1,5 +1,17 @@
 'use client'
 
+// Fix do login travado APOS EXPIRACAO AUTOMATICA de sessao (GRUPO A).
+// /entrar tem que ser sempre dinamica e NUNCA reusada do Router Cache do
+// cliente: um prefetch/navegacao RSC feito enquanto o usuario ainda
+// estava logado cacheia o "307 -> /" do proxy (rota de auth + sessao
+// valida). Depois que a sessao expira, uma soft navigation do router
+// podia servir /entrar dessa entrada stale e o formulario chegava
+// "rasgado"/inerte - clicar em Entrar nao fazia nada. Logout MANUAL e'
+// navegacao de documento (POST /sair -> 303 -> GET), ignora esse cache -
+// por isso so' travava no fluxo automatico. As outras 3 telas de (auth)
+// (cadastro / recuperar-senha / nova-senha) ja fazem isto.
+export const dynamic = 'force-dynamic'
+
 import { useState, useRef, Suspense, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -78,12 +90,35 @@ function FormularioLogin() {
   )
 }
 
+// Fallback do <Suspense> de FormularioLogin (que suspende em
+// useSearchParams). Antes era vazio (`<Suspense>` sem `fallback` ->
+// renderiza null): numa soft navigation em que o boundary suspende, a
+// area do formulario virava um vazio clicavel - "cliquei em Entrar e
+// nada aconteceu". Skeleton com a mesma pegada do form (label + 2
+// campos h-8 + botao h-11), aria-hidden pra nao anunciar campos falsos
+// ao leitor de tela.
+function FormularioLoginSkeleton() {
+  return (
+    <div className="space-y-4" aria-hidden="true">
+      <div className="space-y-2">
+        <div className="h-4 w-14 rounded bg-muted" />
+        <div className="h-8 w-full rounded-lg border border-input bg-muted/40" />
+      </div>
+      <div className="space-y-2">
+        <div className="h-4 w-14 rounded bg-muted" />
+        <div className="h-8 w-full rounded-lg border border-input bg-muted/40" />
+      </div>
+      <div className="h-11 w-full rounded-lg bg-muted" />
+    </div>
+  )
+}
+
 export default function EntrarPage() {
   return (
     <div className="bg-card rounded-2xl border border-border shadow-[0_4px_24px_-8px_rgba(0,0,0,0.15)] p-6 sm:p-8">
       <h2 className="font-display text-xl font-bold text-primary mb-1">Entrar</h2>
       <p className="text-sm text-muted-foreground mb-6">Acesse sua conta para fazer pedidos.</p>
-      <Suspense><FormularioLogin /></Suspense>
+      <Suspense fallback={<FormularioLoginSkeleton />}><FormularioLogin /></Suspense>
       <p className="text-sm text-center text-muted-foreground mt-6">
         Ainda nao tem conta?{' '}
         <Link href="/cadastro" className="text-primary font-semibold hover:underline">Cadastre-se</Link>
