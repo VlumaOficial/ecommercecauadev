@@ -620,6 +620,8 @@ Ver `ESCOPO_PROJETO.md` §0 item 49/50 (item 5 da sequência) pro estado de impl
 
 Ambos ficam **registrados como próximo incremento, não implementados agora** — desenho completo (nome exato dos eventos, textos-base, ponto exato do gatilho) fica pra quando o PO autorizar o início, seguindo o mesmo método já em vigor: desenho apresentado e aprovado antes de codar.
 
+**📌 Atualização de estado, 01/09/2026 (insert-only, prevalece sobre o "NÃO implementadas" acima quanto ao item (c)):** a melhoria (c) — aviso de pedido novo ao lojista — **foi implementada** (migration `044` + estrutura, campo WhatsApp opcional no cadastro de staff, tela `/painel/configuracoes › Notificações`, gatilho + orquestrador; robustez de SMTP com timeouts + `maxDuration` no checkout). **Ainda em teste, PENDENTE:** (GRUPO B) confirmar recebimento real dos e-mails de teste ao lojista + confirmar destinatários cadastrados na tela (`order_notification_recipients` estava vazia) + corrigir o canal de e-mail (suspeita: throttle do Zoho / timeouts); (GRUPO C) confirmar identidade de remetente da instância Evolution — aguardando o número da instância do usuário. Detalhe e rastreamento em `ESCOPO_PROJETO.md` §0 item 51. A melhoria (b) segue não implementada.
+
 ---
 
 ## 19. Status e ciclo de vida do pedido (Fase 2)
