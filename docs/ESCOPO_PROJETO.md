@@ -582,6 +582,24 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
 
     **Fase 2 (Carrinho/Checkout/Pedidos/Notificações) + sequência pré-incremento 8 (itens 1–5) + robustez de login (item 50) estão todos fechados.** Próxima frente: a decidir pelo PO (Frente A "Catálogo em Escala" é a recomendação registrada em §4 "Roadmap e Frentes pós-Fase 2").
 
+    **⚠️ REABERTO em 31/08/2026 — a trava de login NÃO estava resolvida.** O usuário reportou o mesmo sintoma no uso real, mesmo com os testes do `e55d6f1` passando (3ª vez que um "resolvido" não resistiu ao teste real dele). Nova rodada de diagnóstico (28–31/08/2026):
+
+    - **Sintoma refinado pelo usuário**: a trava só acontece **após LOGOUT AUTOMÁTICO (expiração de sessão)** — o clique em "Entrar" não reage, sem erro no console, e/ou após login o usuário não é redirecionado. Após **LOGOUT MANUAL** (`/sair`), o login funciona normalmente.
+    - **Instrumentação `[login-debug]` adicionada** (commit `fec966e`) em `proxy.ts`, `POST /api/auth/login`, `POST /api/auth/limpar-sessao`, `/sair` (Function Logs do Vercel) e `entrar/page.tsx` (console do navegador). **NÃO remover ainda** — é a ferramenta de diagnóstico da próxima sessão.
+    - **Log do Vercel analisado** (janela ~12 min trazida pelo usuário): a camada preventiva do `proxy.ts` **nunca apagou um cookie vivo** ali (`setAll` sempre com cookie não-vazio; `LIMPOU cookies em /entrar` só com lista vazia). O proxy do item 50 está **inocentado nesse log**. A janela era o caminho feliz do teste (só o access token teve expiração reduzida no dashboard; o refresh token renovou por 11 min + reabrir o navegador) — **não continha a trava**.
+    - **Falso positivo investigado e descartado**: cheguei a apontar `<Button type="submit">` (`src/components/ui/button.tsx`, `@base-ui/react`) renderizando como `type="button"`. **Errado** — reli `useButton.js` + `mergeProps`: `otherExternalProps` (com o nosso `type="submit"`) é o último arg do merge e **vence** o `{type:'button'}` do Base UI. Prova empírica: ~17 formulários do painel/auth dependem exatamente disso e todos salvam (melhoria c B/C/D testada verde). O botão **funciona**.
+    - **Hipótese de causa raiz atual (NÃO confirmada)**: `/entrar` era a **única** tela `(auth)` **sem `export const dynamic = 'force-dynamic'`**. Enquanto logado, prefetch/navegação RSC de `/entrar` recebe `307 → /` do proxy (rota de auth + sessão válida) e isso **envenena o Router Cache do cliente**. Após expiração automática, uma **soft navigation** do router pode servir `/entrar` dessa entrada stale → o formulário chega inerte, o clique em "Entrar" não reage, nenhum POST sai. Logout **manual** é navegação de documento (`POST /sair → 303 → GET`), **ignora** esse cache — por isso não trava no fluxo manual.
+
+    **Tentativa desta sessão (commit `07bfdc9`, 31/08/2026) — implementada e deployada; usuário testou o cenário real e NÃO resolveu:**
+    1. `export const dynamic = 'force-dynamic'` em `src/app/(auth)/entrar/page.tsx` (igual às 3 irmãs `(auth)`). Não muda render server-side (o layout já é dinâmico via `headers()`); faz o Router Cache do cliente tratar `/entrar` como não-reusável.
+    2. `<Suspense fallback={<FormularioLoginSkeleton/>}>` em `entrar/page.tsx` — antes era `<Suspense>` sem `fallback` (renderiza `null`); numa soft-nav em que `useSearchParams` suspende, a área do form virava um vazio clicável.
+
+    Como 1+2 não resolveram, a hipótese do Router Cache stale fica **enfraquecida** (não necessariamente descartada — pode haver mais de um mecanismo, ou o `force-dynamic` num page client não surtir o efeito esperado no Router Cache). O diagnóstico da próxima sessão **parte do log `[login-debug]` real**, não de nova hipótese às cegas.
+
+    **NÃO feito de propósito** (só reconsiderar se 1+2 não resolverem, pra não tocar o proxy do item 50 sem necessidade): (3) estender a limpeza de cookie do `proxy.ts` ao redirect de rota protegida; (4) limpeza de cookie no mount do client de `/entrar`.
+
+    **Status: EM ABERTO — prioridade a investigar com log real. Causa raiz ainda NÃO confirmada.** Tentativas feitas: (a) correção do `proxy.ts` no item 50 — era causa raiz de OUTRO bug (GRUPO A defeitos do `ec5971f`), não deste; (b) investigação do `<Button type="submit">` — descartada, botão funciona; (c) `force-dynamic` + `Suspense` fallback em `/entrar` (commit `07bfdc9`) — **não resolveu no teste real do usuário**. Próximo passo: usuário reproduz o cenário real (deixar a sessão expirar de verdade — refresh token morto, não só reduzir o access token no dashboard — depois clicar em "Entrar"), traz os logs `[login-debug]` (Vercel + console) e o diagnóstico parte da evidência real, então avaliam-se as camadas (3)/(4).
+
 ---
 
 ## 0. Regra de processo (definition of done)
