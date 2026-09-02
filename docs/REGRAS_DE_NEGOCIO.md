@@ -11,6 +11,19 @@
 
 Cada regra abaixo indica seu status: **✅ Em vigor** (implementada e funcionando), **📐 Decidida** (definida, aguardando implementação) ou **⏳ A definir** (ainda não decidida).
 
+### 0.1 Disparos de notificação em ambiente de teste (insert-only, 02/09/2026)
+
+**✅ Em vigor.** Qualquer teste que possa **disparar uma notificação real** (e-mail ou WhatsApp — checkout, validar, ajustar, concluir, cancelar) só pode endereçar **destinatários reais controlados pelo PO**:
+
+- **E-mail:** `sergiodorea1975@gmail.com`
+- **WhatsApp:** `71991215016`
+
+**Nunca** usar e-mail ou WhatsApp **fabricado** num cliente de teste. Um número/e-mail inventado pode pertencer a um terceiro real (spam a estranho) ou colidir com a própria linha da instância de envio (auto-envio). **Evidência concreta:** no teste do incremento 3 (`pedido_entregue`, pedido de teste **#43**, 02/09/2026), o cliente de teste foi criado com o WhatsApp fabricado `71991240000`; após o prefixo DDI (`canal-whatsapp.ts`, `55` + dígitos) virou `5571991240000`, que **coincidiu com o número WhatsApp conectado na instância Evolution** — a instância enviou "pedido entregue" **para si mesma**. Ver `ESCOPO_PROJETO.md` §0 (diagnóstico de segurança do #43) e §1 "Checklist de pré-produção" item 1 (identidade de remetente de teste × real do Criatório Capuã, GRUPO C).
+
+Quando **não se quer** disparo num teste, deixar o campo **vazio**: `notificar-pedido.ts` só envia WhatsApp se `cliente.whatsapp` estiver preenchido (`if (cliente.whatsapp)`), e só envia e-mail se `cliente.email` estiver preenchido — campo vazio = canal pulado, sem erro.
+
+**O teste end-to-end de recebimento real (todos os canais, todos os eventos) é conduzido pelo PO**, não pelo assistente — o assistente valida o fluxo de painel/checkout (status HTTP, transição de estado, ausência de regressão) e a não-quebra da resposta ao usuário; a confirmação de que a mensagem chega fica com o PO.
+
 ---
 
 ## 1. Acesso e perfis
@@ -592,6 +605,8 @@ Além de "Meus Pedidos" (§18.2), a área do cliente no MVP inclui:
 `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, `EMAIL_SMTP_SECURE`, `EMAIL_SMTP_USER`, `EMAIL_SMTP_PASSWORD` (app password do Zoho, nunca a senha da conta — 2FA ativo), `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME`, `CRON_SECRET` (novo). `EVOLUTION_API_URL`/`EVOLUTION_API_KEY`/`EVOLUTION_INSTANCE` já estavam reservadas desde o `.env.example` original — só faltavam os valores. No GitHub Actions: `APP_URL` (novo, URL pública do deploy) + `CRON_SECRET`.
 
 **📌 Credenciais atuais são de TESTE, não as reais do Cauã — troca antes de produção fica registrada como pendência formal em `ESCOPO_PROJETO.md` §1 "Checklist de pré-produção do Cauã", item 1.** Não esquecer quando o Cauã for pra produção de verdade.
+
+**📌 Regra de dado de teste ao disparar notificação (02/09/2026):** contas de teste que possam disparar e-mail/WhatsApp só usam os destinatários reais do PO (`sergiodorea1975@gmail.com` / `71991215016`) ou deixam o campo vazio — **nunca** valor fabricado. Regra completa + evidência (pedido de teste #43: WhatsApp fabricado colidiu com a linha da instância Evolution → auto-envio) em §0.1.
 
 **Visão de SaaS aplicada aqui, mesmo o Cauã sendo single-tenant hoje**: a interface `NotificationChannel` (canal-agnóstica) já desacopla o pipeline de notificação de onde a credencial mora — hoje env var global, no SaaS vira config por-tenant (`ESCOPO_PROJETO.md` §1, pilar 5 "Autonomia de configuração do lojista") — sem precisar reescrever `notificar-pedido.ts`/`canal-email.ts`/`canal-whatsapp.ts`, só trocar de onde a credencial é lida.
 
