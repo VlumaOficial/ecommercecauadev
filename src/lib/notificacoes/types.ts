@@ -10,5 +10,13 @@ export type NotificationChannel = {
 // 'pedido_novo' (melhoria (c), REGRAS_DE_NEGOCIO.md §18.6c) é o único
 // evento cujo destinatário é a EQUIPE (staff), não o cliente — disparado
 // por src/lib/notificacoes/notificar-lojista.ts, nunca por notificar-pedido.ts.
-export type EventoNotificacao = 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado' | 'pedido_novo'
+// Todos os demais têm o CLIENTE como destinatário (notificar-pedido.ts).
+// 'pedido_recebido' (melhoria (b), §18.6b) — incremento 1 de 4 da frente
+// de notificações ao cliente; disparado no checkout após criar_pedido.
+export type EventoNotificacao =
+  | 'pedido_recebido'
+  | 'pedido_validado'
+  | 'pedido_ajustado'
+  | 'pedido_cancelado'
+  | 'pedido_novo'
 export type CanalNotificacao = 'email' | 'whatsapp'

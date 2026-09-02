@@ -144,6 +144,10 @@
 
 **Nota de correção de registro, 27/08/2026: esta linha só foi escrita agora — as migrations `042`/`043` já estavam aplicadas desde 26/08/2026, mas este documento nunca tinha sido atualizado pra refletir isso.** Achado ao fazer o checklist de encerramento de sessão; corrigido antes de encerrar, sem perda de informação (a aplicação real já tinha sido confirmada em `ESCOPO_PROJETO.md`/na conversa, só faltava propagar aqui).
 
+**Atualização de 01/09/2026: migration `044` (aviso de pedido novo ao lojista, melhoria (c) — `profiles.whatsapp`, `order_notification_recipients`, evento `pedido_novo` + seed) foi aplicada pelo usuário em 27/08/2026 mas nunca teve linha própria aqui — registrada agora por completude. Estado e teste em `ESCOPO_PROJETO.md` §0 item 51 (GRUPO B, em teste).** `001`–`044` aplicadas no banco nessa data.
+
+**Atualização de 01/09/2026: migration `045_notificacao_cliente_pedido_recebido.sql` (melhoria (b), incremento 1 de 4 — notificação ao CLIENTE "pedido recebido") — descasamento arquivo × banco reconciliado neste commit.** A `045` (CHECK de `notification_templates.evento` passa a aceitar `pedido_recebido` + seed dos 2 textos-base email/whatsapp por tenant, `on conflict do nothing`) **já estava aplicada no banco** por uma sessão anterior (os 6 templates — 3 tenants × 2 canais — conferidos presentes e idênticos ao SQL do arquivo; `distinct(evento)` no banco já inclui `pedido_recebido`, o que só é possível se o `ALTER ... ADD CONSTRAINT` também rodou), mas o **arquivo versionado nunca tinha sido commitado** (ficou `untracked` no repo). Este commit traz o arquivo pro versionamento — conteúdo do arquivo == SQL aplicado, sem divergência de texto a corrigir no banco. `001`–`045` aplicadas no banco. Aditiva pura (só relaxa um CHECK — nenhum valor removido — e faz seed idempotente); sem risco de regressão. Ver `ESCOPO_PROJETO.md` §0 e `REGRAS_DE_NEGOCIO.md` §18.6b pro detalhe do incremento.
+
 ---
 
 *Ver `docs/ESCOPO_PROJETO.md` §6 "Ambientes e referências" para o contexto completo de como as migrations são versionadas e aplicadas, e §0 para a regra de rastreabilidade de migrations ajustadas/descartadas.*

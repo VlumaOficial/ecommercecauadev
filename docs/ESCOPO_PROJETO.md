@@ -608,6 +608,27 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
 
     **(3) NOTIFICAÇÕES — GRUPO C (identidade de remetente Evolution / WhatsApp): PENDENTE.** Aguardando o **número da instância Evolution** para confirmar a **colisão remetente/destinatário** (mesma classe de risco já registrada em §2 "Débito técnico" / linha ~713: instância `ecommercecauahml` e `EMAIL_FROM_ADDRESS` de teste, não do Criatório Capuã — se for a produção sem trocar, o cliente final recebe mensagem de um remetente que não é a loja). Bloqueado na informação do usuário.
 
+52. **📌 Frente NOVA — notificações ao CLIENTE (melhoria (b), §18.6b): 4 eventos, incrementais, um por vez. Incremento 1 de 4 (`pedido_recebido`) implementado em 01/09/2026.** Esta entrada é insert-only.
+
+    **Mapa dos 4 eventos ao cliente** (destinatário sempre = o próprio cliente do pedido, contato em `customers`; canais e-mail + WhatsApp nos dois; pipeline = `src/lib/notificacoes/notificar-pedido.ts`, separado do de lojista `notificar-lojista.ts`/`pedido_novo`, sem cruzamento):
+
+    | Evento | Gatilho | Ponto de disparo | Status |
+    |---|---|---|---|
+    | `pedido_recebido` | após `criar_pedido` no checkout | `POST /api/loja/checkout` — 2º `after()`, ao lado do aviso ao lojista | **incremento 1 — implementado 01/09/2026** |
+    | `pedido_aprovado` | RPC `validar_pedido` | `POST /api/painel/pedidos/[id]/validar` (ponto já existe — hoje dispara `pedido_validado`) | incremento 2 — não iniciado |
+    | `pedido_entregue` | RPC `concluir_pedido` | `POST /api/painel/pedidos/[id]/concluir` (ponto já existe) | incremento 3 — não iniciado |
+    | `pedido_cancelado` | RPC `cancelar_pedido` (manual / automático §17.2 / futuro pelo cliente §17.3) | Route Handlers de cancelar + cron (pontos já existem) | incremento 4 — não iniciado |
+
+    **Decisão de produto adiada para o incremento 4** (sinalizada pelo PO em 01/09/2026, não decidir agora): o `pedido_cancelado` cobre os 3 tipos de cancelamento — **template único serve os 3, ou o texto varia conforme o motivo?** Resolver ao desenhar o incremento 4.
+
+    **Incremento 1 (`pedido_recebido`) — o que foi feito (01/09/2026):**
+    - **Banco:** migration `045` (CHECK `notification_templates.evento` += `pedido_recebido` + seed dos 2 textos-base email/whatsapp por tenant). **Descasamento reconciliado:** a `045` já tinha sido aplicada no banco por sessão anterior (6 templates conferidos, idênticos ao SQL); o arquivo versionado estava `untracked` e entrou no commit deste incremento. Textos aprovados pelo PO, **não mexidos**. Ver `docs/MIGRATIONS.md` (linha `045`).
+    - **Código (4 arquivos):** (1) `src/app/api/loja/checkout/route.ts` — 2º `after()` chamando `notificarPedido(tenant_id, order_id, 'pedido_recebido')`, `.catch()` próprio, ao lado do aviso ao lojista (os dois convivem, pipelines independentes); (2) `src/lib/notificacoes/notificar-pedido.ts` — passa a tratar `pedido_recebido` (nenhum código de evento-específico; o orquestrador já é genérico — só faltava o evento no type) + guard defensivo `if (cliente.whatsapp)` antes do envio WhatsApp (higiene: `customers.whatsapp` é `NOT NULL`, mas valor vazio não pode disparar envio pra número em branco — nesse caso vai só e-mail, sem quebrar); (3) `src/lib/notificacoes/types.ts` — `EventoNotificacao` += `pedido_recebido`; (4) `src/types/database.ts` — `notification_templates.evento` (Row/Insert/Update) += `pedido_recebido`.
+    - **`templates.ts`:** nenhuma mudança — `resolverPlaceholders` já é genérico (regex `\{(\w+)\}`) e o `vars` montado em `notificar-pedido.ts` já cobre `{nome_cliente}` / `{numero_pedido}` / `{nome_loja}` / `{link_pedido}` (os 4 placeholders dos templates novos).
+    - **Build:** `npx tsc --noEmit` e `npm run build` limpos.
+    - **Isolamento cliente × lojista:** confirmado — origem de destinatário diferente (`customers` vs `order_notification_recipients`) e valor de `evento` diferente (`pedido_recebido` vs `pedido_novo`); compartilham só `canalEmail` / `canalWhatsapp` / `buscarTemplate` (stateless). Um checkout dispara os dois `after()`, para pessoas diferentes, com textos diferentes.
+    - **Teste Chromium na URL pública:** [preenchido após push + deploy].
+
 ---
 
 ## 0. Regra de processo (definition of done)

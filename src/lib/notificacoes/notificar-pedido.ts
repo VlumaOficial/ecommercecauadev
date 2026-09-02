@@ -71,7 +71,10 @@ export async function notificarPedido(
     }
   }
 
-  const templateWhatsapp = await buscarTemplate(tenantId, evento, 'whatsapp', vars)
+  // Guard defensivo de WhatsApp: customers.whatsapp e' NOT NULL no schema
+  // (todo cadastro exige), mas um valor vazio nao pode disparar um envio
+  // pra numero em branco - so' e-mail nesse caso, sem quebrar.
+  const templateWhatsapp = cliente.whatsapp ? await buscarTemplate(tenantId, evento, 'whatsapp', vars) : null
   if (templateWhatsapp) {
     const resultado = await canalWhatsapp.send({ destinatario: cliente.whatsapp, corpo: templateWhatsapp.corpo })
     canais.push({ canal: 'whatsapp', enviado: resultado.ok, motivo: resultado.erro })

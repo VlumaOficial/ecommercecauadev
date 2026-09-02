@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getCustomerProfile } from '@/lib/auth'
 import { notificarPedidoNovoParaLojista } from '@/lib/notificacoes/notificar-lojista'
+import { notificarPedido } from '@/lib/notificacoes/notificar-pedido'
 
 // O after() (aviso de pedido novo ao lojista, §18.6c) roda DEPOIS da
 // resposta, mas ainda dentro do tempo de vida da funcao. O default do
@@ -57,13 +58,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
 
-  // Best-effort: avisa a equipe configurada (REGRAS_DE_NEGOCIO.md §18.6c).
-  // after() roda DEPOIS da resposta ao cliente - nao atrasa nem quebra o
-  // checkout se o envio falhar ou nao houver destinatario configurado.
-  // Pipeline do LOJISTA, separado do notificarPedido() (cliente).
+  // Dois avisos best-effort, disparados via after() (rodam DEPOIS da
+  // resposta ao cliente - nao atrasam nem quebram o checkout se o envio
+  // falhar). Sao pipelines SEPARADOS, cada um com seu proprio .catch():
+  //
+  //  1. LOJISTA (§18.6c): evento 'pedido_novo', destinatario = staff
+  //     configurados em order_notification_recipients.
+  //  2. CLIENTE (§18.6b, incremento 1 de 4): evento 'pedido_recebido',
+  //     destinatario = o proprio cliente do pedido (customers). Nunca
+  //     se cruza com (1) - origem de destinatario e evento diferentes.
+  //     O guard de "cliente sem WhatsApp" fica dentro de notificarPedido().
   after(() =>
     notificarPedidoNovoParaLojista(cliente.tenant_id, data.id).catch((e) =>
       console.error('[notificacoes] falha inesperada ao avisar lojista de pedido novo:', e)
+    )
+  )
+  after(() =>
+    notificarPedido(cliente.tenant_id, data.id, 'pedido_recebido').catch((e) =>
+      console.error('[notificacoes] falha inesperada ao avisar cliente de pedido recebido:', e)
     )
   )
 
