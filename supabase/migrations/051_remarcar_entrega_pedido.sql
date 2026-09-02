@@ -28,7 +28,7 @@
 --   2. trava o pedido (FOR UPDATE), confere tenant.
 --   3. status ∈ {aguardando_validacao, confirmado} senão exceção.
 --   4. motivo não-vazio senão exceção.
---   5. data_nova não-nula senão exceção.
+--   5. data_nova não-nula, e não anterior a hoje (current_date), senão exceção.
 --   6. data_nova tem que MUDAR a previsão (is distinct from a atual)
 --      senão exceção — evita remarcação no-op / notificação à toa.
 --   7. INSERT em order_delivery_reschedules (data_anterior = a
@@ -79,6 +79,10 @@ begin
 
   if p_data_nova is null then
     raise exception 'Informe a nova data de entrega.';
+  end if;
+
+  if p_data_nova < current_date then
+    raise exception 'A nova data de entrega não pode estar no passado.';
   end if;
 
   -- tem que mudar de fato (is distinct from trata NULL corretamente:
