@@ -616,7 +616,7 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
     |---|---|---|---|
     | `pedido_recebido` | após `criar_pedido` no checkout | `POST /api/loja/checkout` — 2º `after()`, ao lado do aviso ao lojista | **incremento 1 — implementado 01/09/2026** |
     | `pedido_validado` | RPC `validar_pedido` | `POST /api/painel/pedidos/[id]/validar` — `after()` | **incremento 2 — implementado 01/09/2026 (reaproveita evento/`after()` que já existiam desde o incremento 8)** |
-    | `pedido_entregue` | RPC `concluir_pedido` | `POST /api/painel/pedidos/[id]/concluir` (ponto já existe) | incremento 3 — não iniciado |
+    | `pedido_entregue` | RPC `concluir_pedido` | `POST /api/painel/pedidos/[id]/concluir` — `after()` novo | **incremento 3 — implementado 02/09/2026 (migration `047` + `after()` novo no handler)** |
     | `pedido_cancelado` | RPC `cancelar_pedido` (manual / automático §17.2 / futuro pelo cliente §17.3) | Route Handlers de cancelar + cron (pontos já existem) | incremento 4 — não iniciado |
 
     **`pedido_ajustado` é notificação independente, por design (decisão do PO, 01/09/2026).** O evento `pedido_ajustado` **já existe e já dispara** desde o incremento 8, a partir de `POST /api/painel/pedidos/[id]/editar` (RPC `ajustar_itens_pedido`, §15.4) — quando o vendedor reduz/remove item antes de validar. **Ajuste (`/editar`) e validação (`/validar`) são dois eventos reais e distintos**: se os dois acontecem no mesmo pedido, o cliente recebe as duas mensagens (`pedido_ajustado` ao salvar a edição, `pedido_validado` ao validar) — isso é o comportamento **correto**, não ruído. Investigação de 01/09/2026 (registrada e descartada pelo PO): não há sinal server-side, sem migration, dentro do `/validar` que diga "este pedido foi editado antes" — e **não se quer** um: o `/editar` **não é tocado** neste incremento (nem `ajustar_itens_pedido`, nem `pedido-itens-section.tsx`).
@@ -643,7 +643,16 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
     - **Recebimento real pelo cliente:** adiado para o **teste integrado final** dos 4 incrementos, feito pelo PO na cadeia completa (não agora).
     - **Status:** implementado (código já presente, verificado por leitura + já testado em 26/08). Aguarda só o teste Chromium de painel desta sessão (credencial de staff) e o teste integrado final do PO.
 
-    Incrementos 3–4 não iniciados.
+    **Incremento 3 (`pedido_entregue`) — o que foi feito (02/09/2026):**
+    - **Banco:** migration `047` — Parte 1 estende o CHECK `notification_templates_evento_check` (+`pedido_entregue`), Parte 2 seed dos 2 textos-base (email + whatsapp) por tenant, grafia da regra §18.5 (`— Equipe {nome_loja}`, sem preposição+artigo). **Aplicada pelo PO em 02/09/2026** — o assistente **não aplicou banco**. Arquivo `supabase/migrations/047_notificacao_cliente_pedido_entregue.sql` criado neste commit espelhando o SQL aplicado, com cabeçalho "não reaplicar"; conteúdo conferido **byte a byte** contra os 6 templates no banco (3 tenants × 2 canais, `assunto`+`corpo` idênticos, `ativo=true`).
+    - **Código (3 arquivos, molde do incremento 1):** (1) `src/app/api/painel/pedidos/[id]/concluir/route.ts` — `after()` **novo** (não existia — diferente do incremento 2) chamando `notificarPedido(perfil.tenant_id, id, 'pedido_entregue')` após o guard `if (error)`, `.catch()` próprio, roda pós-resposta ao vendedor; importa `after` de `next/server` e `notificarPedido`; (2) `src/lib/notificacoes/types.ts` — `EventoNotificacao` += `pedido_entregue`; (3) `src/types/database.ts` — `notification_templates.evento` (Row/Insert/Update) += `pedido_entregue`.
+    - **`templates.ts` / `notificar-pedido.ts`:** sem mudança — orquestrador genérico, `vars` já cobre `{nome_cliente}` / `{numero_pedido}` / `{nome_loja}` / `{link_pedido}`; guard `if (cliente.whatsapp)` já vive lá.
+    - **`concluir_pedido` (RPC, migration 039):** não tocada — só `confirmado → concluido` + `data_efetiva=now()`, sem estoque; `after()` dispara limpo após sucesso.
+    - **Build:** `npx tsc --noEmit` e `npm run build` limpos.
+    - **Teste Chromium de painel (02/09/2026):** [preenchido — status do login de staff].
+    - **Recebimento real pelo cliente:** adiado para o **teste integrado final** dos 4 incrementos, pelo PO.
+
+    Incremento 4 (`pedido_cancelado`, com a decisão de template único vs. por motivo) não iniciado.
 
 ---
 

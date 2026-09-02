@@ -17,6 +17,7 @@ export type EventoNotificacao =
   | 'pedido_recebido'
   | 'pedido_validado'
   | 'pedido_ajustado'
+  | 'pedido_entregue'
   | 'pedido_cancelado'
   | 'pedido_novo'
 export type CanalNotificacao = 'email' | 'whatsapp'

@@ -320,7 +320,7 @@ export type Database = {
         Row: {
           id: string
           tenant_id: string
-          evento: 'pedido_recebido' | 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado' | 'pedido_novo'
+          evento: 'pedido_recebido' | 'pedido_validado' | 'pedido_ajustado' | 'pedido_entregue' | 'pedido_cancelado' | 'pedido_novo'
           canal: 'email' | 'whatsapp'
           assunto: string | null
           corpo: string
@@ -331,7 +331,7 @@ export type Database = {
         Insert: {
           id?: string
           tenant_id?: string
-          evento: 'pedido_recebido' | 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado' | 'pedido_novo'
+          evento: 'pedido_recebido' | 'pedido_validado' | 'pedido_ajustado' | 'pedido_entregue' | 'pedido_cancelado' | 'pedido_novo'
           canal: 'email' | 'whatsapp'
           assunto?: string | null
           corpo: string
@@ -342,7 +342,7 @@ export type Database = {
         Update: {
           id?: string
           tenant_id?: string
-          evento?: 'pedido_recebido' | 'pedido_validado' | 'pedido_ajustado' | 'pedido_cancelado' | 'pedido_novo'
+          evento?: 'pedido_recebido' | 'pedido_validado' | 'pedido_ajustado' | 'pedido_entregue' | 'pedido_cancelado' | 'pedido_novo'
           canal?: 'email' | 'whatsapp'
           assunto?: string | null
           corpo?: string
