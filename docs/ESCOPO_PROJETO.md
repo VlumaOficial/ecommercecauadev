@@ -617,7 +617,7 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
     | `pedido_recebido` | após `criar_pedido` no checkout | `POST /api/loja/checkout` — 2º `after()`, ao lado do aviso ao lojista | **incremento 1 — implementado 01/09/2026** |
     | `pedido_validado` | RPC `validar_pedido` | `POST /api/painel/pedidos/[id]/validar` — `after()` | **incremento 2 — implementado 01/09/2026 (reaproveita evento/`after()` que já existiam desde o incremento 8)** |
     | `pedido_entregue` | RPC `concluir_pedido` | `POST /api/painel/pedidos/[id]/concluir` — `after()` novo | **incremento 3 — implementado 02/09/2026 (migration `047` + `after()` novo no handler)** |
-    | `pedido_cancelado` | RPC `cancelar_pedido` (manual / automático §17.2 / futuro pelo cliente §17.3) | Route Handlers de cancelar + cron (pontos já existem) | incremento 4 — não iniciado |
+    | `pedido_cancelado` | RPC `cancelar_pedido` (manual §17.1) **e** `cancelar_pedidos_expirados` (automático §17.2) | `POST /api/painel/pedidos/[id]/cancelar` — `after()` **e** `POST /api/cron/notificar-cancelamentos` — loop | **incremento 4 — já pronto desde o incremento 8 (manual + automático); cliente §17.3 fora de escopo)** |
 
     **`pedido_ajustado` é notificação independente, por design (decisão do PO, 01/09/2026).** O evento `pedido_ajustado` **já existe e já dispara** desde o incremento 8, a partir de `POST /api/painel/pedidos/[id]/editar` (RPC `ajustar_itens_pedido`, §15.4) — quando o vendedor reduz/remove item antes de validar. **Ajuste (`/editar`) e validação (`/validar`) são dois eventos reais e distintos**: se os dois acontecem no mesmo pedido, o cliente recebe as duas mensagens (`pedido_ajustado` ao salvar a edição, `pedido_validado` ao validar) — isso é o comportamento **correto**, não ruído. Investigação de 01/09/2026 (registrada e descartada pelo PO): não há sinal server-side, sem migration, dentro do `/validar` que diga "este pedido foi editado antes" — e **não se quer** um: o `/editar` **não é tocado** neste incremento (nem `ajustar_itens_pedido`, nem `pedido-itens-section.tsx`).
 
@@ -652,7 +652,26 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
     - **Teste Chromium de painel (02/09/2026) — OK.** Na mesma sessão do teste do incremento 2, staff real concluiu o pedido de teste **#43** (já `confirmado`) pela tela na HML: `POST /api/painel/pedidos/{id}/concluir` → **200**, corpo com `status: "concluido"` e `data_efetiva` gravado, resposta em ~1,8s (o `after()` **novo** do `pedido_entregue` não bloqueou a resposta ao vendedor). **Zero page error** (os mesmos 3× `404` RSC de `/painel/clientes`, pré-existentes). Pedido #43 no banco: `concluido`.
     - **Recebimento real pelo cliente:** adiado para o **teste integrado final** dos 4 incrementos, pelo PO.
 
-    Incremento 4 (`pedido_cancelado`, com a decisão de template único vs. por motivo) não iniciado.
+    **Incremento 4 (`pedido_cancelado`) — diagnóstico 02/09/2026: NENHUM código novo, NENHUMA migration. Já vinha pronto do incremento 8, nos dois gatilhos.**
+    - **Decisão de produto do PO (02/09/2026):** template único com `{motivo}` para todos os tipos; cobrir **manual + automático** agora; **cancelamento pelo cliente (§17.3) fica de fora** (não construído — não há RPC nem tela).
+    - **Template:** `pedido_cancelado` (email + whatsapp) seedado (6 linhas = 3 tenants × 2), `ativo=true`, no CHECK, ambos usam `{motivo}`, já com `— Equipe {nome_loja}` (migration 046). Nada a criar.
+    - **Gatilho MANUAL** (§17.1): `POST /api/painel/pedidos/[id]/cancelar` **já** tem `after()` → `notificarPedido(perfil.tenant_id, id, 'pedido_cancelado', { motivo: parsed.data.motivo })`. `{motivo}` = texto que o vendedor digita no diálogo; a RPC `cancelar_pedido` (migration 039) também grava esse texto em `orders.motivo_cancelamento`.
+    - **Gatilho AUTOMÁTICO** (§17.2): `POST /api/cron/notificar-cancelamentos` (GitHub Action cron, auth por `CRON_SECRET`) **já** chama `cancelar_pedidos_expirados()` (migration 042, `service_role`-only, retorna os pedidos afetados) e itera notificando cada um: `notificarPedido(pedido.tenant_id, pedido.id, 'pedido_cancelado', { motivo: 'Cancelamento automático — prazo de validação expirado' })`.
+    - **`{motivo}` do automático — texto padrão (decisão do PO 02/09/2026: MANTER como está, sem migration):** a string `'Cancelamento automático — prazo de validação expirado'` existe **duplicada, hoje idêntica**, em dois lugares — `cancelar_pedidos_expirados()` (migration 042, grava em `orders.motivo_cancelamento`) e `notificar-cancelamentos/route.ts` (passa pro template; **não lê** a coluna). Registrado como **débito técnico leve** (ver §2 "Débito técnico conhecido"): unificar em fonte única (route lendo `orders.motivo_cancelamento`) **só se algum dia divergir**.
+    - **Tipos:** `pedido_cancelado` já em `EventoNotificacao` (`types.ts`) e `database.ts` (3 lugares). Nada a adicionar.
+    - **Teste Chromium de painel (cancelamento MANUAL, 02/09/2026):** [preenchido — status do teste live].
+    - **Cancelamento automático (cron):** não testado ao vivo nesta sessão — fica pro **teste integrado final** do PO (exige `cancelamento_automatico_habilitado=true` + pedido expirado + rodar o cron).
+    - **Recebimento real pelo cliente:** teste integrado final do PO.
+
+    **Frente "notificações ao cliente" (4 eventos) — estruturalmente COMPLETA (02/09/2026):**
+    | Evento | Gatilho(s) | Estado do código |
+    |---|---|---|
+    | `pedido_recebido` | checkout | implementado incr. 1 (código novo + migration 045) |
+    | `pedido_validado` | `/validar` | já vinha do incr. 8; teste de painel OK |
+    | `pedido_entregue` | `/concluir` | implementado incr. 3 (`after()` novo + migration 047); teste de painel OK |
+    | `pedido_cancelado` | `/cancelar` (manual) + cron (automático) | já vinha do incr. 8; teste de painel manual: ver acima |
+
+    Falta só, em todos: **teste integrado final de recebimento real (e-mail + WhatsApp), conduzido pelo PO**, com os contatos reais do PO (regra `REGRAS_DE_NEGOCIO.md` §0.1). `pedido_ajustado` (5º evento, `/editar`) segue como notificação independente por design (não faz parte dos 4, já registrado acima).
 
 ---
 
@@ -1245,6 +1264,8 @@ docs/                        VISAO_CAUA.md (visao original) + este documento + R
 ### Débito técnico conhecido
 
 - ~~`src/app/(auth)/entrar/entrar-action.ts` — Server Action de login de uma iteração anterior do fluxo de auth, não usada.~~ **Removida em 29/07/2026** (confirmado sem nenhuma referência no código antes de apagar; build seguiu passando).
+
+- **Motivo do cancelamento automático duplicado (registrado 02/09/2026, débito LEVE, decisão do PO de não unificar agora).** A string `'Cancelamento automático — prazo de validação expirado'` existe em dois lugares independentes: `cancelar_pedidos_expirados()` (migration `042`, grava em `orders.motivo_cancelamento`) e `src/app/api/cron/notificar-cancelamentos/route.ts` (passa como `{motivo}` pro template de `pedido_cancelado`; **não lê** a coluna). Hoje são **idênticas** — nenhum efeito visível. Risco: se alguém editar uma e não a outra, o texto gravado no pedido diverge do texto enviado ao cliente. Correção quando/se divergir: o route passa a ler `orders.motivo_cancelamento` do pedido cancelado em vez de ter a cópia literal (fonte única da verdade). Não fazer agora (decisão do PO — baixo valor, custo de migration da RPC não se justifica só por isso).
 
 ---
 
