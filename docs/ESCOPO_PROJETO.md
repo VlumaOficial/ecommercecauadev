@@ -615,9 +615,11 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
     | Evento | Gatilho | Ponto de disparo | Status |
     |---|---|---|---|
     | `pedido_recebido` | após `criar_pedido` no checkout | `POST /api/loja/checkout` — 2º `after()`, ao lado do aviso ao lojista | **incremento 1 — implementado 01/09/2026** |
-    | `pedido_aprovado` | RPC `validar_pedido` | `POST /api/painel/pedidos/[id]/validar` (ponto já existe — hoje dispara `pedido_validado`) | incremento 2 — não iniciado |
+    | `pedido_validado` | RPC `validar_pedido` | `POST /api/painel/pedidos/[id]/validar` — `after()` | **incremento 2 — implementado 01/09/2026 (reaproveita evento/`after()` que já existiam desde o incremento 8)** |
     | `pedido_entregue` | RPC `concluir_pedido` | `POST /api/painel/pedidos/[id]/concluir` (ponto já existe) | incremento 3 — não iniciado |
     | `pedido_cancelado` | RPC `cancelar_pedido` (manual / automático §17.2 / futuro pelo cliente §17.3) | Route Handlers de cancelar + cron (pontos já existem) | incremento 4 — não iniciado |
+
+    **`pedido_ajustado` é notificação independente, por design (decisão do PO, 01/09/2026).** O evento `pedido_ajustado` **já existe e já dispara** desde o incremento 8, a partir de `POST /api/painel/pedidos/[id]/editar` (RPC `ajustar_itens_pedido`, §15.4) — quando o vendedor reduz/remove item antes de validar. **Ajuste (`/editar`) e validação (`/validar`) são dois eventos reais e distintos**: se os dois acontecem no mesmo pedido, o cliente recebe as duas mensagens (`pedido_ajustado` ao salvar a edição, `pedido_validado` ao validar) — isso é o comportamento **correto**, não ruído. Investigação de 01/09/2026 (registrada e descartada pelo PO): não há sinal server-side, sem migration, dentro do `/validar` que diga "este pedido foi editado antes" — e **não se quer** um: o `/editar` **não é tocado** neste incremento (nem `ajustar_itens_pedido`, nem `pedido-itens-section.tsx`).
 
     **Decisão de produto adiada para o incremento 4** (sinalizada pelo PO em 01/09/2026, não decidir agora): o `pedido_cancelado` cobre os 3 tipos de cancelamento — **template único serve os 3, ou o texto varia conforme o motivo?** Resolver ao desenhar o incremento 4.
 
@@ -630,7 +632,18 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
     - **Commit + push:** `0b34973` em `origin/main` (01/09/2026). Vercel HML deployado.
     - **Teste Chromium na URL pública (01/09/2026):** checkout ponta a ponta com cliente de teste real — wizard 1→2→3 (Identificação → Entrega/Salvador → Revisão), `POST /api/loja/checkout` → **201**, pedido **#42** criado (`aguardando_validacao`, R$40), tela "Pedido recebido!" exibida. **Zero erro de console, zero page error** — o 2º `after()` (cliente `pedido_recebido`) **não regrediu o checkout**. Pré-condições da notificação conferidas no banco: templates `pedido_recebido` (email+whatsapp) ativos pro `capua`, `tenant_domains` com linha (resolve `{link_pedido}`). Cliente de teste desativado ao fim; resíduo = pedido de teste #42 (auto-cancela pelo cron em 48h, ou o PO cancela).
     - **⚠️ NÃO verificado por este teste — recebimento real dos 2 canais:** o `after()` roda no serverless da Vercel (sem acesso às Function Logs daqui) e o cliente de teste usou e-mail descartável (mailinator, caixa vazia — API instável / provável bloqueio do Zoho a domínio descartável) + WhatsApp fictício. **Confirmação de recebimento fica com o PO** — mesmo padrão de fechamento do incremento 8 (26/08/2026): PO faz um checkout na HML com o próprio e-mail + WhatsApp reais e confirma que chega a mensagem "Recebemos seu pedido #X" (distinta do "Novo pedido #X" ao lojista, que dispara no mesmo checkout e segue dependente do GRUPO B / destinatário configurado). Se a suspeita de throttle do Zoho (GRUPO B) proceder, pode afetar também o e-mail ao cliente — vale olhar as Function Logs da Vercel com filtro `[notificacoes]` após o teste do PO.
-    - **Status:** código + migration + deploy prontos e sem regressão; **incremento 1 aguarda só a confirmação de recebimento do PO** para ser dado como fechado. Incrementos 2–4 não iniciados.
+    - **Status:** código + migration + deploy prontos e sem regressão; **incremento 1 aguarda só a confirmação de recebimento do PO** para ser dado como fechado.
+
+    **Incremento 2 (`pedido_validado`) — o que foi feito (01/09/2026):**
+    - **Nenhuma linha de código nova.** O `after()` em `POST /api/painel/pedidos/[id]/validar` chamando `notificarPedido(perfil.tenant_id, id, 'pedido_validado')` **já existia desde o incremento 8** — com `.catch()` próprio, disparo só após `validar_pedido` ter sucesso (depois do guard `if (error)`), e sem afetar a resposta ao vendedor (`after()` roda pós-resposta). Destinatário = cliente do pedido, resolvido dentro de `notificarPedido` a partir de `pedido.customer_id`. O guard `if (cliente.whatsapp)` vive dentro de `notificar-pedido.ts` (adicionado no incremento 1) e já se aplica a este evento. Adicionar um 2º `after()` seria **bug** (notificação dupla) — não foi feito.
+    - **Tipos/CHECK:** `pedido_validado` já presente em `EventoNotificacao` (`types.ts`), em `database.ts` (`notification_templates.evento`, 3 lugares) e no CHECK do banco (migration 044). Templates `pedido_validado` (email + whatsapp) seedados e ativos pro `capua`, já com a grafia corrigida da migration 046. **Nada criado.**
+    - **`/editar` / `ajustar_itens_pedido` / `pedido-itens-section.tsx`:** não tocados (decisão do PO — ver parágrafo "`pedido_ajustado` é notificação independente" acima).
+    - **Teste end-to-end anterior:** o caminho `pedido_validado` a partir do `/validar` já foi testado ponta a ponta em 26/08/2026 (incremento 8) — "pedido de teste validado disparou e-mail real, recebido, confirmado pelo PO" (ver `docs/MIGRATIONS.md`, linha 26/08).
+    - **Teste Chromium de painel (01/09/2026):** [preenchido — depende de credencial de staff].
+    - **Recebimento real pelo cliente:** adiado para o **teste integrado final** dos 4 incrementos, feito pelo PO na cadeia completa (não agora).
+    - **Status:** implementado (código já presente, verificado por leitura + já testado em 26/08). Aguarda só o teste Chromium de painel desta sessão (credencial de staff) e o teste integrado final do PO.
+
+    Incrementos 3–4 não iniciados.
 
 ---
 
