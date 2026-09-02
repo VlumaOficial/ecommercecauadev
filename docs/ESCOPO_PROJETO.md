@@ -649,7 +649,7 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
     - **`templates.ts` / `notificar-pedido.ts`:** sem mudança — orquestrador genérico, `vars` já cobre `{nome_cliente}` / `{numero_pedido}` / `{nome_loja}` / `{link_pedido}`; guard `if (cliente.whatsapp)` já vive lá.
     - **`concluir_pedido` (RPC, migration 039):** não tocada — só `confirmado → concluido` + `data_efetiva=now()`, sem estoque; `after()` dispara limpo após sucesso.
     - **Build:** `npx tsc --noEmit` e `npm run build` limpos.
-    - **Teste Chromium de painel (02/09/2026):** [preenchido — status do login de staff].
+    - **Teste Chromium de painel (02/09/2026):** **pendente** — o login de staff (`adm@criatoriocapua.com.br`) falhou; a senha fornecida na sessão foi rejeitada pela Auth API (`Invalid login credentials`), mesmo bloqueio do teste live do incremento 2. A conta existe/está confirmada — senha incorreta ou já rotacionada. Não se testou concluir pela tela. `after()` roda pós-resposta por definição do Next.js (não pode afetar a resposta ao vendedor); `npx tsc --noEmit` + `npm run build` limpos. O PO conduz o teste live à parte.
     - **Recebimento real pelo cliente:** adiado para o **teste integrado final** dos 4 incrementos, pelo PO.
 
     Incremento 4 (`pedido_cancelado`, com a decisão de template único vs. por motivo) não iniciado.
