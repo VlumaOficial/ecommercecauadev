@@ -5,6 +5,19 @@ import { canalWhatsapp } from './canal-whatsapp'
 import { buscarTemplate } from './templates'
 import type { EventoNotificacao, CanalNotificacao } from './types'
 
+// Regra de fallback do placeholder {data_prevista} (incremento A da
+// feature de modificacao de pedido): vive AQUI, na resolucao - nunca no
+// texto do template. Assim o placeholder sempre resolve pra algo valido
+// mesmo que o lojista edite o template no futuro (visao SaaS). Data ->
+// dd/mm/aaaa (padrao BR); vazia/null -> "a combinar". Corte da string
+// ISO (date do Postgres vem "AAAA-MM-DD") em vez de new Date() pra nao
+// arriscar deslocamento de fuso.
+function formatarDataPrevista(iso: string | null | undefined): string {
+  if (!iso) return 'a combinar'
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso
+}
+
 export type ResultadoEnvioCanal = { canal: CanalNotificacao; enviado: boolean; motivo?: string }
 export type ResultadoNotificacao = {
   orderId: string
@@ -29,7 +42,11 @@ export async function notificarPedido(
 ): Promise<ResultadoNotificacao> {
   const admin = createAdminClient()
 
-  const { data: pedido } = await admin.from('orders').select('id, numero, customer_id').eq('id', orderId).single()
+  const { data: pedido } = await admin
+    .from('orders')
+    .select('id, numero, customer_id, data_prevista')
+    .eq('id', orderId)
+    .single()
   if (!pedido) {
     console.error(`[notificacoes] pedido ${orderId} nao encontrado ao notificar evento ${evento}`)
     return { orderId, numero: 0, canais: [] }
@@ -52,6 +69,10 @@ export async function notificarPedido(
     nome_loja: tenant?.nome ?? '',
     link_pedido: dominio ? `https://${dominio.dominio}/meus-pedidos/${pedido.numero}` : '',
     motivo: extra?.motivo ?? '',
+    // Sempre presente no vars (como motivo) — só o template de
+    // pedido_validado usa {data_prevista} hoje, mas fica disponível pra
+    // qualquer template (visão SaaS). Fallback "a combinar" quando null.
+    data_prevista: formatarDataPrevista(pedido.data_prevista),
   }
 
   const canais: ResultadoEnvioCanal[] = []

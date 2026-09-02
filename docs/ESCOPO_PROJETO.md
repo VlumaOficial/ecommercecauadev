@@ -673,6 +673,16 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
 
     Falta só, em todos: **teste integrado final de recebimento real (e-mail + WhatsApp), conduzido pelo PO**, com os contatos reais do PO (regra `REGRAS_DE_NEGOCIO.md` §0.1). `pedido_ajustado` (5º evento, `/editar`) segue como notificação independente por design (não faz parte dos 4, já registrado acima).
 
+    **Feature "notificar o cliente quando o vendedor modifica um pedido" — levantamento em 02/09/2026 (ver histórico da conversa para o mapa completo dos pontos de mutação).** Achado do levantamento: quase toda alteração visível ao cliente já notifica (itens→`pedido_ajustado`, status→`pedido_validado`/`pedido_entregue`/`pedido_cancelado`). Gaps reais: (1) `data_prevista` é gravada em `validar_pedido` e o `pedido_validado` dispara, mas o texto não mencionava a data; (2) não há caminho para **remarcar** `data_prevista` depois da validação (sem RPC/handler/tela); (3) `observacao_interna` não notifica — **correto por design** (cliente nunca vê). `observacao_cliente`/`delivery_city_id`/`modalidade_entrega` não são editáveis pelo vendedor hoje.
+
+    **Incremento (A) — previsão de entrega no texto do `pedido_validado` (implementado 02/09/2026):**
+    - **Banco:** migration `048` — `UPDATE` do `corpo` dos 2 templates `pedido_validado` (email + whatsapp) adicionando "Previsão de entrega: {data_prevista}." **Aplicada pelo PO em 02/09/2026** — o assistente **não aplicou**. Arquivo `supabase/migrations/048_pedido_validado_data_prevista.sql` criado espelhando o SQL, cabeçalho "não reaplicar", conteúdo conferido **byte a byte** (2 canais do capua, `corpo` idêntico, ambos com `{data_prevista}`, `ativo=true`; 6 linhas no total).
+    - **Código:** só `src/lib/notificacoes/notificar-pedido.ts` — (a) a query do pedido passa a trazer `data_prevista` (`select 'id, numero, customer_id, data_prevista'`); (b) `vars` ganha a chave `data_prevista`, resolvida por `formatarDataPrevista(pedido.data_prevista)`: data preenchida → `dd/mm/aaaa` (corte da string ISO `AAAA-MM-DD`, sem `new Date()` pra não arriscar fuso); vazia/null → literal **`"a combinar"`**. Chave sempre presente no `vars` (como `motivo`), disponível pra qualquer template.
+    - **Decisão de produto:** a **regra de fallback vive na resolução (orquestrador), não no texto do template** — assim o placeholder `{data_prevista}` sempre resolve pra algo válido mesmo que o lojista edite o template no futuro (visão SaaS). Nenhum outro evento muda. Sem tela.
+    - **Build:** `npx tsc --noEmit` e `npm run build` limpos. Recebimento real: teste e2e do PO (§0.1).
+
+    **Incremento (B) — remarcação da data de entrega — PRÓXIMO PASSO desta feature, ainda NÃO iniciado.** Cobriria o gap (2) acima: um caminho (RPC + handler + tela) para o vendedor **alterar `data_prevista` depois da validação**, com notificação ao cliente (evento a decidir — genérico "pedido atualizado" vs. específico "data remarcada"). Escopo a desenhar com o PO.
+
 ---
 
 ## 0. Regra de processo (definition of done)
