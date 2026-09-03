@@ -683,6 +683,8 @@ Todas vão pelos **dois canais**: e-mail **e** WhatsApp. Se o cliente não tiver
 
 **Regra: ajuste e validação são notificações independentes por design.** Se o vendedor edita o pedido (reduz itens) e depois valida, o cliente recebe **as duas** mensagens — "pedido ajustado" ao salvar a edição e "pedido validado" ao validar. São dois fatos reais e distintos; não é duplicação.
 
+**Regra: motivo de cancelamento vs. motivo de remarcação — tratamento oposto, e proposital.** O **motivo de cancelamento** é **comunicado ao cliente** na notificação (ele precisa saber por que o pedido foi cancelado). O **motivo de remarcação de entrega** é de **uso interno** e **nunca aparece na notificação ao cliente** — nesta, o cliente vê apenas a **nova data prevista**. Os dois comportamentos estão corretos como implementados e devem permanecer assim.
+
 #### Notificação ao LOJISTA (equipe)
 
 | Evento | Quando dispara | Destinatário |
