@@ -193,6 +193,28 @@ export function useConcluirPedido() {
   })
 }
 
+export function useRemarcarEntrega() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, data_nova, motivo }: { id: string; data_nova: string; motivo: string }) => {
+      const response = await fetch(`/api/painel/pedidos/${id}/remarcar-entrega`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data_nova, motivo }),
+      })
+      return parseJsonOrThrow(response)
+    },
+    onSuccess: (data, { id }) => {
+      mesclarPedidoNoCache(queryClient, id, data.data)
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] })
+      queryClient.invalidateQueries({ queryKey: ['pedido', id] })
+      toast.success('Entrega remarcada — o cliente será notificado da nova previsão.')
+    },
+    onError: (error: Error) => toast.error(error.message || 'Não foi possível remarcar a entrega.'),
+  })
+}
+
 export function useAtualizarObservacaoInterna() {
   const queryClient = useQueryClient()
 

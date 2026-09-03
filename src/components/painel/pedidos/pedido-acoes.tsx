@@ -14,36 +14,52 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ConfirmDialog } from '@/components/painel/crud/confirm-dialog'
-import { useValidarPedido, useCancelarPedido, useConcluirPedido, type PedidoDetalhe } from '@/hooks/use-pedidos'
+import {
+  useValidarPedido,
+  useCancelarPedido,
+  useConcluirPedido,
+  useRemarcarEntrega,
+  type PedidoDetalhe,
+} from '@/hooks/use-pedidos'
 
-// As 3 acoes de destino do pedido (Validar/Cancelar/Concluir) - Editar
-// (reduzir/remover item) mora dentro de PedidoItensSection, por mexer
-// diretamente na lista de itens ali. Disponibilidade por status
-// (REGRAS_DE_NEGOCIO.md §19.1/§20): Validar so' em aguardando_validacao,
-// Concluir so' em confirmado, Cancelar em aguardando_validacao OU
-// confirmado (nunca terminal). Tudo gated por pode_gerenciar
-// (staff_pode_gerenciar_pedidos, migration 039) - as RPCs conferem de
-// novo no servidor, isto e' so' UI.
+// As acoes de destino do pedido (Validar/Cancelar/Concluir/Remarcar
+// entrega) - Editar (reduzir/remover item) mora dentro de
+// PedidoItensSection, por mexer diretamente na lista de itens ali.
+// Disponibilidade por status (REGRAS_DE_NEGOCIO.md §19.1/§20): Validar
+// so' em aguardando_validacao, Concluir so' em confirmado, Cancelar e
+// Remarcar entrega em aguardando_validacao OU confirmado (nunca
+// terminal). Tudo gated por pode_gerenciar (staff_pode_gerenciar_pedidos,
+// migration 039) - as RPCs conferem de novo no servidor, isto e' so' UI.
 export function PedidoAcoes({ pedido }: { pedido: PedidoDetalhe }) {
   const [validarAberto, setValidarAberto] = useState(false)
   const [cancelarAberto, setCancelarAberto] = useState(false)
   const [concluirAberto, setConcluirAberto] = useState(false)
+  const [remarcarAberto, setRemarcarAberto] = useState(false)
   const [dataPrevista, setDataPrevista] = useState('')
   const [motivo, setMotivo] = useState('')
+  const [novaData, setNovaData] = useState('')
+  const [motivoRemarca, setMotivoRemarca] = useState('')
 
   const validar = useValidarPedido()
   const cancelar = useCancelarPedido()
   const concluir = useConcluirPedido()
+  const remarcar = useRemarcarEntrega()
 
+  const emAndamento = pedido.status === 'aguardando_validacao' || pedido.status === 'confirmado'
   const podeValidar = pedido.pode_gerenciar && pedido.status === 'aguardando_validacao'
-  const podeCancelar =
-    pedido.pode_gerenciar && (pedido.status === 'aguardando_validacao' || pedido.status === 'confirmado')
+  const podeCancelar = pedido.pode_gerenciar && emAndamento
   const podeConcluir = pedido.pode_gerenciar && pedido.status === 'confirmado'
+  const podeRemarcar = pedido.pode_gerenciar && emAndamento
 
   return (
     <>
       {podeValidar && <Button onClick={() => setValidarAberto(true)}>Validar pedido</Button>}
       {podeConcluir && <Button onClick={() => setConcluirAberto(true)}>Marcar como concluído</Button>}
+      {podeRemarcar && (
+        <Button variant="outline" onClick={() => setRemarcarAberto(true)}>
+          Remarcar entrega
+        </Button>
+      )}
       {podeCancelar && (
         <Button variant="destructive" onClick={() => setCancelarAberto(true)}>
           Cancelar pedido
@@ -138,6 +154,66 @@ export function PedidoAcoes({ pedido }: { pedido: PedidoDetalhe }) {
               disabled={cancelar.isPending || !motivo.trim()}
             >
               {cancelar.isPending ? 'Aguarde...' : 'Confirmar cancelamento'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={remarcarAberto} onOpenChange={setRemarcarAberto}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remarcar entrega do pedido #{pedido.numero}</DialogTitle>
+            <DialogDescription>
+              Define uma nova previsão de entrega. O cliente será notificado da nova data — o motivo é
+              interno e não aparece para ele.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="remarcar-data">Nova data de entrega</Label>
+              <Input
+                id="remarcar-data"
+                type="date"
+                value={novaData}
+                onChange={(e) => setNovaData(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="remarcar-motivo">Motivo da remarcação (interno)</Label>
+              <Textarea
+                id="remarcar-motivo"
+                value={motivoRemarca}
+                onChange={(e) => setMotivoRemarca(e.target.value)}
+                placeholder="Ex.: transportadora reagendou, cliente pediu para adiar..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setRemarcarAberto(false)}
+              disabled={remarcar.isPending}
+            >
+              Voltar
+            </Button>
+            <Button
+              type="button"
+              onClick={() =>
+                remarcar.mutate(
+                  { id: pedido.id, data_nova: novaData, motivo: motivoRemarca },
+                  {
+                    onSuccess: () => {
+                      setRemarcarAberto(false)
+                      setNovaData('')
+                      setMotivoRemarca('')
+                    },
+                  }
+                )
+              }
+              disabled={remarcar.isPending || !novaData || !motivoRemarca.trim()}
+            >
+              {remarcar.isPending ? 'Aguarde...' : 'Confirmar remarcação'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -320,7 +320,7 @@ export type Database = {
         Row: {
           id: string
           tenant_id: string
-          evento: 'pedido_recebido' | 'pedido_validado' | 'pedido_ajustado' | 'pedido_entregue' | 'pedido_cancelado' | 'pedido_novo'
+          evento: 'pedido_recebido' | 'pedido_validado' | 'pedido_ajustado' | 'pedido_entregue' | 'pedido_data_remarcada' | 'pedido_cancelado' | 'pedido_novo'
           canal: 'email' | 'whatsapp'
           assunto: string | null
           corpo: string
@@ -331,7 +331,7 @@ export type Database = {
         Insert: {
           id?: string
           tenant_id?: string
-          evento: 'pedido_recebido' | 'pedido_validado' | 'pedido_ajustado' | 'pedido_entregue' | 'pedido_cancelado' | 'pedido_novo'
+          evento: 'pedido_recebido' | 'pedido_validado' | 'pedido_ajustado' | 'pedido_entregue' | 'pedido_data_remarcada' | 'pedido_cancelado' | 'pedido_novo'
           canal: 'email' | 'whatsapp'
           assunto?: string | null
           corpo: string
@@ -342,7 +342,7 @@ export type Database = {
         Update: {
           id?: string
           tenant_id?: string
-          evento?: 'pedido_recebido' | 'pedido_validado' | 'pedido_ajustado' | 'pedido_entregue' | 'pedido_cancelado' | 'pedido_novo'
+          evento?: 'pedido_recebido' | 'pedido_validado' | 'pedido_ajustado' | 'pedido_entregue' | 'pedido_data_remarcada' | 'pedido_cancelado' | 'pedido_novo'
           canal?: 'email' | 'whatsapp'
           assunto?: string | null
           corpo?: string
@@ -1418,6 +1418,17 @@ export type Database = {
       // observacao_interna). Sem restricao de status.
       atualizar_observacao_interna_pedido: {
         Args: { p_order_id: string; p_observacao: string | null }
+        Returns: Database["public"]["Tables"]["orders"]["Row"]
+      }
+      // Migration 051 (feature "modificacao de pedido pelo vendedor",
+      // incremento B) - remarca orders.data_prevista de um pedido em
+      // aguardando_validacao/confirmado. Grava historico em
+      // order_delivery_reschedules (data_anterior/nova/motivo/
+      // alterado_por). Valida: status, motivo obrigatorio, data nao no
+      // passado, data tem que mudar. Nao dispara notificacao (o handler
+      // /remarcar-entrega faz via after()). p_data_nova: 'YYYY-MM-DD'.
+      remarcar_entrega_pedido: {
+        Args: { p_order_id: string; p_data_nova: string; p_motivo: string }
         Returns: Database["public"]["Tables"]["orders"]["Row"]
       }
       // Migration 041 (correção do bug 46) - service_role-only, nunca
