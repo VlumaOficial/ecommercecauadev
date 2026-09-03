@@ -34,9 +34,11 @@ export default async function CheckoutPage() {
             Seu carrinho continua salvo. Entre ou crie sua conta para continuar.
           </p>
           <div className="flex flex-col gap-3">
-            <Link href="/entrar?proximo=/checkout">
-              <Button className="h-11 w-full text-base">Entrar</Button>
-            </Link>
+            {/* <a> (não <Link>): navegação de documento pra /entrar — ignora o
+                Router Cache do cliente (item 50). */}
+            <Button className="h-11 w-full text-base" render={<a href="/entrar?proximo=/checkout" />}>
+              Entrar
+            </Button>
             <Link href="/cadastro?proximo=/checkout">
               <Button variant="outline" className="h-11 w-full text-base">Criar conta</Button>
             </Link>

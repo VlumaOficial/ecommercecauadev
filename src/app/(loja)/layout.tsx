@@ -6,7 +6,7 @@ import type { Metadata } from 'next'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { getPublicStoreSettings, getPublicCategories, urlArquivoLoja, urlLogoLoja } from '@/lib/loja/rpc'
 import { corTextoContraste } from '@/lib/loja/cor'
-import { getCustomerProfile } from '@/lib/auth'
+import { getCustomerProfile, getStaffProfile } from '@/lib/auth'
 import { Header } from '@/components/loja/header'
 import { NavCategorias } from '@/components/loja/nav-categorias'
 import { Footer } from '@/components/loja/footer'
@@ -94,7 +94,16 @@ export default async function LojaLayout({ children }: { children: React.ReactNo
     )
   }
 
-  const [categorias, cliente] = await Promise.all([getPublicCategories(tenant.slug), getCustomerProfile()])
+  // getStaffProfile() além de getCustomerProfile(): a vitrine nunca soube
+  // ler sessão de staff (só de cliente), então staff logado via "Ver
+  // loja" via "Entrar" — e clicar caía no trap do item 50. `ehStaff`
+  // troca a affordance por "Ir para o painel". Não afeta cliente/anônimo:
+  // getStaffProfile() é null pros dois (anônimo curto-circuita em getUser).
+  const [categorias, cliente, staff] = await Promise.all([
+    getPublicCategories(tenant.slug),
+    getCustomerProfile(),
+    getStaffProfile(),
+  ])
 
   return (
     <CarrinhoProvider
@@ -107,7 +116,7 @@ export default async function LojaLayout({ children }: { children: React.ReactNo
       }}
     >
       <div className="loja-theme flex min-h-svh flex-col bg-background text-foreground" style={temaStyle}>
-        <Header nomeLoja={settings.nome} valorMinimoPedido={settings.valor_minimo_pedido} logoPath={settings.logo_path} cliente={cliente} />
+        <Header nomeLoja={settings.nome} valorMinimoPedido={settings.valor_minimo_pedido} logoPath={settings.logo_path} cliente={cliente} ehStaff={!!staff} />
         <NavCategorias categorias={categorias} />
         {!settings.pedidos_abertos && (
           <div className="bg-amber-500/15 px-4 py-2 text-center text-sm text-amber-900 sm:px-6">

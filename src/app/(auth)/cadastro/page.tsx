@@ -1,5 +1,3 @@
-import Link from 'next/link'
-
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { getPublicStoreSettings } from '@/lib/loja/rpc'
 import { Button } from '@/components/ui/button'
@@ -37,9 +35,10 @@ export default async function CadastroPage({
         <p className="text-sm text-muted-foreground mb-6">
           {settings.nome} não está aceitando novos cadastros agora. Tente novamente mais tarde.
         </p>
-        <Link href="/entrar">
-          <Button variant="outline" className="w-full">Voltar para entrar</Button>
-        </Link>
+        {/* <a> (não <Link>): navegação de documento pra /entrar (item 50). */}
+        <Button variant="outline" className="w-full" render={<a href="/entrar" />}>
+          Voltar para entrar
+        </Button>
       </div>
     )
   }

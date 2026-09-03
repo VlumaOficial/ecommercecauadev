@@ -1,8 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -41,7 +39,11 @@ export function CadastroForm({ proximo }: { proximo?: string }) {
   const [mostrarSenha, setMostrarSenha] = useState(false)
   const [reenvioContador, setReenvioContador] = useState(0)
   const [reenviando, setReenviando] = useState(false)
-  const router = useRouter()
+
+  // Nav pra /entrar sempre por window.location (documento), nunca
+  // router.push/<Link> — ignora o Router Cache do cliente (item 50).
+  const irParaEntrar = () =>
+    window.location.assign(proximo ? `/entrar?proximo=${encodeURIComponent(proximo)}` : '/entrar')
 
   function formatarWhatsapp(v: string) {
     const d = v.replace(/\D/g, '').slice(0, 11)
@@ -120,7 +122,7 @@ export function CadastroForm({ proximo }: { proximo?: string }) {
           {reenviando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {reenvioContador > 0 ? `Reenviar em ${reenvioContador}s` : 'Reenviar e-mail'}
         </Button>
-        <Button onClick={() => router.push(proximo ? `/entrar?proximo=${encodeURIComponent(proximo)}` : '/entrar')} variant="ghost" className="w-full">Voltar para entrar</Button>
+        <Button onClick={irParaEntrar} variant="ghost" className="w-full">Voltar para entrar</Button>
       </div>
     )
   }
@@ -164,7 +166,7 @@ export function CadastroForm({ proximo }: { proximo?: string }) {
 
       <p className="text-sm text-center text-muted-foreground mt-6">
         Ja tem conta?{' '}
-        <Link href={proximo ? `/entrar?proximo=${encodeURIComponent(proximo)}` : '/entrar'} className="text-primary font-semibold hover:underline">Entrar</Link>
+        <a href={proximo ? `/entrar?proximo=${encodeURIComponent(proximo)}` : '/entrar'} className="text-primary font-semibold hover:underline">Entrar</a>
       </p>
     </div>
   )

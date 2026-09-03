@@ -3,7 +3,6 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -65,7 +64,7 @@ export default function RecuperarSenhaPage() {
           {reenviando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {contador > 0 ? `Reenviar em ${contador}s` : 'Reenviar e-mail'}
         </Button>
-        <Link href="/entrar"><Button variant="ghost" className="w-full">Voltar para entrar</Button></Link>
+        <Button variant="ghost" className="w-full" render={<a href="/entrar" />}>Voltar para entrar</Button>
       </div>
     )
   }
@@ -85,7 +84,7 @@ export default function RecuperarSenhaPage() {
         </Button>
       </form>
       <p className="text-sm text-center text-muted-foreground mt-6">
-        <Link href="/entrar" className="text-primary font-semibold hover:underline">Voltar para entrar</Link>
+        <a href="/entrar" className="text-primary font-semibold hover:underline">Voltar para entrar</a>
       </p>
     </div>
   )

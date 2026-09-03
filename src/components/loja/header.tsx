@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { TruckIcon, UserIcon } from 'lucide-react'
+import { LayoutDashboardIcon, TruckIcon, UserIcon } from 'lucide-react'
 
 import { urlLogoLoja } from '@/lib/loja/rpc'
 import { Preco } from '@/components/ui/preco'
@@ -14,11 +14,13 @@ export function Header({
   valorMinimoPedido,
   logoPath,
   cliente,
+  ehStaff,
 }: {
   nomeLoja: string
   valorMinimoPedido: number
   logoPath: string | null
   cliente: CustomerProfile | null
+  ehStaff: boolean
 }) {
   return (
     <>
@@ -57,14 +59,33 @@ export function Header({
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
             {cliente ? (
               <HeaderContaMenu cliente={cliente} />
+            ) : ehStaff ? (
+              // Sessao de STAFF na vitrine: a vitrine so' reconhece
+              // sessao de cliente (getCustomerProfile), entao sem isto o
+              // header mostrava "Entrar" - e clicar caia no trap do item
+              // 50 (Router Cache retendo o 307 /entrar->/). Aqui o staff
+              // tem a affordance certa. `<a>` (nao <Link>) de proposito:
+              // navegacao de documento, o middleware decide fresco.
+              <a
+                href="/painel"
+                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                <LayoutDashboardIcon className="size-4" />
+                <span className="hidden sm:inline">Ir para o painel</span>
+              </a>
             ) : (
-              <Link
+              // `<a>` (nao <Link>) de proposito: navegar pra /entrar tem
+              // que ser navegacao de DOCUMENTO - ignora o Router Cache do
+              // cliente, que retinha o redirect 307 /entrar->/ deixado
+              // por uma sessao valida e transformava o clique num no-op
+              // silencioso (ESCOPO_PROJETO.md §0 item 50).
+              <a
                 href="/entrar"
                 className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
               >
                 <UserIcon className="size-4" />
                 <span className="hidden sm:inline">Entrar</span>
-              </Link>
+              </a>
             )}
             <CarrinhoDrawer />
           </div>
