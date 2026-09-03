@@ -8,6 +8,7 @@ import { PedidoStatusBadge } from '@/components/loja/pedidos/status-badge'
 import { PedidoItensSection } from './pedido-itens-section'
 import { PedidoObservacaoInterna } from './pedido-observacao-interna'
 import { PedidoAcoes } from './pedido-acoes'
+import { formatarDataISO } from '@/lib/utils'
 
 // Formata os digitos do WhatsApp (armazenado sem mascara, DDD + numero
 // - ver formatarWhatsapp em cadastro-form.tsx) so' pra EXIBICAO na
@@ -107,7 +108,7 @@ export function PedidoDetalheView({ id }: { id: string }) {
           {(pedido.data_prevista || pedido.data_efetiva) && (
             <div className="mt-2 space-y-0.5 border-t border-border pt-2 text-sm text-muted-foreground">
               {pedido.data_prevista && (
-                <p>Prevista: {new Date(pedido.data_prevista).toLocaleDateString('pt-BR')}</p>
+                <p>Prevista: {formatarDataISO(pedido.data_prevista)}</p>
               )}
               {pedido.data_efetiva && <p>Efetiva: {new Date(pedido.data_efetiva).toLocaleString('pt-BR')}</p>}
             </div>

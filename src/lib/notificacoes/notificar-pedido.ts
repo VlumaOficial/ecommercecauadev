@@ -3,19 +3,17 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { canalEmail } from './canal-email'
 import { canalWhatsapp } from './canal-whatsapp'
 import { buscarTemplate } from './templates'
+import { formatarDataISO } from '@/lib/utils'
 import type { EventoNotificacao, CanalNotificacao } from './types'
 
 // Regra de fallback do placeholder {data_prevista} (incremento A da
 // feature de modificacao de pedido): vive AQUI, na resolucao - nunca no
 // texto do template. Assim o placeholder sempre resolve pra algo valido
 // mesmo que o lojista edite o template no futuro (visao SaaS). Data ->
-// dd/mm/aaaa (padrao BR); vazia/null -> "a combinar". Corte da string
-// ISO (date do Postgres vem "AAAA-MM-DD") em vez de new Date() pra nao
-// arriscar deslocamento de fuso.
+// dd/mm/aaaa via formatarDataISO (corte de string, sem new Date(), fonte
+// unica compartilhada com o front); vazia/null -> "a combinar".
 function formatarDataPrevista(iso: string | null | undefined): string {
-  if (!iso) return 'a combinar'
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
-  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso
+  return iso ? formatarDataISO(iso) : 'a combinar'
 }
 
 export type ResultadoEnvioCanal = { canal: CanalNotificacao; enviado: boolean; motivo?: string }

@@ -6,6 +6,7 @@ import { getCustomerProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { Preco } from '@/components/ui/preco'
 import { PedidoStatusBadge } from '@/components/loja/pedidos/status-badge'
+import { formatarDataISO } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -98,7 +99,7 @@ export default async function MeuPedidoDetalhePage({ params }: { params: Promise
             {pedido.data_prevista && (
               <p>
                 <span className="font-medium text-foreground">Data prevista:</span>{' '}
-                {new Date(pedido.data_prevista).toLocaleDateString('pt-BR')}
+                {formatarDataISO(pedido.data_prevista)}
               </p>
             )}
             {pedido.data_efetiva && (
