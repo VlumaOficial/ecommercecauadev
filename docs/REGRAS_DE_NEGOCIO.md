@@ -37,6 +37,14 @@ Quando **não se quer** disparo num teste, deixar o campo **vazio**: `notificar-
 - Um usuário nunca é cliente e staff ao mesmo tempo — o cadastro (via metadata no signup) decide se a conta vira uma linha em `profiles` (staff) ou `customers` (cliente).
 - Só staff acessa `/painel`; cliente não-staff é redirecionado para a loja.
 
+### 1.1 Sessão de acesso e expiração — decisões (insert-only, 03/09/2026)
+
+**✅ Em vigor.**
+
+- **A sessão de quem está logado (cliente ou staff) é renovada automaticamente enquanto a pessoa usa o sistema.** Ficar mais de uma hora logado **não** desloga — e esse é o comportamento correto e desejado. Não existe "expiração automática da sessão por tempo" como cenário de uso real.
+- **Item 50 — trava de login: FECHADO (03/09/2026).** O botão "Entrar" da vitrine ficava **inerte** (clicar não fazia nada) para quem tinha uma sessão presente no navegador — seja um membro da equipe navegando pela loja, seja o resíduo de uma sessão anterior. A causa raiz era o **cache de navegação do próprio navegador** guardando um redirecionamento antigo da tela de login — **não** era cookie corrompido nem o servidor (as três tentativas anteriores trataram a camada errada). Correção: (A) ir para a tela de login passou a ser sempre uma navegação de página inteira, que ignora esse cache; (B) um membro da equipe que abre a vitrine vê **"Ir para o painel"** no lugar de "Entrar". O rótulo "logout automático" usado durante a investigação era o nome do **sintoma**, não um evento de tempo. Detalhe técnico completo em `ESCOPO_PROJETO.md` §0 item 50.
+- **Futuro (decisão de produto, baixa prioridade — não é bug):** avaliar uma **política de expiração de sessão da equipe (staff) por segurança** — por exemplo, encerrar a sessão após um período de inatividade e/ou ao fechar o navegador —, ponderando o risco de um computador compartilhado no balcão da loja ficar logado sem ninguém por perto. Registrado no roadmap (§8), a decidir; não implementar agora. **Não se aplica ao cliente** — para o cliente final, sessão longa é conveniência, não risco.
+
 ---
 
 ## 2. Fechamento da loja — dois níveis independentes
@@ -266,6 +274,13 @@ As seções abaixo serão preenchidas conforme cada módulo for desenhado — ma
 - **Pedidos**: fluxo de aceite pelo staff, o que pode ser alterado pelo staff antes de aceitar, geração de PDF, envio por WhatsApp.
 - **Pagamento**: fora do sistema no MVP — regra de como isso é registrado/conciliado ainda não definida.
 - **Promoções por ciclo**: como um ciclo de vendas começa/termina e como isso se relaciona com `pedidos_abertos`.
+
+**📌 Itens de roadmap registrados em 03/09/2026 (fechamento de sessão) — frentes futuras, ainda não iniciadas:**
+
+- **Manual do Usuário da solução** — artefato próprio, em linguagem de usuário final, separado **por perfil** (lojista/equipe e cliente), tendo **`REGRAS_DE_NEGOCIO.md` como fonte da verdade**. É uma frente de trabalho dedicada, não um subproduto de outra tarefa.
+- **Redirecionamento após o logout → vitrine** (era o "item 3" original da lista de robustez de login, suspenso durante a investigação do item 50). Reavaliar agora **para onde** o logout deve levar, considerando que a equipe passou a ter "Ir para o painel" na vitrine (§1.1).
+- **Política de expiração de sessão da equipe (staff) por segurança** — timeout por inatividade e/ou logout ao fechar o navegador, ponderando o risco de dispositivo compartilhado no balcão (§1.1). Decisão de produto, baixa prioridade.
+- **Remover a instrumentação de diagnóstico `[login-debug]`** do fluxo de autenticação — depois que o PO confirmar o fechamento do item 50 no uso real; mudança técnica à parte, sem efeito de negócio.
 
 **📌 Pendências registradas com o PO em 15/08/2026 (continuação da Fase 2 — §§15–16), a decidir nas próximas conversas ANTES de implementar:**
 
@@ -532,6 +547,8 @@ Ver `ESCOPO_PROJETO.md` §4 "Roadmap e Frentes pós-Fase 2" pro registro desta f
 
 O cliente é notificado sempre que o pedido muda de estado por ação do vendedor ou do sistema: **validação** (aceito), **ajuste** (itens reduzidos/removidos — §15.4) e **cancelamento** (§17). A notificação avisa da novidade e direciona o cliente pra área do cliente (§18.2), que é onde ele vê o detalhe completo — a notificação em si é só o aviso, não o lugar de conferir os dados.
 
+> **📌 Ampliado (03/09/2026) — a lista completa e atual dos eventos de notificação está no §18.7 (catálogo consolidado).** Além de validação/ajuste/cancelamento, o cliente também é notificado ao **finalizar o checkout** (`pedido_recebido`), ao pedido ser **concluído/entregue** (`pedido_entregue`) e ao ter a **data de entrega remarcada** (`pedido_data_remarcada`). O §18.7 é a referência de negócio; este §18.1 fica como o registro histórico da decisão original.
+
 ### 18.2 Área do cliente ("Meus Pedidos") — nasce no MVP
 
 **✅ Implementado e testado com Chromium real contra a URL pública em 21/08/2026 — Fase 2, incremento 6 do roteiro.**
@@ -647,6 +664,41 @@ Ambos ficam **registrados como próximo incremento, não implementados agora** �
 
 **📌 Feature "notificar quando o vendedor modifica o pedido" — Incremento (A): previsão de entrega no `pedido_validado` — implementado 02/09/2026 (insert-only).** O texto do `pedido_validado` (email + whatsapp) passa a incluir "Previsão de entrega: {data_prevista}." (migration `048`, aplicada pelo PO). **Decisão de produto: a regra de fallback do placeholder `{data_prevista}` vive na RESOLUÇÃO (orquestrador `notificar-pedido.ts`), não no texto do template** — `data_prevista` preenchida resolve para `dd/mm/aaaa`, vazia/null resolve para o literal **`"a combinar"`**. Motivo: o placeholder tem que resolver sempre para algo válido mesmo que o lojista edite o texto do template no futuro (visão SaaS — templates viram editáveis por-tenant). A chave `data_prevista` fica sempre presente no `vars` (como `motivo`), disponível para qualquer template. Nenhum outro evento muda; sem tela. **Incremento (B) — remarcação de `data_prevista` depois da validação — IMPLEMENTADO 03/09/2026. Fecha a feature "modificação de pedido pelo vendedor" (A + B).** Regras de negócio: remarcar só em `aguardando_validacao`/`confirmado` (nunca `concluido`/`cancelado`); diálogo "Remarcar entrega" (nova data + motivo); evento **específico `pedido_data_remarcada`** (texto ao cliente mostra a nova data via `{data_prevista}`); **motivo obrigatório e interno** — o cliente NUNCA vê o motivo da remarcação; a RPC `remarcar_entrega_pedido` rejeita data no passado, data igual à atual, e motivo vazio; toda remarcação bem-sucedida grava uma linha imutável em `order_delivery_reschedules` (histórico/rastreabilidade — visão SaaS; RLS só-select para staff do tenant, cliente nunca acessa) e atualiza `orders.data_prevista`, na mesma transação. Notifica-se **sempre** numa remarcação bem-sucedida, inclusive quando não havia previsão anterior. Migrations `049`/`050`/`051` aplicadas pelo PO; código (handler `/remarcar-entrega`, diálogo, hook, tipos) e teste de painel na HML em `ESCOPO_PROJETO.md` §0 item 52. Recebimento real da notificação: teste e2e do PO.
 
+### 18.7 Catálogo consolidado de notificações — referência de negócio (insert-only, 03/09/2026)
+
+**✅ Em vigor.** Consolida em linguagem de negócio o que os §§18.1–18.6 e as atualizações incrementais acima descrevem de forma dispersa. Nada aqui substitui aqueles blocos — é a leitura de referência (base do manual do usuário).
+
+#### Notificações ao CLIENTE (ciclo do pedido)
+
+Todas vão pelos **dois canais**: e-mail **e** WhatsApp. Se o cliente não tiver um dos contatos preenchido, o canal correspondente é simplesmente pulado (sem erro). Toda mensagem direciona o cliente à área "Meus Pedidos" (§18.2), que é a fonte de verdade do detalhe.
+
+| Evento | Quando dispara | O que a mensagem diz |
+|---|---|---|
+| **Pedido recebido** | O cliente finaliza o checkout | "Recebemos seu pedido #N, em breve confirmaremos os detalhes." Aviso de que o pedido entrou — ainda não foi validado pelo vendedor. |
+| **Pedido validado** | O vendedor valida (aceita) o pedido | "Seu pedido #N foi confirmado e já está sendo preparado. Previsão de entrega: {data}." Inclui **a previsão de entrega** — quando o vendedor não informou data, aparece **"a combinar"**. |
+| **Pedido ajustado** | O vendedor reduz/remove itens ao editar o pedido (§15.4) | "Um ou mais itens foram reduzidos ou removidos por falta de estoque. Confira o que mudou." Direciona ao link do pedido — o detalhe item a item fica na área do cliente, não no texto. |
+| **Pedido entregue** | O vendedor conclui o pedido (marca a entrega como realizada) | "Seu pedido #N foi entregue. Obrigado pela preferência." |
+| **Data de entrega remarcada** | O vendedor remarca a data prevista de entrega | "A previsão de entrega do seu pedido #N foi atualizada para {nova data}." **O motivo da remarcação é interno e nunca aparece para o cliente.** |
+| **Pedido cancelado** | O vendedor cancela manualmente (§17.1) **ou** o cancelamento automático por tempo (§17.2) dispara | "Seu pedido #N foi cancelado. Motivo: {motivo}." No cancelamento manual, o motivo é o texto que o vendedor digitou; no automático, é um texto padrão do sistema ("Cancelamento automático — prazo de validação expirado"). |
+
+**Regra: ajuste e validação são notificações independentes por design.** Se o vendedor edita o pedido (reduz itens) e depois valida, o cliente recebe **as duas** mensagens — "pedido ajustado" ao salvar a edição e "pedido validado" ao validar. São dois fatos reais e distintos; não é duplicação.
+
+#### Notificação ao LOJISTA (equipe)
+
+| Evento | Quando dispara | Destinatário |
+|---|---|---|
+| **Pedido novo** | O cliente finaliza o checkout | Os membros da equipe **cadastrados como destinatários** em `/painel/configuracoes › Notificações`, cada um pelos canais que escolheu (e-mail, WhatsApp, ou os dois). |
+
+**Se nenhum destinatário estiver cadastrado, nada é enviado — e isso é o comportamento correto, não uma falha.** O aviso ao lojista é sempre separado do aviso ao cliente (destinatário diferente, evento diferente); nunca se misturam.
+
+#### Regras de redação dos textos de notificação (templates)
+
+Os textos ficam guardados como **dados** (editáveis por loja no futuro), não no código. Ao escrever ou editar um template:
+
+- **Nunca usar preposição+artigo (na / no / em) antes de `{nome_loja}`.** O nome da loja varia de gênero de uma loja para outra (fase SaaS) — "na Criatório..." fica errado. O branding entra pela **assinatura final "— Equipe {nome_loja}"** ou pelo nome isolado, sem preposição.
+- **`{data_prevista}` é resolvido no momento do envio** — vira `dd/mm/aaaa` quando há data, ou o literal **"a combinar"** quando não há. Essa regra de preenchimento vive na **resolução** (no sistema), não no texto do template — assim o texto continua correto mesmo que o lojista edite o template mais tarde.
+- **Placeholders disponíveis:** `{nome_cliente}`, `{numero_pedido}`, `{nome_loja}`, `{link_pedido}`, `{data_prevista}`, `{motivo}`.
+
 ---
 
 ## 19. Status e ciclo de vida do pedido (Fase 2)
@@ -732,6 +784,23 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 **Segurança**: `src/lib/supabase/admin.ts` (client com a service role key) só existe pra este fluxo — `import 'server-only'` no topo quebra o **build** se qualquer componente client tentar importá-lo, mesmo transitivamente (confirmado com um teste real: um componente client importando o helper derrubou o build do Next com o erro exato de `server-only`, removido em seguida). Duas camadas: o Route Handler confere `role === 'admin'` da sessão real antes de tudo; a RPC `promover_para_staff` continua `service_role`-only por baixo (mesma garantia estrutural da migration `041`) — mesmo que a primeira camada tivesse um bug, a segunda segura sozinha.
 
 **Teste completo (Chromium real, sessão de admin real)**: staff novo criado ponta a ponta pela tela (toast confirma o e-mail enviado, não caiu no fallback de "não conseguimos enviar"); confirmado no banco que saiu de `customers` e entrou em `profiles` com papel/e-mail corretos; sessão do **operador recém-criado** tentando chamar `POST /api/painel/equipe` recebe 403 (gate admin-only funcionando de verdade, não só no código); admin tentando se autodesativar e tentando trocar o próprio papel — os dois recusados com mensagem clara, e o botão de desativar já vem desabilitado na própria linha na UI; edição de nome confirmada persistida no banco; desativar confirmado no banco. Zero resíduo de teste ao final.
+
+---
+
+## 23. Superfície de modificação de pedido pelo vendedor — consolidado (insert-only, 03/09/2026)
+
+**✅ Em vigor.** O que a equipe pode alterar num pedido depois que ele foi feito, e o que **não** pode. Cada ação abaixo tem sua regra detalhada na seção indicada; esta é a visão de conjunto.
+
+| Ação | Quando é permitida | Regra | Notifica o cliente? |
+|---|---|---|---|
+| **Reduzir / remover itens** (§15.4) | Só enquanto o pedido está **aguardando validação** | Só dá para **reduzir quantidade ou remover** item — nunca aumentar nem adicionar item novo | Sim — "pedido ajustado" |
+| **Validar** (aceitar) | Pedido **aguardando validação** | Baixa o estoque de verdade; o vendedor pode informar a **previsão de entrega** (opcional) | Sim — "pedido validado" (com a previsão de entrega) |
+| **Concluir** (entrega realizada) | Pedido **confirmado** | Registra a data efetiva da entrega | Sim — "pedido entregue" |
+| **Cancelar** | Pedido **aguardando validação** ou **confirmado** (nunca um pedido concluído ou já cancelado) | **Motivo obrigatório.** Se o pedido já estava confirmado, o estoque baixado é devolvido | Sim — "pedido cancelado" (com o motivo) |
+| **Definir / remarcar a data de entrega** | Pedido **aguardando validação** ou **confirmado** | **Motivo obrigatório e interno** (rastreabilidade — o cliente nunca vê). Data no passado é recusada. Data igual à atual é recusada. Cada remarcação fica registrada no histórico de remarcações do pedido (para relatórios). Notifica sempre que dá certo, inclusive quando não havia previsão anterior | Sim — "data de entrega remarcada" (mostra a nova data; **sem** o motivo) |
+| **Observação interna** | Qualquer status | Anotação livre da equipe sobre o pedido. **O cliente NUNCA vê este campo** — não é a mesma caixa da observação que o cliente escreveu no checkout (§19.3) | Não |
+
+**O vendedor NÃO pode, hoje:** mudar a cidade de entrega do pedido, mudar a modalidade de entrega, ou editar a observação que o **cliente** escreveu no checkout. Também não pode aumentar quantidades nem adicionar itens (só reduzir/remover).
 
 ---
 
