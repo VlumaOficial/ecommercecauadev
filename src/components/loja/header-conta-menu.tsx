@@ -17,14 +17,19 @@ function iniciais(nome: string) {
 
 // Fase 2, incremento 6 (Área do Cliente) - resolve a lacuna registrada em
 // REGRAS_DE_NEGOCIO.md §18.2: o header nunca soube ler o estado de sessão
-// do cliente, sempre mostrava "Entrar" mesmo já logado. Sair via fetch (não
-// form/navegação) porque /sair só aceita POST - os cookies de sessão são
-// limpos pelo Set-Cookie da própria resposta, sem precisar seguir o
-// redirect que a rota devolve.
+// do cliente, sempre mostrava "Entrar" mesmo já logado.
+//
+// Logout: `fetch` no POST /sair só pra aplicar o Set-Cookie que limpa a
+// sessão (a rota devolve um 303 que o fetch não navega); a navegação em
+// si é `window.location.assign('/')` - vai pra VITRINE (destino único de
+// logout pra staff e cliente, REGRAS_DE_NEGOCIO.md §8/§1.1). `assign` é
+// navegação de documento de propósito: ignora o Router Cache do cliente,
+// o middleware re-avalia a sessão (agora limpa) e a home renderiza o
+// estado deslogado - mesmo princípio da correção do item 50.
 export function HeaderContaMenu({ cliente }: { cliente: CustomerProfile }) {
   async function sair() {
     await fetch('/sair', { method: 'POST' })
-    window.location.assign('/entrar')
+    window.location.assign('/')
   }
 
   return (

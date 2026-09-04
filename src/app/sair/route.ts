@@ -5,7 +5,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function POST(request: NextRequest) {
   const { origin } = new URL(request.url)
   const cookieStore = await cookies()
-  const response = NextResponse.redirect(`${origin}/entrar`, 303)
+  // Destino do logout = VITRINE (`/`), único pra staff e cliente
+  // (REGRAS_DE_NEGOCIO.md §8/§1.1). O form nativo da sidebar do painel
+  // segue este 303 como navegação de documento (ignora o Router Cache).
+  const response = NextResponse.redirect(`${origin}/`, 303)
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -35,7 +38,7 @@ export async function POST(request: NextRequest) {
         .getAll()
         .filter((c) => c.name.startsWith('sb-'))
         .map((c) => ({ name: c.name, vazio: !c.value })),
-      redirect: `${origin}/entrar`,
+      redirect: `${origin}/`,
     })
   )
   return response
