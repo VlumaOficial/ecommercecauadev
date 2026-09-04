@@ -827,6 +827,8 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 **Item de backlog registrado ao implementar (não corrigido agora, ver `ESCOPO_PROJETO.md` §1 "Checklist de pré-produção", item 2):** hoje uma conta desativada (cliente ou staff) que loga com senha correta não vê nenhuma mensagem explicando por que caiu de volta pro login — só é tratada como anônima mais adiante. Mexe no fluxo de login como um todo (staff incluso), por isso fica para uma frente própria de autenticação, não para o Inc 2.
 
+**Testado com Chromium real contra a URL pública em 04/09/2026 (detalhe técnico completo em `ESCOPO_PROJETO.md` §0 item 53):** as 4 ações confirmadas ponta a ponta com um cliente de teste (contato real controlado pelo PO, nunca fabricado). Único achado: reenviar o link de senha logo em seguida de criar o cliente (ou de um reenvio anterior) pode devolver "Não foi possível reenviar o link agora." por alguns segundos — é o próprio limite de reenvio de e-mail do provedor (Supabase Auth), não um defeito; espera de cerca de um minuto resolve.
+
 ---
 
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
