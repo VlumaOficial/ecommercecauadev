@@ -883,6 +883,8 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 **Fora do escopo deste incremento** (fica para incrementos futuros da mesma frente): características por categoria (ficha técnica, §4.3/§4.7) e fotos dos produtos — o fluxo completo da frente é importar dados → exportar com os códigos das variações (SKU) → nomear as fotos pelos SKUs → importar as fotos, mas só a primeira etapa (dados) está pronta agora.
 
+**Testado com Chromium real contra a URL pública em 04/09/2026** (detalhe técnico completo em `ESCOPO_PROJETO.md` §4, Frente A — Incremento 1): um arquivo cobrindo produto simples, produto com variações, categoria nova e todos os tipos de erro confirmou o comportamento descrito acima ponta a ponta — em especial a atomicidade por produto (o produto com uma variação inválida não entrou de jeito nenhum) e o isolamento entre produtos (os demais entraram normalmente). Reconfirmado que o cadastro manual de produto continua funcionando normalmente.
+
 ---
 
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
