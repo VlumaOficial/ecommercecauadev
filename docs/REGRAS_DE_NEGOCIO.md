@@ -806,6 +806,20 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 ---
 
+## 24. Módulo de Clientes (painel) — Fase 3, incremento 1 (insert-only, 04/09/2026)
+
+**✅ Em vigor.** `/painel/clientes` — a equipe consulta e acompanha os clientes da loja (não confundir com `/painel/equipe`, §22, que é a gestão da própria equipe).
+
+**Listagem:** filtra por status (ativo/inativo), busca por nome/e-mail/WhatsApp, e por cidade de entrega (incluindo "sem cidade cadastrada"). Cada cliente mostra quantos pedidos já fez.
+
+**Ficha do cliente:** dados de cadastro, e as métricas do relacionamento com a loja — nº de pedidos, total gasto, ticket médio, data da última compra — mais o histórico completo de pedidos.
+
+**Regra: o que conta como "pedido" nas métricas.** Só pedidos **confirmados** ou **entregues** (concluídos) entram no nº de pedidos, no total gasto e no ticket médio — são os únicos com venda de fato comprometida. Pedidos **aguardando validação** ainda podem ser recusados, então não contam como venda ainda. Pedidos **cancelados** também ficam de fora da média, mas aparecem separadamente na ficha como "pedidos cancelados" — um dado complementar, não uma venda.
+
+**Roadmap desta frente (Fase 3, 3 incrementos):** incremento 1 (listagem + ficha) ✅; incremento 2 — cadastrar cliente novo (recebe e-mail pra criar a própria senha), desativar (para de logar, mas o histórico continua preservado e visível), reenviar link de redefinição de senha — não iniciado; incremento 3 — carga de clientes em massa (planilha-modelo + upload + relatório do que deu certo/errado, com o motivo) — não iniciado.
+
+---
+
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
 
 *Entregável planejado: ao final do desenvolvimento, este documento é a base para gerar o **manual formal do usuário/lojista** — por isso a linguagem aqui evita jargão técnico desde o início.*
