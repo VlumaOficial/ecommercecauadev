@@ -43,7 +43,17 @@ export function ClientesView() {
         <div className="flex flex-wrap items-center gap-3">
           <Select value={cidade || 'todas'} onValueChange={(v) => setCidade(!v || v === 'todas' ? '' : v)}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Todas as cidades" />
+              {/* SelectValue sem children renderiza o `value` cru (achado
+                  testando na HML: mostrava "todas"/o uuid da cidade em vez
+                  do rótulo) - render-prop resolve o rótulo certo. */}
+              <SelectValue placeholder="Todas as cidades">
+                {(value: string) => {
+                  if (!value || value === 'todas') return 'Todas as cidades'
+                  if (value === 'sem_cidade') return 'Sem cidade'
+                  const selecionada = cidades.find((c) => c.id === value)
+                  return selecionada ? `${selecionada.nome}${selecionada.uf ? ' - ' + selecionada.uf : ''}` : 'Todas as cidades'
+                }}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas as cidades</SelectItem>
