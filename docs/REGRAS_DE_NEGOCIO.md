@@ -818,6 +818,15 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 **Roadmap desta frente (Fase 3, 3 incrementos):** incremento 1 (listagem + ficha) ✅; incremento 2 — cadastrar cliente novo (recebe e-mail pra criar a própria senha), desativar/reativar (para de logar, mas o histórico continua preservado e visível), reenviar link de redefinição de senha — **📌 desenho aprovado pelo PO em 04/09/2026, PENDENTE DE IMPLEMENTAÇÃO** (detalhe técnico completo em `ESCOPO_PROJETO.md` §0 item 53; decisão de nível de permissão — admin-only vs. qualquer staff — ainda em aberto); incremento 3 — carga de clientes em massa (planilha-modelo + upload + relatório do que deu certo/errado, com o motivo) — não iniciado.
 
+**✅ Incremento 2 implementado em 04/09/2026 (insert-only, sucede a linha acima).** Decisão de permissão fechada pelo PO: **qualquer staff do tenant**, não admin-only — consistente com a leitura da listagem (incremento 1). As 4 ações ficam disponíveis tanto na listagem (`/painel/clientes`) quanto na ficha (`/painel/clientes/[id]`):
+
+- **Criar cliente**: formulário (nome, e-mail, WhatsApp, cidade de entrega opcional, observações internas opcionais) — 1 passo só (diferente da equipe, `REGRAS_DE_NEGOCIO.md` §22, que precisa de 2). A conta nasce em `customers` automaticamente (nenhum `role` é enviado), e um e-mail para o cliente definir a própria senha é disparado em seguida — mesmo mecanismo já usado para a equipe.
+- **Editar cliente**: nome, WhatsApp, cidade de entrega e observações internas. O e-mail nunca é editável aqui (é o identificador de login).
+- **Desativar/reativar**: cliente desativado é bloqueado de comprar/logar (a camada de aplicação já trata conta inativa como anônima), mas todo o histórico de pedidos permanece intacto e visível na ficha. Pede confirmação antes de desativar.
+- **Reenviar link de senha**: reenvia o mesmo e-mail de "definir senha" do passo de criação — útil se o primeiro se perdeu.
+
+**Item de backlog registrado ao implementar (não corrigido agora, ver `ESCOPO_PROJETO.md` §1 "Checklist de pré-produção", item 2):** hoje uma conta desativada (cliente ou staff) que loga com senha correta não vê nenhuma mensagem explicando por que caiu de volta pro login — só é tratada como anônima mais adiante. Mexe no fluxo de login como um todo (staff incluso), por isso fica para uma frente própria de autenticação, não para o Inc 2.
+
 ---
 
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*

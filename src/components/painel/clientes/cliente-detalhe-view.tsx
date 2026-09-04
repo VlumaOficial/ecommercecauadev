@@ -1,14 +1,23 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeftIcon, MessageCircleIcon } from 'lucide-react'
-import { useCliente } from '@/hooks/use-clientes'
+import { ArrowLeftIcon, MailIcon, MessageCircleIcon, PencilIcon, PowerIcon, RotateCcwIcon } from 'lucide-react'
+import {
+  useCliente,
+  useUpdateCliente,
+  useSetClienteAtivo,
+  useReenviarSenhaCliente,
+} from '@/hooks/use-clientes'
+import { useCidades } from '@/hooks/use-cidades'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { StatusBadge } from '@/components/painel/crud/status-badge'
+import { ConfirmDialog } from '@/components/painel/crud/confirm-dialog'
 import { PedidoStatusBadge } from '@/components/loja/pedidos/status-badge'
 import { Preco } from '@/components/ui/preco'
+import { ClienteFormDialog } from './cliente-form-dialog'
 
 // Mesmo padrao de formatarWhatsappExibicao ja duplicado em
 // pedido-detalhe-view.tsx / equipe-table.tsx (so' exibicao) - numero
@@ -23,6 +32,14 @@ function formatarWhatsappExibicao(digitos: string) {
 export function ClienteDetalheView({ id }: { id: string }) {
   const router = useRouter()
   const { data: cliente, isLoading, error } = useCliente(id)
+  const { data: cidades = [] } = useCidades({ status: 'ativos', busca: '' })
+
+  const [formAberto, setFormAberto] = useState(false)
+  const [confirmarInativarAberto, setConfirmarInativarAberto] = useState(false)
+
+  const atualizar = useUpdateCliente()
+  const setAtivo = useSetClienteAtivo()
+  const reenviarSenha = useReenviarSenhaCliente()
 
   if (isLoading) {
     return <p className="py-10 text-center text-sm text-muted-foreground">Carregando...</p>
@@ -55,8 +72,41 @@ export function ClienteDetalheView({ id }: { id: string }) {
       </Link>
 
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <h1 className="font-display text-2xl font-bold text-[var(--brand-navy)]">{cliente.nome}</h1>
-        <StatusBadge ativo={cliente.ativo} />
+        <div className="flex items-center gap-2">
+          <h1 className="font-display text-2xl font-bold text-[var(--brand-navy)]">{cliente.nome}</h1>
+          <StatusBadge ativo={cliente.ativo} />
+        </div>
+        <div className="flex gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => reenviarSenha.mutate(id)}
+            disabled={reenviarSenha.isPending}
+          >
+            <MailIcon />
+            Reenviar senha
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setFormAberto(true)}>
+            <PencilIcon />
+            Editar
+          </Button>
+          {cliente.ativo ? (
+            <Button variant="outline" size="sm" onClick={() => setConfirmarInativarAberto(true)}>
+              <PowerIcon />
+              Desativar
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAtivo.mutate({ id, ativo: true })}
+              disabled={setAtivo.isPending}
+            >
+              <RotateCcwIcon />
+              Reativar
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
@@ -80,6 +130,11 @@ export function ClienteDetalheView({ id }: { id: string }) {
           <p className="mt-2 text-xs text-muted-foreground">
             Cadastrado em {new Date(cliente.created_at).toLocaleDateString('pt-BR')}
           </p>
+          {cliente.observacoes && (
+            <p className="mt-3 border-t border-border pt-2 text-sm text-muted-foreground whitespace-pre-wrap">
+              {cliente.observacoes}
+            </p>
+          )}
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-5">
@@ -158,6 +213,39 @@ export function ClienteDetalheView({ id }: { id: string }) {
           Voltar para clientes
         </Button>
       </div>
+
+      <ClienteFormDialog
+        open={formAberto}
+        onOpenChange={setFormAberto}
+        cliente={cliente}
+        cidades={cidades}
+        onSubmit={(values) =>
+          atualizar.mutate(
+            {
+              id,
+              values: {
+                nome: values.nome,
+                whatsapp: values.whatsapp,
+                delivery_city_id: values.delivery_city_id,
+                observacoes: values.observacoes,
+              },
+            },
+            { onSuccess: () => setFormAberto(false) }
+          )
+        }
+        loading={atualizar.isPending}
+      />
+
+      <ConfirmDialog
+        open={confirmarInativarAberto}
+        onOpenChange={setConfirmarInativarAberto}
+        title="Desativar cliente?"
+        description={`"${cliente.nome}" fica bloqueado de comprar/logar até ser reativado. O histórico de pedidos é preservado.`}
+        confirmLabel="Desativar"
+        destructive
+        loading={setAtivo.isPending}
+        onConfirm={() => setAtivo.mutate({ id, ativo: false }, { onSuccess: () => setConfirmarInativarAberto(false) })}
+      />
     </div>
   )
 }

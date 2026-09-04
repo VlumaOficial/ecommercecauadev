@@ -1,11 +1,27 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { MailIcon, PencilIcon, PowerIcon, RotateCcwIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { StatusBadge } from '@/components/painel/crud/status-badge'
 import type { ClienteResumo } from '@/hooks/use-clientes'
 
-export function ClientesTable({ clientes, isLoading }: { clientes: ClienteResumo[]; isLoading: boolean }) {
+export function ClientesTable({
+  clientes,
+  isLoading,
+  onEdit,
+  onInativar,
+  onReativar,
+  onReenviarSenha,
+}: {
+  clientes: ClienteResumo[]
+  isLoading: boolean
+  onEdit: (cliente: ClienteResumo) => void
+  onInativar: (cliente: ClienteResumo) => void
+  onReativar: (cliente: ClienteResumo) => void
+  onReenviarSenha: (cliente: ClienteResumo) => void
+}) {
   const router = useRouter()
 
   if (isLoading) {
@@ -26,6 +42,7 @@ export function ClientesTable({ clientes, isLoading }: { clientes: ClienteResumo
           <TableHead>Cidade</TableHead>
           <TableHead>Status</TableHead>
           <TableHead className="text-right">Pedidos</TableHead>
+          <TableHead className="text-right">Ações</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -49,6 +66,41 @@ export function ClientesTable({ clientes, isLoading }: { clientes: ClienteResumo
               <StatusBadge ativo={cliente.ativo} />
             </TableCell>
             <TableCell className="text-right font-semibold">{cliente.numero_pedidos}</TableCell>
+            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-end gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => onReenviarSenha(cliente)}
+                  aria-label={`Reenviar link de senha para ${cliente.nome}`}
+                  title="Reenviar link de senha"
+                >
+                  <MailIcon />
+                </Button>
+                <Button variant="ghost" size="icon-sm" onClick={() => onEdit(cliente)} aria-label={`Editar ${cliente.nome}`}>
+                  <PencilIcon />
+                </Button>
+                {cliente.ativo ? (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => onInativar(cliente)}
+                    aria-label={`Desativar ${cliente.nome}`}
+                  >
+                    <PowerIcon />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => onReativar(cliente)}
+                    aria-label={`Reativar ${cliente.nome}`}
+                  >
+                    <RotateCcwIcon />
+                  </Button>
+                )}
+              </div>
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

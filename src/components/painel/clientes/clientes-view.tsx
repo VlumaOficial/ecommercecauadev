@@ -1,10 +1,21 @@
 'use client'
 
+import { useState } from 'react'
+import { PlusIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useQueryParamState } from '@/hooks/use-query-param-state'
-import { useClientes } from '@/hooks/use-clientes'
+import {
+  useClientes,
+  useCreateCliente,
+  useUpdateCliente,
+  useSetClienteAtivo,
+  useReenviarSenhaCliente,
+  type ClienteResumo,
+} from '@/hooks/use-clientes'
 import { useCidades } from '@/hooks/use-cidades'
 import { StatusFilterTabs, type StatusFiltro } from '@/components/painel/crud/status-filter-tabs'
 import { SearchInput } from '@/components/painel/crud/search-input'
+import { ConfirmDialog } from '@/components/painel/crud/confirm-dialog'
 import {
   Select,
   SelectContent,
@@ -13,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ClientesTable } from './clientes-table'
+import { ClienteFormDialog, type ClienteParaEditar } from './cliente-form-dialog'
 
 export function ClientesView() {
   const [status, setStatus] = useQueryParamState('status', 'ativos')
@@ -31,11 +43,73 @@ export function ClientesView() {
   // Inc 1, sem impacto na massa de teste atual).
   const { data: cidades = [] } = useCidades({ status: 'ativos', busca: '' })
 
+  const [formAberto, setFormAberto] = useState(false)
+  const [clienteEditando, setClienteEditando] = useState<ClienteParaEditar | null>(null)
+  const [clienteParaInativar, setClienteParaInativar] = useState<ClienteResumo | null>(null)
+
+  const criar = useCreateCliente()
+  const atualizar = useUpdateCliente()
+  const setAtivo = useSetClienteAtivo()
+  const reenviarSenha = useReenviarSenhaCliente()
+
+  function abrirNovo() {
+    setClienteEditando(null)
+    setFormAberto(true)
+  }
+
+  function abrirEdicao(cliente: ClienteResumo) {
+    setClienteEditando({
+      id: cliente.id,
+      nome: cliente.nome,
+      email: cliente.email,
+      whatsapp: cliente.whatsapp,
+      delivery_city_id: cliente.delivery_city_id,
+      observacoes: cliente.observacoes,
+    })
+    setFormAberto(true)
+  }
+
+  function handleSubmit(values: {
+    nome: string
+    email: string
+    whatsapp: string
+    delivery_city_id: string | null
+    observacoes: string | null
+  }) {
+    if (clienteEditando) {
+      atualizar.mutate(
+        {
+          id: clienteEditando.id,
+          values: {
+            nome: values.nome,
+            whatsapp: values.whatsapp,
+            delivery_city_id: values.delivery_city_id,
+            observacoes: values.observacoes,
+          },
+        },
+        { onSuccess: () => setFormAberto(false) }
+      )
+    } else {
+      criar.mutate(values, { onSuccess: () => setFormAberto(false) })
+    }
+  }
+
+  function confirmarInativar() {
+    if (!clienteParaInativar) return
+    setAtivo.mutate({ id: clienteParaInativar.id, ativo: false }, { onSuccess: () => setClienteParaInativar(null) })
+  }
+
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-[var(--brand-navy)]">Clientes</h1>
-        <p className="text-muted-foreground mt-1">Consulte o histórico e as métricas de cada cliente.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-[var(--brand-navy)]">Clientes</h1>
+          <p className="text-muted-foreground mt-1">Consulte o histórico e as métricas de cada cliente.</p>
+        </div>
+        <Button onClick={abrirNovo}>
+          <PlusIcon />
+          Adicionar cliente
+        </Button>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -76,8 +150,35 @@ export function ClientesView() {
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-2">
-        <ClientesTable clientes={clientes} isLoading={isLoading} />
+        <ClientesTable
+          clientes={clientes}
+          isLoading={isLoading}
+          onEdit={abrirEdicao}
+          onInativar={setClienteParaInativar}
+          onReativar={(cliente) => setAtivo.mutate({ id: cliente.id, ativo: true })}
+          onReenviarSenha={(cliente) => reenviarSenha.mutate(cliente.id)}
+        />
       </div>
+
+      <ClienteFormDialog
+        open={formAberto}
+        onOpenChange={setFormAberto}
+        cliente={clienteEditando}
+        cidades={cidades}
+        onSubmit={handleSubmit}
+        loading={criar.isPending || atualizar.isPending}
+      />
+
+      <ConfirmDialog
+        open={!!clienteParaInativar}
+        onOpenChange={(open) => !open && setClienteParaInativar(null)}
+        title="Desativar cliente?"
+        description={`"${clienteParaInativar?.nome}" fica bloqueado de comprar/logar até ser reativado. O histórico de pedidos é preservado.`}
+        confirmLabel="Desativar"
+        destructive
+        loading={setAtivo.isPending}
+        onConfirm={confirmarInativar}
+      />
     </div>
   )
 }
