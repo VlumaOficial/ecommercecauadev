@@ -841,6 +841,8 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 **✅ Incremento 3 implementado em 04/09/2026 (insert-only, sucede a linha acima) — Fase 3 completa (3 de 3 incrementos).** `/painel/clientes`, botão "Importar clientes": baixa um modelo (CSV ou XLSX, 4 colunas — e-mail, nome, whatsapp, cidade), o lojista preenche e faz upload do mesmo formato de volta. A carga é **parcial**: linhas válidas são importadas, linhas inválidas ficam de fora e aparecem num relatório com o número da linha e o motivo em português claro (e-mail vazio/inválido/já cadastrado/repetido no próprio arquivo, nome vazio, whatsapp vazio/inválido, cidade que não bate com nenhuma cidade cadastrada). Um e-mail já cadastrado **nunca** sobrescreve o cliente existente — a linha é só reportada como erro. Tela mostra o progresso durante a importação e, ao final, um resumo (quantas entraram, quantas falharam) mais a opção de baixar o relatório completo. Detalhe técnico completo (função de criação compartilhada com o incremento 2, isolamento por linha, parsing client-side) em `ESCOPO_PROJETO.md` §0 item 56.
 
+**Testado com Chromium real contra a URL pública em 04/09/2026** (detalhe completo em `ESCOPO_PROJETO.md` §0 item 56): arquivo com 7 linhas cobrindo os 5 tipos de erro de uma vez — 3 entraram certinho (sem e-mail de senha disparado), as outras 4 apareceram no relatório com o motivo certo, e uma linha ruim nunca afetou as boas do mesmo arquivo. Reconfirmado que criar cliente individual (incremento 2) continua funcionando normalmente depois da refatoração que reaproveitou o código entre as duas telas.
+
 ---
 
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
