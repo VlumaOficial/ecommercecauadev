@@ -837,6 +837,8 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 **Testado com Chromium real contra a URL pública em 04/09/2026 (detalhe técnico completo em `ESCOPO_PROJETO.md` §0 item 53):** as 4 ações confirmadas ponta a ponta com um cliente de teste (contato real controlado pelo PO, nunca fabricado). Único achado: reenviar o link de senha logo em seguida de criar o cliente (ou de um reenvio anterior) pode devolver "Não foi possível reenviar o link agora." por alguns segundos — é o próprio limite de reenvio de e-mail do provedor (Supabase Auth), não um defeito; espera de cerca de um minuto resolve.
 
+**📌 Incremento 3 (carga em massa) — decisão de escopo registrada em 04/09/2026, antes do desenho: sem disparo de e-mail de senha em massa.** O e-mail de "definir senha" do Supabase Auth sai hoje pelo remetente global da VLUMA (`noreply@vluma.com.br`, SMTP Zoho) — não um remetente do tenant. Disparar esse e-mail em volume numa importação concentraria risco de reputação/spam nesse domínio compartilhado, por causa da migração de dados de um único lojista. Fica adiado para a fase SaaS, junto da resolução do e-mail transacional por-tenant (débito registrado em `ESCOPO_PROJETO.md` §1 "Pilares adicionais do SaaS", item 10). No MVP, a carga em massa cria os clientes **sem** disparo de e-mail — o cliente importado fica "sem senha até definir sob demanda": o lojista usa "Reenviar senha" (incremento 2) quando precisar, ou o próprio cliente usa "esqueci minha senha" ao voltar pra comprar.
+
 ---
 
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
