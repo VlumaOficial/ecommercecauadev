@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, UploadIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useQueryParamState } from '@/hooks/use-query-param-state'
 import {
@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select'
 import { ClientesTable } from './clientes-table'
 import { ClienteFormDialog, type ClienteParaEditar } from './cliente-form-dialog'
+import { ImportarClientesDialog } from './importar-clientes-dialog'
 
 export function ClientesView() {
   const [status, setStatus] = useQueryParamState('status', 'ativos')
@@ -46,6 +47,7 @@ export function ClientesView() {
   const [formAberto, setFormAberto] = useState(false)
   const [clienteEditando, setClienteEditando] = useState<ClienteParaEditar | null>(null)
   const [clienteParaInativar, setClienteParaInativar] = useState<ClienteResumo | null>(null)
+  const [importarAberto, setImportarAberto] = useState(false)
 
   const criar = useCreateCliente()
   const atualizar = useUpdateCliente()
@@ -106,10 +108,16 @@ export function ClientesView() {
           <h1 className="font-display text-2xl font-bold text-[var(--brand-navy)]">Clientes</h1>
           <p className="text-muted-foreground mt-1">Consulte o histórico e as métricas de cada cliente.</p>
         </div>
-        <Button onClick={abrirNovo}>
-          <PlusIcon />
-          Adicionar cliente
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportarAberto(true)}>
+            <UploadIcon />
+            Importar clientes
+          </Button>
+          <Button onClick={abrirNovo}>
+            <PlusIcon />
+            Adicionar cliente
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -179,6 +187,8 @@ export function ClientesView() {
         loading={setAtivo.isPending}
         onConfirm={confirmarInativar}
       />
+
+      <ImportarClientesDialog open={importarAberto} onOpenChange={setImportarAberto} />
     </div>
   )
 }

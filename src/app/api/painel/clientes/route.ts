@@ -1,10 +1,8 @@
-import { randomBytes } from 'crypto'
 import { NextResponse, type NextRequest } from 'next/server'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { getStaffProfile } from '@/lib/auth'
+import { criarClienteComoStaff } from '@/lib/painel/clientes'
 
 // Listagem de clientes (Fase 3, incremento 1). Leitura direta via client
 // SERVIDOR + RLS (customers_select_own, migration 013, ja cobre staff do
@@ -123,68 +121,20 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const admin = createAdminClient()
-  const whatsappDigitos = parsed.data.whatsapp.replace(/\D/g, '')
-
-  // Senha aleatória que ninguém vê/loga - o cliente define a própria via
-  // o e-mail de "definir senha" (mesmo mecanismo do passo 3 de
-  // /api/painel/equipe). SEM app_metadata - handle_new_user decide
-  // `customers` por ausência de role, não por presença de nenhum campo.
-  const senhaAleatoria = randomBytes(24).toString('base64url')
-  const { data: novoUsuario, error: erroCriar } = await admin.auth.admin.createUser({
+  const resultado = await criarClienteComoStaff({
+    nome: parsed.data.nome,
     email: parsed.data.email,
-    password: senhaAleatoria,
-    email_confirm: true,
-    user_metadata: {
-      nome: parsed.data.nome,
-      whatsapp: whatsappDigitos,
-      delivery_city_id: parsed.data.delivery_city_id ?? '',
-    },
-  })
-  if (erroCriar || !novoUsuario.user) {
-    const message = erroCriar?.message?.includes('already been registered')
-      ? 'Já existe uma conta com esse e-mail.'
-      : 'Não foi possível criar a conta.'
-    return NextResponse.json({ error: message }, { status: 400 })
-  }
-
-  // handle_new_user roda na mesma transação do INSERT em auth.users - a
-  // linha em customers já existe aqui, sem corrida/retry.
-  const { data: clienteCriado, error: erroBusca } = await admin
-    .from('customers')
-    .select('id, nome, email, whatsapp, ativo, delivery_city_id, observacoes')
-    .eq('auth_user_id', novoUsuario.user.id)
-    .maybeSingle()
-
-  if (erroBusca || !clienteCriado) {
-    return NextResponse.json(
-      { error: 'A conta foi criada, mas não foi possível confirmar o cadastro do cliente.' },
-      { status: 500 }
-    )
-  }
-
-  // observacoes não faz parte do metadata do trigger (só nome/whatsapp/
-  // delivery_city_id) - UPDATE simples à parte, mesmo padrão do whatsapp
-  // de staff em POST /api/painel/equipe. Falha aqui não desfaz a criação.
-  let clienteFinal = clienteCriado
-  if (parsed.data.observacoes) {
-    const { data: clienteComObs } = await admin
-      .from('customers')
-      .update({ observacoes: parsed.data.observacoes })
-      .eq('id', clienteCriado.id)
-      .select('id, nome, email, whatsapp, ativo, delivery_city_id, observacoes')
-      .single()
-    if (clienteComObs) clienteFinal = clienteComObs
-  }
-
-  // Dispara o e-mail de "definir senha" - reaproveita 100% o mecanismo já
-  // testado (REGRAS_DE_NEGOCIO.md §18.4), sem template novo. Falha aqui
-  // NÃO desfaz a criação - a tela oferece "reenviar" depois.
-  const anon = createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
-  const origin = new URL(request.url).origin
-  const { error: erroEmail } = await anon.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${origin}/auth/callback?next=/nova-senha`,
+    whatsapp: parsed.data.whatsapp.replace(/\D/g, ''),
+    delivery_city_id: parsed.data.delivery_city_id,
+    observacoes: parsed.data.observacoes ?? null,
+    enviarEmail: true,
+    origin: new URL(request.url).origin,
   })
 
-  return NextResponse.json({ data: clienteFinal, emailEnviado: !erroEmail }, { status: 201 })
+  if (!resultado.ok) {
+    const status = resultado.error.startsWith('A conta foi criada') ? 500 : 400
+    return NextResponse.json({ error: resultado.error }, { status })
+  }
+
+  return NextResponse.json({ data: resultado.cliente, emailEnviado: resultado.emailEnviado }, { status: 201 })
 }
