@@ -24,6 +24,14 @@ Quando **não se quer** disparo num teste, deixar o campo **vazio**: `notificar-
 
 **O teste end-to-end de recebimento real (todos os canais, todos os eventos) é conduzido pelo PO**, não pelo assistente — o assistente valida o fluxo de painel/checkout (status HTTP, transição de estado, ausência de regressão) e a não-quebra da resposta ao usuário; a confirmação de que a mensagem chega fica com o PO.
 
+### 0.2 Cleanup de teste não-destrutivo (insert-only, 04/09/2026)
+
+**✅ Em vigor.** Scripts/rotinas de teste **nunca** devem apagar dados via `DELETE`/`deleteUser` cascateante como forma de limpeza. O princípio do projeto é **desativar, não deletar** (soft delete universal, `REGRAS_DE_NEGOCIO.md` §3) — o cleanup de um teste segue a mesma lógica: usar dados descartáveis (registro isolado, sem vínculo com histórico real) ou desativação (`ativo = false`), **nunca** um `DELETE` que cascateie em `auth.users`/`customers`/`orders`.
+
+**Motivo:** o risco não é o teste em si dar errado — é um script de cleanup apontando pro alvo errado (id/e-mail trocado, ambiente errado) ou rodando contra um registro que na verdade tem histórico real por trás; um `DELETE` com `on delete cascade` nessa situação levaria dado de verdade junto, sem chance de reverter.
+
+**Evidência que motivou a regra:** no teste do Inc 2 da Fase 3 (módulo de Clientes, 04/09/2026), o cleanup do script de teste usou `admin.auth.admin.deleteUser()` — que cascateia (`on delete cascade`, `customers.auth_user_id`) e apaga a linha de `customers` por completo. Funcionou sem incidente no tenant de teste daquela vez, mas é exatamente o padrão que esta regra passa a proibir daqui pra frente — cleanup de teste deve preferir desativar o registro de teste (`ativo = false`) a apagá-lo.
+
 ---
 
 ## 1. Acesso e perfis
