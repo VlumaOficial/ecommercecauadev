@@ -902,6 +902,7 @@ Itens que só fazem sentido resolver quando o Cauã estiver de fato indo pra pro
 | Backend/dados | Supabase (Postgres + Auth + RLS), `@supabase/ssr` 0.12.3 |
 | Drag-and-drop | `@dnd-kit/core` + `@dnd-kit/sortable` + `@dnd-kit/utilities` — Base UI não tem primitivo de sortable; dnd-kit é o padrão de mercado, acessível, sem dependência de Radix |
 | Deploy | Vercel |
+| Planilhas (CSV/XLSX) | `xlsx` (SheetJS) — **⚠️ instalado a partir da CDN oficial do SheetJS (`https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`), NUNCA da versão publicada no registro npm.** A versão do npm (`0.18.5`, a que `npm install xlsx`/`npm update xlsx` traria de volta) tem 2 CVEs de severidade alta sem correção disponível ali (Prototype Pollution, ReDoS) — é assim que o próprio SheetJS recomenda instalar hoje em dia, não uma decisão deste projeto. **Antes de qualquer `npm update`/`npm audit fix` tocar em `xlsx`, conferir que `package.json` continua apontando pra uma URL `cdn.sheetjs.com`, não pro registro padrão.** Ver `ESCOPO_PROJETO.md` §0 item 56 pro contexto (Fase 3, Inc 3 — importação de clientes) e `npm audit` pra confirmar zero vulnerabilidade atribuída ao pacote. |
 
 ### Padrão de autenticação (importante, decisão custosa de descobrir)
 
