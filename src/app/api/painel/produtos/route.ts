@@ -2,8 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getStaffProfile } from '@/lib/auth'
-import { slugify } from '@/lib/category-tree'
-import { derivarPrefixo } from '@/lib/produto-codigo'
+import { criarProdutoComoStaff } from '@/lib/painel/produtos'
 
 // Sanitiza a busca antes de montar o filtro .or() do PostgREST: virgula
 // e parenteses tem significado especial na sintaxe do or-filter e
@@ -153,78 +152,25 @@ export async function POST(request: NextRequest) {
   const { produto, codigo_modo, codigo_manual, variacoes, caracteristicas } = parsed.data
   const supabase = await createClient()
 
-  let codigoFinal: string
-  if (codigo_modo === 'automatico') {
-    // Prefixo derivado do NOME DO PRODUTO (decisao #24), calculado no
-    // servidor a partir do nome ja validado - nunca confia num prefixo
-    // vindo do client, mesmo que o peek (codigo-sugerido) ja tenha
-    // mostrado a mesma coisa. Sequencia propria por prefixo (migration
-    // 024), independente da sequencia por categoria.
-    const prefixo = derivarPrefixo(produto.nome)
-    if (!prefixo) {
-      return NextResponse.json(
-        { error: 'Não foi possível gerar um código a partir do nome do produto.' },
-        { status: 400 }
-      )
-    }
-    const { data: codigoGerado, error: codigoError } = await supabase.rpc('gerar_codigo_produto_por_prefixo', {
-      p_prefixo: prefixo,
-    })
-    if (codigoError) {
-      return NextResponse.json({ error: codigoError.message }, { status: 400 })
-    }
-    codigoFinal = codigoGerado as string
-  } else if (codigo_modo === 'categoria') {
-    const { data: codigoGerado, error: codigoError } = await supabase.rpc('gerar_codigo_produto', {
-      p_category_id: produto.category_id,
-    })
-    if (codigoError) {
-      return NextResponse.json({ error: codigoError.message }, { status: 400 })
-    }
-    codigoFinal = codigoGerado as string
-  } else {
-    if (!codigo_manual) {
-      return NextResponse.json({ error: 'Informe um código ou escolha um modo automático.' }, { status: 400 })
-    }
-    codigoFinal = codigo_manual
-  }
-
-  const slugFinal = slugify(produto.nome)
-  if (!slugFinal) {
-    return NextResponse.json(
-      { error: 'Não foi possível gerar uma URL válida a partir do nome.' },
-      { status: 400 }
-    )
-  }
-
-  const { data, error } = await supabase.rpc('criar_produto_com_variacoes', {
-    p_produto: {
+  const resultado = await criarProdutoComoStaff(supabase, {
+    produto: {
       category_id: produto.category_id,
       nome: produto.nome,
-      slug: slugFinal,
       descricao: produto.descricao || null,
       unidade_venda_id: produto.unidade_venda_id,
       destaque: produto.destaque,
       ativo: produto.ativo,
-      codigo: codigoFinal,
       codigo_visivel: produto.codigo_visivel,
     },
-    p_variacoes: variacoes.map((v) => ({
-      nome: v.nome || undefined,
-      sku: v.sku || undefined,
-      preco: v.preco,
-      preco_promocional: v.preco_promocional ?? undefined,
-      modo_estoque: v.modo_estoque,
-      estoque_inicial: v.estoque_inicial ?? undefined,
-      quantidade_minima_estoque: v.quantidade_minima_estoque,
-      quantidade_minima_venda: v.quantidade_minima_venda,
-    })),
-    p_caracteristicas: caracteristicas,
+    codigo_modo,
+    codigo_manual,
+    variacoes,
+    caracteristicas,
   })
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 })
+  if (!resultado.ok) {
+    return NextResponse.json({ error: resultado.error }, { status: 400 })
   }
 
-  return NextResponse.json({ data }, { status: 201 })
+  return NextResponse.json({ data: resultado.produto }, { status: 201 })
 }

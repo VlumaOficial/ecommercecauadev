@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, UploadIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useQueryParamState } from '@/hooks/use-query-param-state'
 import { StatusFilterTabs, type StatusFiltro } from '@/components/painel/crud/status-filter-tabs'
@@ -13,6 +13,7 @@ import { useCategorias } from '@/hooks/use-categorias'
 import { CategoriaFilterPopover } from './categoria-filter-popover'
 import { ProdutosTable } from './produtos-table'
 import { ProdutoViewDialog } from './produto-view-dialog'
+import { ImportarProdutosDialog } from './importar-produtos-dialog'
 import {
   useProdutos,
   useSetProdutoAtivo,
@@ -36,6 +37,7 @@ export function ProdutosView() {
 
   const [produtoParaInativar, setProdutoParaInativar] = useState<Produto | null>(null)
   const [produtoVisualizando, setProdutoVisualizando] = useState<Produto | null>(null)
+  const [importarAberto, setImportarAberto] = useState(false)
   const setAtivo = useSetProdutoAtivo()
 
   function confirmarInativar() {
@@ -53,10 +55,16 @@ export function ProdutosView() {
           <h1 className="font-display text-2xl font-bold text-[var(--brand-navy)]">Produtos</h1>
           <p className="text-muted-foreground mt-1">Gerencie o catálogo de produtos da loja.</p>
         </div>
-        <Button render={<Link href="/painel/produtos/novo" />} nativeButton={false}>
-          <PlusIcon />
-          Adicionar produto
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportarAberto(true)}>
+            <UploadIcon />
+            Importar produtos
+          </Button>
+          <Button render={<Link href="/painel/produtos/novo" />} nativeButton={false}>
+            <PlusIcon />
+            Adicionar produto
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -107,6 +115,8 @@ export function ProdutosView() {
         loading={setAtivo.isPending}
         onConfirm={confirmarInativar}
       />
+
+      <ImportarProdutosDialog open={importarAberto} onOpenChange={setImportarAberto} categorias={categorias} />
     </div>
   )
 }

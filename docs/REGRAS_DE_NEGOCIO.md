@@ -845,6 +845,46 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 ---
 
+## 25. Importação de produtos via planilha (Frente A — Catálogo em Escala, Incremento 1, insert-only 04/09/2026)
+
+**✅ Em vigor.** `/painel/produtos`, botão "Importar produtos" — carrega o catálogo em massa a partir de uma planilha (CSV ou XLSX), pensado pra quando o lojista está migrando um catálogo real de outro sistema (o do Cauã tem ~1.000 itens — cadastro item a item não é viável nessa escala).
+
+**Formato da planilha — uma linha por variação.** Cada produto pode ter uma ou mais variações (tamanhos, cores, etc. — ver §4.4); a planilha reflete isso: cada linha é uma variação, e um **identificador** (coluna própria) diz quais linhas pertencem ao mesmo produto.
+
+- **Produto com uma única variação** (o caso mais comum — ex.: um saco de ração que não tem tamanho): não precisa preencher o identificador, a linha já é o produto inteiro sozinho.
+- **Produto com várias variações** (ex.: um aquário "Pequeno" e "Grande"): preenche o **mesmo identificador** em todas as linhas daquele produto — pode ser qualquer código que o lojista escolher, só serve pra agrupar. Os dados do produto (nome, categoria, etc.) só precisam ser preenchidos na **primeira** linha do grupo; nas linhas seguintes do mesmo produto, esses campos podem ficar em branco.
+
+**Colunas da planilha:**
+| Coluna | Nível | Obrigatória? | Observação |
+|---|---|---|---|
+| `identificador` | Produto | Não | Só necessário quando o produto tem mais de uma variação |
+| `nome` | Produto | Sim | |
+| `descricao` | Produto | Não | |
+| `categoria` | Produto | Sim | Nome da categoria — se não existir, é **criada automaticamente**, com confirmação antes de aplicar |
+| `unidade` | Produto | Não | Nome da unidade de venda cadastrada (Kg, Unidade, etc.) — em branco assume "Unidade" |
+| `codigo` | Produto | Não | Código de referência do produto — útil pra quem está migrando de outro sistema e já tem uma codificação própria; em branco, o sistema gera um automaticamente |
+| `destaque` | Produto | Não | "sim"/"não" |
+| `codigo_visivel` | Produto | Não | "sim"/"não" — se o código aparece pro cliente na vitrine |
+| `variacao_nome` | Variação | Não | Em branco vira "Padrão" |
+| `sku` | Variação | Não | Em branco, o sistema gera automaticamente (mesma regra da tela manual, §4.4) |
+| `preco` | Variação | Sim | Aceita vírgula ou ponto decimal |
+| `preco_promocional` | Variação | Não | Precisa ser menor que o preço normal |
+| `estoque` | Variação | Não | Estoque inicial — em branco, nasce zerado |
+| `quantidade_minima_estoque` | Variação | Não | Alerta de reposição (§4.4) — em branco assume 1 |
+| `quantidade_minima_venda` | Variação | Não | Mínimo de compra do cliente (checkout futuro) — em branco assume 1 |
+
+**Categorias novas, sempre com confirmação antes de aplicar** (mesmo princípio já usado no resto do painel): a tela mostra "vou criar N categorias novas: [lista]" antes de importar qualquer coisa.
+
+**Carga parcial, mas atômica por produto** — decisão de produto tomada com o PO: um produto só é criado **inteiro** (com todas as suas variações) ou **não é criado de jeito nenhum**. Se uma das variações de um produto tiver um erro (preço inválido, SKU repetido, etc.), o **produto inteiro** fica de fora da importação — nunca entra "pela metade" com só as variações boas. Os **outros produtos** da mesma planilha continuam sendo importados normalmente; só o produto com problema fica de fora, reportado no relatório com o motivo exato.
+
+**Um SKU ou código já usado nunca sobrescreve um produto existente** — a linha/produto é reportado como erro no relatório, mesmo princípio já usado na importação de Clientes (§24) e no resto do painel (nunca excluir/sobrescrever sem ação explícita do lojista).
+
+**Relatório de resultado**: mostra quantos produtos entraram, quantos falharam (e por quê, um a um) e quantas categorias novas foram criadas — com opção de baixar o relatório completo.
+
+**Fora do escopo deste incremento** (fica para incrementos futuros da mesma frente): características por categoria (ficha técnica, §4.3/§4.7) e fotos dos produtos — o fluxo completo da frente é importar dados → exportar com os códigos das variações (SKU) → nomear as fotos pelos SKUs → importar as fotos, mas só a primeira etapa (dados) está pronta agora.
+
+---
+
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
 
 *Entregável planejado: ao final do desenvolvimento, este documento é a base para gerar o **manual formal do usuário/lojista** — por isso a linguagem aqui evita jargão técnico desde o início.*
