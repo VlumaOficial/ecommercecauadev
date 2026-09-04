@@ -715,7 +715,7 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
     | Incremento | Escopo | Status |
     |---|---|---|
     | 1 | Listagem (filtros status/busca/cidade) + ficha (dados + métricas + histórico de pedidos) | **✅ Implementado 04/09/2026** |
-    | 2 | Criar cliente (e-mail de definição de senha), desativar (preserva histórico), reenviar reset de senha | não iniciado |
+    | 2 | Criar cliente (e-mail de definição de senha), desativar/reativar (preserva histórico), reenviar reset de senha | **📌 APROVADO PELO PO E PENDENTE DE IMPLEMENTAÇÃO** — desenho investigado e fechado em 04/09/2026, ver detalhe abaixo. Implementar na próxima sessão. |
     | 3 | Carga em massa (modelo + upload + log de sucesso/erro com motivo) | não iniciado |
 
     **Incremento 1 — sem migration** (schema já suportava tudo: `customers.ativo`, `delivery_city_id`, índice em `orders.customer_id`).
@@ -724,7 +724,14 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
     - **Achado corrigido durante o teste:** o dropdown de cidade (`SelectValue` do base-ui sem `children`) mostrava o `value` cru selecionado ("todas", o uuid da cidade) em vez do rótulo — corrigido com uma render-prop no `SelectValue`.
     - **Build:** `tsc --noEmit` e `npm run build` limpos.
     - **Teste na HML (staff real, 04/09/2026):** listagem — Ativos (padrão) = 7, Todos = 20, Inativos = 13 (bate: 20 clientes reais do tenant no momento do teste, não os 19 estimados pelo PO — massa de teste mudou entre sessões); busca "Sergio Roberto" → 1 linha, nº de pedidos = 3 correto na própria linha; filtro cidade "Sem cidade" → 0 linhas (os 20 clientes atuais têm cidade preenchida); filtro por "Salvador" → 20 linhas (toda a massa de teste está em Salvador — conferido no banco, não é bug). Ficha do cliente "Sergio Roberto Dorea" (5 pedidos: 2 `aguardando_validacao`, 3 `confirmado`) → métricas batendo exatamente com o cálculo esperado (nº pedidos 3, total R$189,60, ticket médio R$63,20, última compra 27/08/2026, cancelados 0); histórico com as 5 linhas; clique numa linha do histórico levou ao detalhe do pedido correto. **Zero erro de console, zero `404`** — confirmado que o `404` de prefetch de `/painel/clientes` (documentado como benigno em vários pontos deste arquivo) sumiu.
-    - **Incrementos 2 e 3:** não iniciados, aguardando o PO.
+    - **Incremento 3:** não iniciado, aguardando o PO.
+
+    **Incremento 2 — desenho investigado e APROVADO PELO PO em 04/09/2026, PENDENTE DE IMPLEMENTAÇÃO (a próxima sessão implementa).** Sem migration (schema já suporta tudo). Resumo do desenho (relato completo na conversa desta sessão — resgatar de lá se precisar do detalhe fino ao implementar):
+    - **Criar cliente:** `admin.auth.admin.createUser({ email, password: aleatória, email_confirm: true, user_metadata: { nome, whatsapp, delivery_city_id } })` — **sem** `app_metadata.role`, o que faz o trigger `handle_new_user` (migration 033) cair direto em `customers` (não em `profiles`), **sem RPC nova** — diferente do fluxo de staff (`/painel/equipe`, 2 passos: criar + `promover_para_staff`), cliente é o destino padrão do trigger, 1 passo só. Depois, dispara `resetPasswordForEmail` (e-mail de "definir senha", SMTP do próprio Supabase Auth — **não** o Zoho — mesmo mecanismo 100% reaproveitado de `/painel/equipe`, sem template novo).
+    - **Desativar/reativar:** `update customers set ativo = false/true where id = ...` — RLS (`customers_update_own`) já libera staff do tenant, sem migration. Molde de `POST /api/painel/equipe/[id]/desativar`/`ativar`.
+    - **Reenviar senha:** `POST /api/painel/clientes/[id]/reenviar-senha` — mesmo `resetPasswordForEmail`, molde de `POST /api/painel/equipe/[id]/reenviar-senha` (código quase idêntico, troca `profiles` por `customers`).
+    - **Achado sobre `ativo` e login:** confirmado que `POST /api/auth/login` não checa `ativo` (cliente inativo autentica normalmente), mas `getCustomerProfile()` já filtra `.eq('ativo', true)` — todo uso de cliente (`/checkout`, `/meus-pedidos`, `/minha-conta`, header da vitrine) trata inativo como anônimo. **Mesmo padrão já usado pra staff inativo** (`getStaffProfileForUser`, mesmo filtro) — não é gap novo, é UX silenciosa já aceita no projeto. Recomendação registrada: não mexer no login pra não abrir escopo cruzado com staff.
+    - **⚠️ Decisão em aberto, não fechada — resolver antes/durante a implementação:** nível de permissão das ações do Inc 2 (criar/desativar/reativar/reenviar senha). Em `/painel/equipe` todas são admin-only; recomendação registrada é liberar Clientes pra **qualquer staff** (dado menos sensível que a equipe), mas o PO ainda não confirmou explicitamente essa escolha.
 
 ---
 

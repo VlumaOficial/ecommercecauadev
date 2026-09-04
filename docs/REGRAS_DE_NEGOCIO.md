@@ -816,7 +816,7 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 **Regra: o que conta como "pedido" nas métricas.** Só pedidos **confirmados** ou **entregues** (concluídos) entram no nº de pedidos, no total gasto e no ticket médio — são os únicos com venda de fato comprometida. Pedidos **aguardando validação** ainda podem ser recusados, então não contam como venda ainda. Pedidos **cancelados** também ficam de fora da média, mas aparecem separadamente na ficha como "pedidos cancelados" — um dado complementar, não uma venda.
 
-**Roadmap desta frente (Fase 3, 3 incrementos):** incremento 1 (listagem + ficha) ✅; incremento 2 — cadastrar cliente novo (recebe e-mail pra criar a própria senha), desativar (para de logar, mas o histórico continua preservado e visível), reenviar link de redefinição de senha — não iniciado; incremento 3 — carga de clientes em massa (planilha-modelo + upload + relatório do que deu certo/errado, com o motivo) — não iniciado.
+**Roadmap desta frente (Fase 3, 3 incrementos):** incremento 1 (listagem + ficha) ✅; incremento 2 — cadastrar cliente novo (recebe e-mail pra criar a própria senha), desativar/reativar (para de logar, mas o histórico continua preservado e visível), reenviar link de redefinição de senha — **📌 desenho aprovado pelo PO em 04/09/2026, PENDENTE DE IMPLEMENTAÇÃO** (detalhe técnico completo em `ESCOPO_PROJETO.md` §0 item 53; decisão de nível de permissão — admin-only vs. qualquer staff — ainda em aberto); incremento 3 — carga de clientes em massa (planilha-modelo + upload + relatório do que deu certo/errado, com o motivo) — não iniciado.
 
 ---
 
