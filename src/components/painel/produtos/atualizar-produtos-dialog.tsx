@@ -26,9 +26,14 @@ import { formatarMoeda } from '@/lib/utils'
 // no Excel → Reimportar aqui, não um modelo em branco.
 const COLUNAS = COLUNAS_ATUALIZACAO_PRODUTOS
 
+// Dois produtos de exemplo, cada um sua própria linha (sem
+// identificador) - ilustram uma ENTRADA de estoque com troca de preço
+// e uma SAÍDA de estoque com remoção de foto. Um arquivo de verdade
+// normalmente vem de uma exportação real (Exportar → editar →
+// Reimportar), não deste modelo em branco - ele só documenta as colunas.
 const LINHAS_EXEMPLO = [
-  ['', 'Ração para Peixes Tropicais', 'Ração em flocos, embalagem de 1kg', 'Rações', 'Kg', 'RAC0001', 'não', 'não', 'Padrão', 'RAC0001-PADR', '32.90', '', '30', '5', '1', ''],
-  ['RAC0001', '', '', '', '', '', '', '', 'Padrão', 'RAC0001-PADR', '32.90', '', '-5', '', '', ''],
+  ['', 'Ração para Peixes Tropicais', 'Ração em flocos, embalagem de 1kg', 'Rações', 'Kg', 'RAC0001', 'não', 'não', 'Padrão', 'RAC0001-PADR', '34.90', '', '30', '5', '1', ''],
+  ['', '', '', '', '', 'AQ0002', '', '', '', 'AQ0002-PADR', '', '', '-5', '', '', 'remover'],
 ]
 
 const TAMANHO_LOTE = 10
@@ -102,23 +107,26 @@ function paraInteiro(v: string): number | null {
   return n === null ? null : Math.trunc(n)
 }
 
-function agruparPorCodigo(linhas: { linha: number; dados: LinhaArquivo }[]): { grupos: GrupoAtualizacao[]; semCodigo: number[] } {
+// Agrupa por `identificador` (herdando código/nome/descrição da 1ª
+// linha do grupo) - MESMA convenção do Inc 1, nunca por `codigo` linha
+// a linha: a exportação (Inc 2) só preenche codigo/nome/descrição na
+// 1ª linha de cada grupo (colunas em branco nas seguintes = herdam),
+// exatamente como identificador/nome/categoria no Inc 1 - group por
+// código exigiria a célula preenchida em toda linha, o que quebraria
+// justamente o arquivo real que veio de uma exportação.
+function agruparLinhas(linhas: { linha: number; dados: LinhaArquivo }[]): GrupoAtualizacao[] {
   const grupos = new Map<string, GrupoAtualizacao>()
   const ordemChaves: string[] = []
-  const semCodigo: number[] = []
 
   for (const { linha, dados } of linhas) {
-    const codigo = dados.codigo.trim()
-    if (!codigo) {
-      semCodigo.push(linha)
-      continue
-    }
+    const identificador = dados.identificador.trim()
+    const chave = identificador || `__solo_${linha}__`
 
-    let grupo = grupos.get(codigo)
+    let grupo = grupos.get(chave)
     if (!grupo) {
-      grupo = { linhas: [], codigo, nome: dados.nome, descricao: dados.descricao, variacoes: [] }
-      grupos.set(codigo, grupo)
-      ordemChaves.push(codigo)
+      grupo = { linhas: [], codigo: dados.codigo, nome: dados.nome, descricao: dados.descricao, variacoes: [] }
+      grupos.set(chave, grupo)
+      ordemChaves.push(chave)
     }
     grupo.linhas.push(linha)
     grupo.variacoes.push({
@@ -131,7 +139,7 @@ function agruparPorCodigo(linhas: { linha: number; dados: LinhaArquivo }[]): { g
     })
   }
 
-  return { grupos: ordemChaves.map((c) => grupos.get(c)!), semCodigo }
+  return ordemChaves.map((c) => grupos.get(c)!)
 }
 
 export function AtualizarProdutosDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -173,13 +181,17 @@ export function AtualizarProdutosDialog({ open, onOpenChange }: { open: boolean;
       return
     }
 
-    const { grupos, semCodigo } = agruparPorCodigo(linhasBrutas)
-    const puladosLocais: GrupoPulado[] = semCodigo.map((linha) => ({
-      linhas: [linha],
-      codigo: '',
-      nome: '(sem código)',
-      motivo: 'Código do produto vazio — obrigatório na atualização.',
-    }))
+    const todosOsGrupos = agruparLinhas(linhasBrutas)
+    const puladosLocais: GrupoPulado[] = []
+    const grupos: GrupoAtualizacao[] = []
+    for (const g of todosOsGrupos) {
+      const codigo = g.codigo.trim()
+      if (!codigo) {
+        puladosLocais.push({ linhas: g.linhas, codigo: '', nome: g.nome.trim() || '(sem código)', motivo: 'Código do produto vazio — obrigatório na atualização.' })
+      } else {
+        grupos.push({ ...g, codigo })
+      }
+    }
 
     if (grupos.length === 0) {
       setPulados(puladosLocais)
