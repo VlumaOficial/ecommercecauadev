@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { PlusIcon, UploadIcon, DownloadIcon } from 'lucide-react'
+import { PlusIcon, UploadIcon, DownloadIcon, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useQueryParamState } from '@/hooks/use-query-param-state'
@@ -18,6 +18,7 @@ import { CategoriaFilterPopover } from './categoria-filter-popover'
 import { ProdutosTable } from './produtos-table'
 import { ProdutoViewDialog } from './produto-view-dialog'
 import { ImportarProdutosDialog } from './importar-produtos-dialog'
+import { ImportarFotosDialog } from './importar-fotos-dialog'
 import {
   useProdutos,
   useSetProdutoAtivo,
@@ -42,6 +43,7 @@ export function ProdutosView() {
   const [produtoParaInativar, setProdutoParaInativar] = useState<Produto | null>(null)
   const [produtoVisualizando, setProdutoVisualizando] = useState<Produto | null>(null)
   const [importarAberto, setImportarAberto] = useState(false)
+  const [importarFotosAberto, setImportarFotosAberto] = useState(false)
   const setAtivo = useSetProdutoAtivo()
 
   function confirmarInativar() {
@@ -98,6 +100,10 @@ export function ProdutosView() {
               <DropdownMenuItem onClick={() => exportar('xlsx')}>Exportar como XLSX</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button variant="outline" onClick={() => setImportarFotosAberto(true)}>
+            <ImageIcon />
+            Importar fotos
+          </Button>
           <Button variant="outline" onClick={() => setImportarAberto(true)}>
             <UploadIcon />
             Importar produtos
@@ -159,6 +165,7 @@ export function ProdutosView() {
       />
 
       <ImportarProdutosDialog open={importarAberto} onOpenChange={setImportarAberto} categorias={categorias} />
+      <ImportarFotosDialog open={importarFotosAberto} onOpenChange={setImportarFotosAberto} />
     </div>
   )
 }

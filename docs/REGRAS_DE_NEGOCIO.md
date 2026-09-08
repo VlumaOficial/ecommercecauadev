@@ -905,6 +905,28 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 ---
 
+## 27. Importação de fotos por SKU (Frente A — Catálogo em Escala, Incremento 3, insert-only 04/09/2026)
+
+**✅ Em vigor.** `/painel/produtos`, botão "Importar fotos" — sobe várias fotos de uma vez, casando cada arquivo com a variação certa **pelo nome do arquivo** (o SKU, §4.4).
+
+**Nomenclatura do nome do arquivo:**
+- `SKU.jpg` (ou `.jpeg`/`.png`/`.webp`) — foto única daquela variação, vira automaticamente a **capa** (1ª foto da galeria).
+- `SKU-1.jpg`, `SKU-2.jpg`, ... — várias fotos da mesma variação; o número é a ordem de exibição (`SKU-1` aparece primeiro).
+
+**Foto é sempre da variação, nunca herdada entre variações do mesmo produto** (nenhuma novidade — mesmo princípio já usado no cadastro manual, §4.4). Na prática, um produto de **uma única variação** tem a foto do seu único SKU funcionando como "a foto do produto" — não existe herança automática produto→variação nesta fase.
+
+**Adicionar vs. Substituir — escolha única pra todo o lote (não por arquivo):**
+- **Adicionar à galeria** (padrão, sem risco): as fotos novas entram, as que já existiam continuam. Limite de 5 fotos por variação continua valendo — se estourar, aquele arquivo aparece no relatório como erro, sem afetar os demais.
+- **Substituir**: troca **todas** as fotos atuais das variações presentes no lote pelas novas — **exclusão permanente**, com confirmação explícita antes de rodar (mesmo princípio de ações destrutivas do resto do painel). Se alguma foto nova falhar no meio do envio, o sistema **preserva as fotos antigas daquela variação** em vez de deixá-la sem nenhuma foto — o lojista só perde tempo reenviando o que falhou, nunca fica com um produto "pelado" por acidente.
+
+**Erros do relatório**: SKU não encontrado no cadastro, nome de arquivo fora do padrão (número mal formatado depois do SKU), formato de arquivo não suportado — cada um com o nome do arquivo e o motivo.
+
+**Fica pra um incremento futuro** (não implementado agora): sinalizar a ação (adicionar/substituir) **por arquivo/produto** dentro da própria planilha de importação de dados (hoje a escolha é só do lote inteiro de fotos, numa tela separada).
+
+---
+
+---
+
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
 
 *Entregável planejado: ao final do desenvolvimento, este documento é a base para gerar o **manual formal do usuário/lojista** — por isso a linguagem aqui evita jargão técnico desde o início.*
