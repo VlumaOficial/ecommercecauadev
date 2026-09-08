@@ -923,6 +923,8 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 **Fica pra um incremento futuro** (não implementado agora): sinalizar a ação (adicionar/substituir) **por arquivo/produto** dentro da própria planilha de importação de dados (hoje a escolha é só do lote inteiro de fotos, numa tela separada).
 
+**Testado com Chromium real contra a URL pública em 04/09/2026** (detalhe técnico completo em `ESCOPO_PROJETO.md` §4, Frente A — Incremento 3): capa e galeria confirmadas na ordem certa, SKU com hífen no próprio código casou sem problema, os 3 tipos de erro isolados sem afetar as fotos válidas do mesmo lote, adicionar preservando a capa existente, e substituir testado nos dois cenários — sucesso completo e falha parcial (esta última confirmando que a variação nunca fica sem nenhuma foto). Achado separado, não deste incremento: a exclusão de foto (rota já existente, não alterada) apaga o cadastro corretamente mas pode deixar o arquivo no armazenamento — sem efeito visível pro lojista, registrado como tarefa própria de investigação.
+
 ---
 
 ---
