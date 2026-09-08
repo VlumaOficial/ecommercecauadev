@@ -901,6 +901,8 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 **Reimportar um export não atualiza o catálogo existente**: como cada produto já tem um código, reimportar a planilha exportada sem editar nada é rejeitado linha a linha ("já existe um produto com este código") — nada é duplicado nem sobrescrito. A exportação de hoje serve pra editar em massa fora do sistema, migrar/duplicar um catálogo entre lojas, e descobrir os códigos das variações (SKU) pra nomear as fotos (frente futura da Frente A). **Atualizar o catálogo existente a partir de uma planilha reimportada é um incremento futuro, ainda não construído.**
 
+**Testado com Chromium real contra a URL pública em 04/09/2026** (detalhe técnico completo em `ESCOPO_PROJETO.md` §4, Frente A — Incremento 2): exportação sem filtro trouxe o catálogo ativo inteiro no formato certo; exportação filtrada (por status e por busca) trouxe só o subconjunto correspondente; um produto com uma variação ativa e outra inativa exportou só a ativa; arquivo exportado foi lido de volta pelo mesmo leitor da importação sem erro de formato.
+
 ---
 
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
