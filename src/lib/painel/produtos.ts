@@ -105,3 +105,71 @@ export async function criarProdutoComoStaff(
   if (error) return { ok: false, error: error.message }
   return { ok: true, produto: data as Tables<'products'> }
 }
+
+// Sanitiza a busca antes de montar o filtro .or() do PostgREST: virgula
+// e parenteses tem significado especial na sintaxe do or-filter e
+// quebrariam a query se vierem do texto digitado pelo usuario.
+export function sanitizarBuscaProduto(busca: string) {
+  return busca.replace(/[(),]/g, ' ').trim()
+}
+
+export type FiltroProdutos = { status: string; busca: string; categoryId: string }
+
+export type VariacaoEncontradaFiltro = {
+  id: string
+  nome: string
+  sku: string | null
+  bateu_sku: boolean
+  bateu_nome: boolean
+}
+
+// Extraída de GET /api/painel/produtos (listagem) para ser reaproveitada
+// pela exportação (Frente A, Inc 2) - garante que "o que a tela mostra"
+// e "o que o export traz" usam EXATAMENTE a mesma query/filtro, nunca
+// duas implementações que podem divergir.
+export async function filtrarProdutosComoStaff(supabase: SupabaseServerClient, filtro: FiltroProdutos) {
+  let query = supabase.from('products_com_status').select('*').order('nome', { ascending: true })
+
+  if (filtro.status === 'ativos') query = query.eq('ativo', true)
+  else if (filtro.status === 'inativos') query = query.eq('ativo', false)
+  if (filtro.categoryId) query = query.eq('category_id', filtro.categoryId)
+
+  // product_id -> variacoes que bateram na busca (so preenchido quando
+  // ha busca) - permite a listagem mostrar QUAL variacao casou, nao so
+  // que o produto casou. A exportacao ignora esse mapa, so usa `data`.
+  const variacoesPorProduto = new Map<string, VariacaoEncontradaFiltro[]>()
+
+  const busca = sanitizarBuscaProduto(filtro.busca)
+  if (busca) {
+    // Busca tambem por SKU/rotulo de variacao: acha os product_id que
+    // batem numa query separada (product_variants nao e' exposto pela
+    // view products_com_status, que agrega/agrupa as variacoes) e
+    // inclui no .or() principal via id.in.(...). Nao filtra por
+    // variacao ativa/inativa de proposito - staff pode estar
+    // procurando o produto por um SKU ja inativado.
+    const { data: variantMatches } = await supabase
+      .from('product_variants')
+      .select('id, product_id, nome, sku')
+      .or(`sku.ilike.%${busca}%,nome.ilike.%${busca}%`)
+
+    const buscaLower = busca.toLowerCase()
+    for (const v of variantMatches ?? []) {
+      const bateuSku = !!v.sku && v.sku.toLowerCase().includes(buscaLower)
+      const bateuNome = !!v.nome && v.nome.toLowerCase().includes(buscaLower)
+      if (!bateuSku && !bateuNome) continue
+      const lista = variacoesPorProduto.get(v.product_id) ?? []
+      lista.push({ id: v.id, nome: v.nome, sku: v.sku, bateu_sku: bateuSku, bateu_nome: bateuNome })
+      variacoesPorProduto.set(v.product_id, lista)
+    }
+    const idsPorVariacao = [...variacoesPorProduto.keys()]
+
+    const condicoes = [`nome.ilike.%${busca}%`, `codigo.ilike.%${busca}%`]
+    if (idsPorVariacao.length > 0) {
+      condicoes.push(`id.in.(${idsPorVariacao.join(',')})`)
+    }
+    query = query.or(condicoes.join(','))
+  }
+
+  const { data, error } = await query
+  return { data, error, variacoesPorProduto }
+}

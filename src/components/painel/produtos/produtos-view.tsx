@@ -3,13 +3,17 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { PlusIcon, UploadIcon } from 'lucide-react'
+import { toast } from 'sonner'
+import { PlusIcon, UploadIcon, DownloadIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useQueryParamState } from '@/hooks/use-query-param-state'
 import { StatusFilterTabs, type StatusFiltro } from '@/components/painel/crud/status-filter-tabs'
 import { SearchInput } from '@/components/painel/crud/search-input'
 import { ConfirmDialog } from '@/components/painel/crud/confirm-dialog'
 import { useCategorias } from '@/hooks/use-categorias'
+import { COLUNAS_PRODUTOS } from '@/lib/importacao/colunas-produtos'
+import { baixarCsv, baixarXlsx } from '@/lib/importacao/download'
 import { CategoriaFilterPopover } from './categoria-filter-popover'
 import { ProdutosTable } from './produtos-table'
 import { ProdutoViewDialog } from './produto-view-dialog'
@@ -48,6 +52,34 @@ export function ProdutosView() {
     )
   }
 
+  // Frente A, incremento 2 (aprovado pelo PO em 04/09/2026) - exporta
+  // respeitando os MESMOS filtros da URL (status/busca/categoria), no
+  // formato de 15 colunas do Inc 1 (round-trip de formato). A leitura
+  // (join produto+variação, resolução de nomes) é toda no servidor;
+  // aqui só monta o arquivo a partir do JSON já achatado.
+  async function exportar(formato: 'csv' | 'xlsx') {
+    const params = new URLSearchParams({ status, busca })
+    if (categoryId) params.set('category_id', categoryId)
+
+    const response = await fetch(`/api/painel/produtos/exportar?${params.toString()}`)
+    const body = await response.json().catch(() => null)
+    if (!response.ok || !Array.isArray(body?.linhas)) {
+      toast.error('Não foi possível exportar os produtos. Tente novamente.')
+      return
+    }
+
+    const linhas: string[][] = body.linhas.map((l: Record<string, string>) =>
+      COLUNAS_PRODUTOS.map((coluna) => l[coluna] ?? '')
+    )
+    const nomeBase = `produtos-${new Date().toISOString().slice(0, 10)}`
+    if (linhas.length === 0) {
+      toast.info('Nenhum produto encontrado com os filtros atuais.')
+      return
+    }
+    if (formato === 'csv') baixarCsv([[...COLUNAS_PRODUTOS], ...linhas], `${nomeBase}.csv`)
+    else baixarXlsx([[...COLUNAS_PRODUTOS], ...linhas], `${nomeBase}.xlsx`, 'Produtos')
+  }
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
@@ -56,6 +88,16 @@ export function ProdutosView() {
           <p className="text-muted-foreground mt-1">Gerencie o catálogo de produtos da loja.</p>
         </div>
         <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button variant="outline" />}>
+              <DownloadIcon />
+              Exportar
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => exportar('csv')}>Exportar como CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportar('xlsx')}>Exportar como XLSX</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="outline" onClick={() => setImportarAberto(true)}>
             <UploadIcon />
             Importar produtos

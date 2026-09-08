@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { parseSpreadsheetFile } from '@/lib/importacao/parse-spreadsheet'
 import { baixarCsv, baixarXlsx } from '@/lib/importacao/download'
+import { COLUNAS_PRODUTOS } from '@/lib/importacao/colunas-produtos'
 import type { Categoria } from '@/hooks/use-categorias'
 
 // Frente A (Gestão de Catálogo em Escala), incremento 1 - aprovado pelo
@@ -22,23 +23,7 @@ import type { Categoria } from '@/hooks/use-categorias'
 // Nuvemshop): colunas de produto preenchidas na 1ª linha do grupo,
 // colunas em branco nas linhas seguintes = herdam da 1ª. `identificador`
 // agrupa - vazio = a linha é seu próprio produto de 1 variação.
-const COLUNAS = [
-  'identificador',
-  'nome',
-  'descricao',
-  'categoria',
-  'unidade',
-  'codigo',
-  'destaque',
-  'codigo_visivel',
-  'variacao_nome',
-  'sku',
-  'preco',
-  'preco_promocional',
-  'estoque',
-  'quantidade_minima_estoque',
-  'quantidade_minima_venda',
-] as const
+const COLUNAS = COLUNAS_PRODUTOS
 
 const LINHAS_EXEMPLO = [
   // Produto de 1 variação - sem identificador.

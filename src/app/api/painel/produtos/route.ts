@@ -2,14 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getStaffProfile } from '@/lib/auth'
-import { criarProdutoComoStaff } from '@/lib/painel/produtos'
-
-// Sanitiza a busca antes de montar o filtro .or() do PostgREST: virgula
-// e parenteses tem significado especial na sintaxe do or-filter e
-// quebrariam a query se vierem do texto digitado pelo usuario.
-function sanitizarBusca(busca: string) {
-  return busca.replace(/[(),]/g, ' ').trim()
-}
+import { criarProdutoComoStaff, filtrarProdutosComoStaff, sanitizarBuscaProduto } from '@/lib/painel/produtos'
 
 export async function GET(request: NextRequest) {
   const perfil = await getStaffProfile()
@@ -19,58 +12,11 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status') ?? 'ativos'
-  const busca = sanitizarBusca(searchParams.get('busca')?.trim() ?? '')
+  const busca = sanitizarBuscaProduto(searchParams.get('busca')?.trim() ?? '')
   const categoryId = searchParams.get('category_id')?.trim() ?? ''
 
   const supabase = await createClient()
-  let query = supabase
-    .from('products_com_status')
-    .select('*')
-    .order('nome', { ascending: true })
-
-  if (status === 'ativos') query = query.eq('ativo', true)
-  else if (status === 'inativos') query = query.eq('ativo', false)
-  if (categoryId) query = query.eq('category_id', categoryId)
-
-  // product_id -> variacoes que bateram na busca (so preenchido quando
-  // ha busca) - permite a listagem mostrar QUAL variacao casou, nao so
-  // que o produto casou. Populado abaixo, antes do .or() principal.
-  const variacoesPorProduto = new Map<
-    string,
-    { id: string; nome: string; sku: string | null; bateu_sku: boolean; bateu_nome: boolean }[]
-  >()
-
-  if (busca) {
-    // Busca tambem por SKU/rotulo de variacao: acha os product_id que
-    // batem numa query separada (product_variants nao e' exposto pela
-    // view products_com_status, que agrega/agrupa as variacoes) e
-    // inclui no .or() principal via id.in.(...). Nao filtra por
-    // variacao ativa/inativa de proposito - staff pode estar
-    // procurando o produto por um SKU ja inativado.
-    const { data: variantMatches } = await supabase
-      .from('product_variants')
-      .select('id, product_id, nome, sku')
-      .or(`sku.ilike.%${busca}%,nome.ilike.%${busca}%`)
-
-    const buscaLower = busca.toLowerCase()
-    for (const v of variantMatches ?? []) {
-      const bateuSku = !!v.sku && v.sku.toLowerCase().includes(buscaLower)
-      const bateuNome = !!v.nome && v.nome.toLowerCase().includes(buscaLower)
-      if (!bateuSku && !bateuNome) continue
-      const lista = variacoesPorProduto.get(v.product_id) ?? []
-      lista.push({ id: v.id, nome: v.nome, sku: v.sku, bateu_sku: bateuSku, bateu_nome: bateuNome })
-      variacoesPorProduto.set(v.product_id, lista)
-    }
-    const idsPorVariacao = [...variacoesPorProduto.keys()]
-
-    const condicoes = [`nome.ilike.%${busca}%`, `codigo.ilike.%${busca}%`]
-    if (idsPorVariacao.length > 0) {
-      condicoes.push(`id.in.(${idsPorVariacao.join(',')})`)
-    }
-    query = query.or(condicoes.join(','))
-  }
-
-  const { data, error } = await query
+  const { data, error, variacoesPorProduto } = await filtrarProdutosComoStaff(supabase, { status, busca, categoryId })
   if (error) {
     return NextResponse.json({ error: 'Não foi possível carregar os produtos. Tente novamente.' }, { status: 400 })
   }

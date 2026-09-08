@@ -887,6 +887,22 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 ---
 
+## 26. Exportação de produtos via planilha (Frente A — Catálogo em Escala, Incremento 2, insert-only 04/09/2026)
+
+**✅ Em vigor.** `/painel/produtos`, botão "Exportar" (CSV ou XLSX) — gera uma planilha do catálogo no **mesmo formato** da importação (§25), fechando o ciclo: o lojista pode editar o catálogo inteiro numa planilha (Excel, Google Sheets) e trazer de volta.
+
+**Respeita o que está sendo visto na tela**: exporta exatamente o conjunto filtrado no momento (status Ativos/Inativos/Todos, busca, categoria) — sem nenhum filtro aplicado, exporta o catálogo inteiro do tenant.
+
+**Só o catálogo ativo entra**: variações **inativas** não aparecem na planilha exportada (o formato não tem como marcar "inativo" numa linha — incluir daria a entender que a variação está à venda). Um produto sem nenhuma variação ativa também não aparece.
+
+**Identificador de agrupamento = código do produto**: como o identificador é só um artifício da planilha (não existe no cadastro), a exportação usa o **código** do próprio produto (§4.6 — único, nunca muda) pra agrupar as variações de um mesmo produto de várias linhas; produto de uma variação só sai com o identificador em branco, igual ao que o lojista preencheria na importação.
+
+**Coluna "estoque" é uma foto do momento**: mostra o saldo atual de cada variação no instante da exportação, não um valor fixo — se o lojista consultar de novo mais tarde, o número pode ter mudado (vendas, ajustes de estoque no meio do caminho).
+
+**Reimportar um export não atualiza o catálogo existente**: como cada produto já tem um código, reimportar a planilha exportada sem editar nada é rejeitado linha a linha ("já existe um produto com este código") — nada é duplicado nem sobrescrito. A exportação de hoje serve pra editar em massa fora do sistema, migrar/duplicar um catálogo entre lojas, e descobrir os códigos das variações (SKU) pra nomear as fotos (frente futura da Frente A). **Atualizar o catálogo existente a partir de uma planilha reimportada é um incremento futuro, ainda não construído.**
+
+---
+
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
 
 *Entregável planejado: ao final do desenvolvimento, este documento é a base para gerar o **manual formal do usuário/lojista** — por isso a linguagem aqui evita jargão técnico desde o início.*
