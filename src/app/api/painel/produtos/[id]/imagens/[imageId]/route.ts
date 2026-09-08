@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getStaffProfile } from '@/lib/auth'
+import { removerImagemComoStaff } from '@/lib/painel/produtos'
 
 const altTextSchema = z.object({ alt_text: z.string().trim().optional().default('') })
 
@@ -76,18 +77,9 @@ export async function DELETE(
     return NextResponse.json({ error: 'Imagem não encontrada.' }, { status: 404 })
   }
 
-  const { data: removidos, error: removeError } = await supabase.storage.from('product-images').remove([imagem.storage_path])
-  const removeuDeVerdade = !removeError && (removidos ?? []).some((r) => r.name === imagem.storage_path)
-  if (!removeuDeVerdade) {
-    return NextResponse.json({ error: 'Não foi possível excluir a imagem. Tente novamente.' }, { status: 400 })
-  }
-
-  const { error: deleteError } = await supabase.from('product_images').delete().eq('id', imageId)
-  if (deleteError) {
-    return NextResponse.json(
-      { error: 'A imagem foi removida do armazenamento, mas houve um erro ao atualizar o cadastro. Atualize a página.' },
-      { status: 400 }
-    )
+  const resultado = await removerImagemComoStaff(supabase, { imageId, storagePath: imagem.storage_path })
+  if (!resultado.ok) {
+    return NextResponse.json({ error: resultado.error }, { status: 400 })
   }
 
   return NextResponse.json({ ok: true })

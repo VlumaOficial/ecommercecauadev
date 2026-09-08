@@ -20,3 +20,11 @@ export const COLUNAS_PRODUTOS = [
   'quantidade_minima_estoque',
   'quantidade_minima_venda',
 ] as const
+
+// Frente A, incremento 4 (atualização em massa via reimportação) -
+// as MESMAS 15 colunas + `acao_foto` (16ª, vazio = não mexe / "remover"
+// = apaga as fotos daquele SKU). Código e SKU são obrigatórios aqui
+// (chave de casamento imutável) - diferente do Inc 1, onde eram
+// opcionais (geração automática). Fluxo esperado: exportar (Inc 2),
+// editar, reimportar aqui - não um modelo em branco.
+export const COLUNAS_ATUALIZACAO_PRODUTOS = [...COLUNAS_PRODUTOS, 'acao_foto'] as const

@@ -947,6 +947,24 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 ---
 
+## 29. Atualização em massa de produtos via reimportação (Frente A — Catálogo em Escala, Incremento 4, insert-only 08/09/2026)
+
+**✅ Em vigor.** `/painel/produtos`, botão "Atualizar em massa" — diferente da importação (Incremento 1), esta tela **atualiza produtos que já existem**, nunca cria produtos novos. Fluxo esperado: **Exportar** o catálogo (botão "Exportar"), editar no Excel só o que quer mudar, e **reimportar** o mesmo arquivo aqui.
+
+**Como o sistema encontra o produto**: pelo **código do produto** e pelo **SKU da variação** — os dois já vêm preenchidos se o arquivo veio de uma exportação, e **nunca são alterados** por esta tela (são a identidade do produto/variação, não um dado editável). Uma linha com código ou SKU que não bate com nada cadastrado não atualiza nada — é reportada como erro.
+
+**Regra geral — célula em branco nunca apaga**: nome, descrição, preço e preço promocional só mudam se a célula correspondente tiver algum valor. Célula vazia = mantém o que já está cadastrado. **Importante**: por essa mesma regra, **não é possível remover um preço promocional já cadastrado através desta reimportação** — deixar a célula em branco preserva a promoção existente, não a apaga. Para remover uma promoção, edite o produto individualmente.
+
+**Estoque é diferente de tudo isso — nunca sobrescreve o saldo.** O número da planilha é somado (ou subtraído) ao estoque atual, nunca substitui: um valor positivo é tratado como **entrada** (chegou mercadoria), um valor negativo como **saída** (saiu mercadoria por algum motivo fora de uma venda normal). Exemplo: saldo 100 + planilha `30` = 130. Saldo 100 + planilha `-10` = 90. **Atenção**: reimportar o mesmo arquivo duas vezes soma o estoque duas vezes — a tela sempre mostra um aviso e o resultado final (saldo atual → saldo novo) antes de aplicar, exatamente pra evitar esse erro.
+
+**Fotos**: uma coluna (`acao_foto`) permite pedir "remover as fotos deste SKU" durante a atualização — em branco, as fotos não são mexidas. Adicionar ou trocar fotos continua sendo feito pelo Incremento 3 (upload por SKU), não por esta planilha.
+
+**Antes de aplicar qualquer coisa, o lojista vê exatamente o que vai mudar**: quais produtos serão atualizados (com o preço/estoque de antes e depois, lado a lado) e quais serão **pulados** (com o motivo) — nada é aplicado sem essa confirmação explícita, e o servidor confere tudo de novo antes de gravar, nunca confiando só no que a tela mostrou.
+
+**Mesma regra de segurança dos outros incrementos**: um produto com um problema na planilha (SKU errado, preço inválido) não é atualizado **nada** — nem os outros campos, nem as outras variações desse mesmo produto — mas os demais produtos do arquivo são atualizados normalmente.
+
+---
+
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
 
 *Entregável planejado: ao final do desenvolvimento, este documento é a base para gerar o **manual formal do usuário/lojista** — por isso a linguagem aqui evita jargão técnico desde o início.*

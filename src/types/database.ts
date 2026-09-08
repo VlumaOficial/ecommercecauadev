@@ -1358,6 +1358,14 @@ export type Database = {
         Args: { p_product_id: string; p_produto: Json; p_variacoes: Json; p_caracteristicas?: Json }
         Returns: Database["public"]["Tables"]["products"]["Row"]
       }
+      // Adicionada na migration 053 (Frente A, Inc 4 - atualizacao em
+      // massa via reimportacao). Drift do tipo gerado, corrigido a mao
+      // (CLI sem privilegio pra regenerar nesta sessao, mesmo caso da
+      // staff_pode_gerenciar_pedidos acima).
+      atualizar_produto_via_importacao: {
+        Args: { p_codigo: string; p_produto: Json; p_variacoes: Json }
+        Returns: Database["public"]["Tables"]["products"]["Row"]
+      }
       // Adicionada na migration 037 (Fase 2, incremento 3). customer_id
       // sempre resolvido de auth.uid() dentro da funcao - nunca aceito
       // como parametro (por isso nao aparece em Args). p_itens: array

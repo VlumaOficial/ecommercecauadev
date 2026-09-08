@@ -113,6 +113,40 @@ export function sanitizarBuscaProduto(busca: string) {
   return busca.replace(/[(),]/g, ' ').trim()
 }
 
+export type RemoverImagemResultado = { ok: true } | { ok: false; error: string }
+
+// Extraída de DELETE /api/painel/produtos/[id]/imagens/[imageId] pra
+// ser reaproveitada pela atualização em massa (Frente A, Inc 4,
+// acao_foto=remover) - a MESMA lógica corrigida (Inc 3, 04/09/2026),
+// nunca duplicada num segundo lugar que poderia divergir da correção.
+// O chamador já confirmou que a linha existe (findError/not found é
+// responsabilidade de quem chama, que também sabe o status HTTP certo
+// pra cada caso) - aqui só a parte crítica: confirmar que o Storage
+// REALMENTE removeu o arquivo (checando `data`, não só ausência de
+// `error` - achado do Inc 3) antes de apagar a linha do banco.
+export async function removerImagemComoStaff(
+  supabase: SupabaseServerClient,
+  params: { imageId: string; storagePath: string }
+): Promise<RemoverImagemResultado> {
+  const { data: removidos, error: removeError } = await supabase.storage
+    .from('product-images')
+    .remove([params.storagePath])
+  const removeuDeVerdade = !removeError && (removidos ?? []).some((r) => r.name === params.storagePath)
+  if (!removeuDeVerdade) {
+    return { ok: false, error: 'Não foi possível excluir a imagem. Tente novamente.' }
+  }
+
+  const { error: deleteError } = await supabase.from('product_images').delete().eq('id', params.imageId)
+  if (deleteError) {
+    return {
+      ok: false,
+      error: 'A imagem foi removida do armazenamento, mas houve um erro ao atualizar o cadastro. Atualize a página.',
+    }
+  }
+
+  return { ok: true }
+}
+
 export type FiltroProdutos = { status: string; busca: string; categoryId: string }
 
 export type VariacaoEncontradaFiltro = {
