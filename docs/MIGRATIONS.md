@@ -173,6 +173,8 @@
 
 **Atualização final de 04/09/2026 (mesmo dia) — migration `052` aplicada pelo PO e testada. `001`–`052` estão todas aplicadas e validadas no banco — nenhuma pendência de migration.** Pendência que **não** é de migration, registrada à parte: limpeza dos 17 arquivos órfãos já existentes no bucket `product-images` (de antes da correção) — tarefa separada, aguardando autorização do PO, não bloqueia nada.
 
+**Fechamento, 04/09/2026 (mesmo dia) — limpeza dos 17 órfãos concluída, com autorização explícita do PO, em dois passos (lista revisada antes de qualquer exclusão).** Removidos via service role só os 17 caminhos exatos já listados e aprovados — nenhuma linha de `product_images` tocada. Verificação pós-exclusão: 0 órfãos restantes no bucket, 0 linhas de `product_images` apontando pra arquivo inexistente (checado pra todos os produtos), bucket com exatamente 20 objetos pras 20 linhas existentes — correspondência 1:1. Ver `ESCOPO_PROJETO.md` §4 pro relato completo dos dois passos. **Nenhuma pendência remanescente relacionada ao bug de arquivo órfão no Storage.**
+
 ---
 
 *Ver `docs/ESCOPO_PROJETO.md` §6 "Ambientes e referências" para o contexto completo de como as migrations são versionadas e aplicadas, e §0 para a regra de rastreabilidade de migrations ajustadas/descartadas.*
