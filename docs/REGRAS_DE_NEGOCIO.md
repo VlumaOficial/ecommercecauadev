@@ -927,6 +927,24 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 ---
 
+## 28. Atualização em massa de produtos via reimportação (Frente A — Catálogo em Escala, Incremento 4, insert-only 08/09/2026)
+
+**📌 Desenho aprovado pelo PO em 08/09/2026 — PENDENTE DE IMPLEMENTAÇÃO** (sessão dedicada). Registrado aqui como referência do que foi combinado, pro manual futuro já nascer alinhado com a regra de negócio decidida.
+
+**Diferença central pro Incremento 1 (importação)**: lá, cada linha **cria** um produto novo. Aqui, cada linha **atualiza** um produto que já existe — casando pelo **código do produto** e pelo **SKU da variação**, que nesta operação são tratados como **chave fixa, nunca alterada** pela planilha.
+
+**O que é sobrescrito normalmente** (célula em branco = não mexe, mantém o que já está cadastrado — nunca apaga um dado só porque a célula ficou vazia): nome, descrição, preço, preço promocional.
+
+**Estoque é diferente de tudo isso — nunca é sobrescrito.** O número da planilha é somado ao estoque atual, como se fosse uma entrada de mercadoria (mesma mecânica de sempre — toda mudança de estoque vira uma movimentação registrada, com rastro). Exemplo: se o produto está com 100 unidades e a planilha traz 30, o resultado é 130, não 30. Isso evita perder de vista vendas que aconteceram entre a exportação e a reimportação.
+
+**Foto**: uma coluna própria (`acao_foto`) permite pedir "remover as fotos deste SKU" durante a atualização em massa — em branco, as fotos não são mexidas. Adicionar ou substituir fotos continua sendo feito pelo upload de imagens (Incremento 3), não pela planilha de dados (planilha não carrega arquivo).
+
+**Antes de aplicar qualquer mudança, o lojista vê exatamente o que vai mudar** — um resumo tipo "vai alterar o preço de tal produto de R$X pra R$Y, somar tantas unidades ao estoque de tal produto, remover fotos de N produtos" — e só depois de confirmar é que a atualização roda de verdade.
+
+**Mesma regra de segurança do Incremento 1**: um produto com problema na planilha não entra "pela metade" — ou atualiza inteiro, ou fica de fora e é reportado no relatório de erro; os demais produtos da mesma planilha são atualizados normalmente.
+
+---
+
 ---
 
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
