@@ -43,6 +43,16 @@ export async function PATCH(
 // removido com a linha ainda apontando pra ele, nem uma linha
 // removida com o arquivo ainda ocupando espaco sem referencia nenhuma
 // (o segundo caso e o unico residuo aceito, ver nota no plano).
+//
+// Achado (Frente A, Inc 3, 04/09/2026): so checar `error` do
+// `.remove()` nao basta - a chamada pode devolver sucesso (sem
+// `error`) com `data` vazio/incompleto quando o Storage nao remove o
+// arquivo de verdade (ex.: RLS negando silenciosamente), deixando um
+// orfao no bucket. Correcao: confirma que o PATH pedido realmente
+// aparece no `data` devolvido antes de considerar a remocao efetiva -
+// so ai apaga a linha. Se nao confirmar, a linha PERMANECE (a foto
+// continua aparecendo - estado correto) e o erro e reportado, nunca
+// apaga a linha as cegas.
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; imageId: string }> }
@@ -66,9 +76,10 @@ export async function DELETE(
     return NextResponse.json({ error: 'Imagem não encontrada.' }, { status: 404 })
   }
 
-  const { error: removeError } = await supabase.storage.from('product-images').remove([imagem.storage_path])
-  if (removeError) {
-    return NextResponse.json({ error: 'Não foi possível remover a imagem. Tente novamente.' }, { status: 400 })
+  const { data: removidos, error: removeError } = await supabase.storage.from('product-images').remove([imagem.storage_path])
+  const removeuDeVerdade = !removeError && (removidos ?? []).some((r) => r.name === imagem.storage_path)
+  if (!removeuDeVerdade) {
+    return NextResponse.json({ error: 'Não foi possível excluir a imagem. Tente novamente.' }, { status: 400 })
   }
 
   const { error: deleteError } = await supabase.from('product_images').delete().eq('id', imageId)
