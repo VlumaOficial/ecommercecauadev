@@ -766,6 +766,8 @@ Com isso, os itens (1)–(4) da sequência pré-incremento 8 estão fechados. Pr
 
 **Com isso, a Fase 3 (Módulo de Clientes) está com os 3 incrementos implementados.**
 
+57. **🏁 MARCO — 09/09/2026. Frente A (Gestão de Catálogo em Escala) COMPLETA, 4/4 incrementos (ver detalhe em §4). Com ela, encerra-se a fase de DESENVOLVIMENTO DE FEATURES do MVP do Cauã.** Módulos concluídos: catálogo (CRUD individual + em massa — importar/exportar/fotos por SKU/atualizar), pedidos, checkout, notificações (cliente + lojista, ciclo completo), clientes (CRUD + migração em massa), autenticação/sessão estabilizada (item 50, "login trap", fechado em 03/09/2026). **A próxima frente NÃO é mais desenvolvimento de feature nova do MVP — é PRÉ-PRODUÇÃO** (ver "Checklist de pré-produção do Cauã" em §1, itens 3 e 4 adicionados nesta mesma entrada). Isso não significa "zero código daqui pra frente" (a própria pré-produção pode gerar ajustes pontuais, e o teste e2e do PO pode revelar ❌ que viram trabalho de correção) — significa que não há mais nenhuma feature nova do MVP planejada e pendente de implementação; o que resta é validar, trocar credenciais reais, duplicar o ambiente pra produção, e corrigir o que o uso real apontar.
+
 ---
 
 ## 0. Regra de processo (definition of done)
@@ -885,6 +887,12 @@ Itens que só fazem sentido resolver quando o Cauã estiver de fato indo pra pro
    **Sequenciamento registrado em 26/08/2026 (mapa de prioridade, seção "Roadmap e Frentes pós-Fase 2" em §4)**: este checklist inteiro está classificado como **Estratégico** (não Alta prioridade) — depende da Frente A (Gestão de Catálogo em Escala) existir primeiro, já que não faz sentido preparar o Cauã pra produção sem ter como subir o catálogo real (~1.000 itens) em escala.
 
 2. **📌 Registrado em 04/09/2026, ao implementar Fase 3 Inc 2 (ações de Clientes) — UX de conta desativada no login, sem mensagem explicativa.** Hoje um cliente (ou staff) **desativado** que autentica com e-mail/senha corretos passa pela autenticação normalmente (login não checa `ativo`) e só cai de volta no login/vitrine mais adiante, quando a camada de app filtra `ativo=true` (`getCustomerProfile`/`getStaffProfileForUser`, tratando-o como anônimo) — sem nenhuma mensagem explicando o motivo. A pessoa só vê "não deu certo", sem saber que a conta foi desativada. Item futuro: exibir uma mensagem clara ("sua conta foi desativada, procure a loja") nesse cenário. **Mexe no fluxo de login em si (afeta staff também, não só cliente)** — não é um ajuste pontual da tela de Clientes, precisa ser tratado numa frente própria de autenticação, não implementado agora junto do Inc 2.
+
+3. **📌 Registrado em 09/09/2026, junto do marco de fim de desenvolvimento de features (item 57 em §0) — teste e2e completo + aceite do Cauã, conduzido pelo PO. PENDENTE, é o próximo passo real.** Cobre o produto ponta a ponta em uso real: recebimento de fato dos e-mails de definição/reset de senha (Incs 2/3 do módulo de Clientes — os testes automatizados confirmaram ausência de erro, não o recebimento positivo, ver `REGRAS_DE_NEGOCIO.md` §24), notificações (WhatsApp/e-mail, ciclo completo cliente+lojista), fluxo de pedido/checkout completo, e a carga do catálogo real do Cauã (~1.000 itens) usando a Frente A recém-concluída. Qualquer ❌ que esse teste revelar vira trabalho de correção antes de seguir — não é uma feature nova do MVP, é fechamento do que já existe.
+
+4. **📌 Registrado em 09/09/2026 — duplicação do ambiente de homologação (HML) para produção (PRD).** Hoje só existe um ambiente (`ecommercecauahml.vluma.com.br`, repo `ecommercecauadev`, projeto Supabase de homologação). Antes do lançamento real do Cauã, precisa existir um ambiente de **produção** separado: repositório/deploy Vercel próprio, projeto Supabase próprio (banco e Storage isolados do de teste — nenhum dado/arquivo de teste desta fase de desenvolvimento deve aparecer em produção), e domínio de produção do Criatório Capuã. Não desenhado em detalhe ainda (que dados migram, como as migrations são reaplicadas do zero no banco novo, etc.) — só registrado pra não ser esquecido como uma etapa própria, distinta da troca de credenciais (item 1) e do teste e2e (item 3).
+
+**Débitos SaaS que não bloqueiam o Cauã (single-tenant), mas ficam registrados pra quando a fase SaaS chegar** — já documentados em detalhe em outros pontos, só resumidos aqui pra quem chegar por este checklist: Evolution (WhatsApp) por-tenant e e-mail transacional por-tenant (§1 "Pilares adicionais do SaaS", ambos sem diagnóstico de viabilidade formal registrado ainda — ver nota no item 56 acima); envio de e-mail de senha em massa na importação de clientes, hoje só individual (item 55/56 acima, amarrado ao e-mail por-tenant).
 
 ---
 
@@ -1350,6 +1358,8 @@ Trigger `handle_new_user()` em `auth.users`: lê `raw_user_meta_data.role` no si
 | **Horizonte** (fase grande, sem prazo) | Fase SaaS (pilares em §1: self-service, Super Admin VLUMA, landing+Asaas, cobrança); Fluxo B/Asaas (pagamento no checkout) | — |
 
 **Recomendação de sequência do PO**: próximo passo = Frente A (Catálogo em Escala), com as 2 melhorias de notificação possivelmente encaixadas como incremento curto antes/junto (curtas, mesmo contexto do pipeline recém-fechado). Depois, conforme o objetivo do usuário no momento.
+
+**✅ Atualização de 09/09/2026 — a dependência da linha "Estratégico" acima está resolvida.** Frente A completa (4/4, item 57 em §0) e Fase 3 completa (3/3, item 56 em §0) — as duas frentes "Média"/"Alta" que precisavam existir antes do Checklist de pré-produção fazer sentido **já existem**. **A próxima frente de fato é o Checklist de pré-produção do Cauã** (§1), começando pelo teste e2e/aceite do PO (item 3 do checklist) e pelo mapeamento dos demais itens (troca de credenciais reais, item 1; duplicação HML→PRD, item 4) — não há mais nenhuma feature nova do MVP nas filas "Alta"/"Média" aguardando implementação.
 
 ---
 
