@@ -963,6 +963,8 @@ Tela `/painel/equipe` (só STAFF — clientes ficam 100% pra Fase 3, módulo de 
 
 **Mesma regra de segurança dos outros incrementos**: um produto com um problema na planilha (SKU errado, preço inválido) não é atualizado **nada** — nem os outros campos, nem as outras variações desse mesmo produto — mas os demais produtos do arquivo são atualizados normalmente.
 
+**Testado com Chromium real contra a URL pública em 09/09/2026** (detalhe técnico completo em `ESCOPO_PROJETO.md` §4, Frente A — Incremento 4): entrada e saída de estoque confirmadas funcionando corretamente (incluindo o bloqueio de uma saída maior que o saldo disponível, sem gravar nada), atualização parcial de dados (só o preenchido muda), casamento por código/SKU com os três tipos de erro, remoção de foto junto com outras mudanças no mesmo produto, e a atomicidade total (produto com problema não muda nada, nem estoque nem dados). **Frente A — Gestão de Catálogo em Escala está completa: os 4 incrementos (importar, exportar, fotos por SKU, atualizar em massa) implementados e testados.**
+
 ---
 
 *Ver `docs/ESCOPO_PROJETO.md` para a visão técnica (stack, modelo de dados, arquitetura) por trás destas regras.*
